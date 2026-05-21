@@ -166,8 +166,8 @@ poker-pi-app/
 
 ## 10. Status atual do projeto
 
-**ETAPA ATUAL:** 5 (concluída — código; aguardando validação E2E)
-**PRÓXIMA ETAPA:** 6 (Polimento: animações + sons + sorteio animado)
+**ETAPA ATUAL:** 6 + 7-A (concluídas — código; aguardando validação E2E)
+**PRÓXIMA ETAPA:** validar end-to-end e merge na main
 
 ### Roteiro de etapas
 
@@ -177,8 +177,10 @@ poker-pi-app/
 - [x] Etapa 3: Painel admin de uma partida → `docs/etapa-3-admin-partida.md`
 - [x] Etapa 4: Duas mesas + fila + renovação → `docs/etapa-4-duas-mesas.md`
 - [x] Etapa 5: Mesa final + pódio → `docs/etapa-5-mesa-final.md`
-- [ ] Etapa 6: Polimento (animações, sons, sorteio) → `docs/etapa-6-polimento.md`
-- [ ] Etapa 7: V2 (PWA jogador, WhatsApp) → `docs/etapa-7-v2.md`
+- [x] Etapa 6: Polimento (animações, sons, sorteio) → `docs/etapa-6-polimento.md`
+- [~] Etapa 7-A: PWA do jogador + QR codes → `docs/etapa-7-v2.md`
+- [ ] Etapa 7-B: WhatsApp (Twilio) — post-MVP, requer creds
+- [ ] Etapa 7-C: Export PDF — opcional, JSON já cobre exporta
 
 ---
 

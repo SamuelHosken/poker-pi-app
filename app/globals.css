@@ -176,3 +176,18 @@
     opacity: 0;
   }
 }
+
+@keyframes jogando-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(201, 169, 97, 0);
+    border-color: rgba(201, 169, 97, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 40px 0 rgba(201, 169, 97, 0.25);
+    border-color: rgba(201, 169, 97, 0.85);
+  }
+}
+
+.glow-jogando {
+  animation: jogando-glow 3.5s ease-in-out infinite;
+}

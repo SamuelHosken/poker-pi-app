@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createPlayer } from "@/lib/tournament/players";
 import type { Tables } from "@/lib/types/database.types";
+import { PlayerQrButton } from "./player-qr-button";
 
 type Player = Tables<"players">;
 
@@ -89,9 +90,9 @@ export function PlayersSection({
           {players.map((p) => (
             <li
               key={p.id}
-              className="flex items-center justify-between rounded-md border border-line bg-ink-2 px-4 py-2.5"
+              className="flex items-center justify-between gap-2 rounded-md border border-line bg-ink-2 px-4 py-2.5"
             >
-              <div>
+              <div className="min-w-0 flex-1">
                 <span className="text-paper">{p.name}</span>
                 {p.nickname && (
                   <span className="ml-2 font-display italic text-gold">{p.nickname}</span>
@@ -100,6 +101,7 @@ export function PlayersSection({
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
                 {STATE_LABEL[p.state] ?? p.state}
               </span>
+              <PlayerQrButton playerName={p.name} token={p.player_token} />
             </li>
           ))}
         </ul>

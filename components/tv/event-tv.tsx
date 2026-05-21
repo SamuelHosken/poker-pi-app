@@ -14,6 +14,8 @@ import {
   type CelebrationData,
 } from "./match-finish-celebration";
 import { Podium } from "./podium";
+import { AnimatedNewMatch, type NewMatchData } from "./new-match-overlay";
+import { SoundToggle } from "./sound-toggle";
 
 type Event = Tables<"events">;
 type PhysicalTable = Tables<"physical_tables">;
@@ -50,6 +52,7 @@ export function EventTV({
 
   const [toasts, setToasts] = useState<EliminationToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
+  const [newMatch, setNewMatch] = useState<NewMatchData | null>(null);
 
   const levelsById = useMemo(() => {
     const m: Record<string, BlindLevel> = {};
@@ -75,12 +78,21 @@ export function EventTV({
   // Refs de dedup pra eventos que disparam ações visuais (toast/celebração).
   const seenEliminations = useRef<Set<string>>(new Set());
   const seenFinishes = useRef<Set<string>>(new Set());
+  const seenNewMatches = useRef<Set<string>>(new Set());
   // Pré-popula com FINALIZADAs já existentes — evita celebração ao montar.
+  // Pré-popula matches existentes — evita sorteio ao reabrir TV.
   useEffect(() => {
     for (const m of initialMatches) {
       if (m.state === "FINALIZADA") seenFinishes.current.add(m.id);
+      seenNewMatches.current.add(m.id);
     }
   }, [initialMatches]);
+
+  const playersById = useMemo(() => {
+    const m = new Map<string, { name: string; nickname: string | null }>();
+    for (const p of players) m.set(p.id, { name: p.name, nickname: p.nickname });
+    return m;
+  }, [players]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -106,6 +118,19 @@ export function EventTV({
         (payload) => {
           const next = payload.new as Match;
           setMatches((prev) => upsertById(prev, next, payload.eventType));
+
+          // Nova partida → sorteio animado (uma vez por match)
+          if (payload.eventType === "INSERT" && !seenNewMatches.current.has(next.id)) {
+            seenNewMatches.current.add(next.id);
+            const ptable = tablesRef.current.find((tt) => tt.id === next.physical_table_id);
+            if (ptable) {
+              setNewMatch({
+                matchId: next.id,
+                tableNumber: ptable.table_number,
+                isFinalTable: next.is_final_table,
+              });
+            }
+          }
 
           if (
             payload.eventType === "UPDATE" &&
@@ -293,6 +318,16 @@ export function EventTV({
           onDone={() => setCelebration(null)}
         />
       )}
+
+      {/* Sorteio animado quando uma nova partida começa */}
+      <AnimatedNewMatch
+        data={newMatch}
+        playersById={playersById}
+        onDone={() => setNewMatch(null)}
+      />
+
+      {/* Botão flutuante pra ativar som (autoplay policy) */}
+      <SoundToggle />
     </div>
   );
 }

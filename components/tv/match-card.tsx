@@ -23,7 +23,7 @@ export function MatchCard({
 }) {
   const accentClass =
     table.state === "JOGANDO"
-      ? "border-gold/60"
+      ? "border-gold/60 glow-jogando"
       : table.state === "PAUSADA"
         ? "border-red-poker/60"
         : "border-line";

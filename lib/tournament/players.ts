@@ -46,6 +46,24 @@ export async function createPlayer(input: unknown): Promise<{ id: string; token:
 }
 
 /**
+ * Busca um jogador pelo token único (rota pública /player/[token]).
+ * Retorna null se não existe. RLS permite SELECT público.
+ */
+export async function getPlayerByToken(token: string): Promise<Player | null> {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .eq("player_token", token)
+    .maybeSingle();
+
+  if (error) throw new Error(`Erro ao buscar jogador: ${error.message}`);
+  return data ?? null;
+}
+
+/**
  * Lista todos os jogadores de um evento (ordenados por chegada).
  */
 export async function listPlayersForEvent(eventId: string): Promise<Player[]> {
