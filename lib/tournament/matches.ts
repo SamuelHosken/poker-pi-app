@@ -59,9 +59,13 @@ export async function startMatchOnTable(input: {
 
   if (tableErr) throw new Error(`Erro ao buscar mesa: ${tableErr.message}`);
   if (!table) throw new Error("Mesa não encontrada.");
-  if (table.state !== "LIVRE") {
-    throw new Error(`Mesa não está LIVRE (estado atual: ${table.state}).`);
+  // Aceita LIVRE (primeira partida) ou FINALIZADA (renovação após mesa terminar).
+  if (table.state !== "LIVRE" && table.state !== "FINALIZADA") {
+    throw new Error(
+      `Mesa não pode iniciar partida no estado atual (${table.state}). Aguarde finalizar.`,
+    );
   }
+  const previousTableState = table.state as "LIVRE" | "FINALIZADA";
 
   const { data: firstLevel, error: levelErr } = await supabase
     .from("blind_levels")
@@ -138,7 +142,7 @@ export async function startMatchOnTable(input: {
     matchId: match.id,
     physicalTableId,
     playerIds,
-    previousState: { matchState: "LIVRE", tableState: "LIVRE" },
+    previousState: { matchState: "LIVRE", tableState: previousTableState },
   });
 
   revalidatePath(`/admin/events/${table.event_id}`);
@@ -518,8 +522,17 @@ export async function undoLastAction(eventId: string): Promise<{ undone: ActionP
         .eq("id", payload.physicalTableId);
       break;
     }
+    case "REBUY_PLAYER": {
+      await supabase
+        .from("players")
+        .update({
+          state: payload.previousState.playerState,
+          rebuys_used: payload.previousState.rebuysUsed,
+        })
+        .eq("id", payload.playerId);
+      break;
+    }
     case "ASSIGN_SEAT":
-    case "REBUY_PLAYER":
     case "TRANSITION_TO_FINAL": {
       throw new Error(`Desfazer ${payload.type} ainda não implementado nesta etapa.`);
     }
@@ -530,6 +543,36 @@ export async function undoLastAction(eventId: string): Promise<{ undone: ActionP
   revalidatePath(`/admin/events/${eventId}`);
   revalidatePath(`/tv/${eventId}`);
   return { undone: payload.type };
+}
+
+/**
+ * Libera uma mesa FINALIZADA — volta pro estado LIVRE sem iniciar nova partida.
+ * Útil quando o organizador quer aguardar fila crescer antes de renovar.
+ */
+export async function releaseFinishedTable(physicalTableId: string): Promise<void> {
+  await requireAdmin();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: table, error: tErr } = await supabase
+    .from("physical_tables")
+    .select("*")
+    .eq("id", physicalTableId)
+    .maybeSingle();
+  if (tErr) throw new Error(`Erro ao ler mesa: ${tErr.message}`);
+  if (!table) throw new Error("Mesa não encontrada.");
+  if (table.state !== "FINALIZADA") {
+    throw new Error(`Só dá pra liberar mesa FINALIZADA (atual: ${table.state}).`);
+  }
+
+  const { error: updErr } = await supabase
+    .from("physical_tables")
+    .update({ state: "LIVRE" })
+    .eq("id", physicalTableId);
+  if (updErr) throw new Error(`Erro ao liberar mesa: ${updErr.message}`);
+
+  revalidatePath(`/admin/events/${table.event_id}`);
+  revalidatePath(`/tv/${table.event_id}`);
 }
 
 export async function getMatchesForEvent(eventId: string): Promise<{

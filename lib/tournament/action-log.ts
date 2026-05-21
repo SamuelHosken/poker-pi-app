@@ -48,7 +48,7 @@ export type ActionPayload =
       playerIds: string[];
       previousState: {
         matchState: "LIVRE";
-        tableState: "LIVRE";
+        tableState: "LIVRE" | "FINALIZADA";
       };
     }
   | {

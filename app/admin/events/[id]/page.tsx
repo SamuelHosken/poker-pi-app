@@ -7,12 +7,17 @@ import {
   getParticipationsForMatch,
   hasReversibleAction,
 } from "@/lib/tournament/matches";
+import { getQueue } from "@/lib/tournament/queue";
+import { getEliminatedWithRebuyStatus } from "@/lib/tournament/rebuy";
+import { canTransitionToFinalTable } from "@/lib/tournament/final-table";
 import { formatBRL, formatDateBR } from "@/lib/format";
 import { AdvanceStateButton } from "./advance-state-button";
 import { PlayersSection } from "./players-section";
 import { MatchControls } from "./match-controls";
 import { MatchPlayersSection } from "./match-players-section";
 import { UndoButton } from "./undo-button";
+import { QueueSection } from "./queue-section";
+import { RebuySection } from "./rebuy-section";
 
 const STATE_LABEL: Record<string, string> = {
   SETUP: "Setup",
@@ -38,12 +43,16 @@ export default async function EventDetailPage({
 }) {
   const { id } = await params;
 
-  const [detail, players, matchesData, canUndo] = await Promise.all([
-    getEvent(id),
-    listPlayersForEvent(id),
-    getMatchesForEvent(id),
-    hasReversibleAction(id),
-  ]);
+  const [detail, players, matchesData, canUndo, queue, eliminatedRebuy, finalEligibility] =
+    await Promise.all([
+      getEvent(id),
+      listPlayersForEvent(id),
+      getMatchesForEvent(id),
+      hasReversibleAction(id),
+      getQueue(id),
+      getEliminatedWithRebuyStatus(id),
+      canTransitionToFinalTable(id),
+    ]);
 
   if (!detail) notFound();
   const { event, blindLevels, physicalTables } = detail;
@@ -137,10 +146,34 @@ export default async function EventDetailPage({
             disabled={!canStart}
           />
         )}
+        {event.state === "EM_ANDAMENTO" && (
+          <div title={finalEligibility.canTransition ? undefined : finalEligibility.reason}>
+            <AdvanceStateButton
+              eventId={event.id}
+              targetState="MESA_FINAL"
+              label={
+                finalEligibility.canTransition
+                  ? `Ir para Mesa Final (${finalEligibility.classifiedCount} classificados)`
+                  : `Mesa Final: ${finalEligibility.classifiedCount} classificados`
+              }
+              disabled={!finalEligibility.canTransition}
+            />
+          </div>
+        )}
       </div>
 
       {(event.state === "CREDENCIAMENTO" || event.state === "EM_ANDAMENTO") && (
         <PlayersSection eventId={event.id} players={players} />
+      )}
+
+      {event.state === "EM_ANDAMENTO" && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <QueueSection queue={queue} />
+          <RebuySection
+            eliminated={eliminatedRebuy}
+            rebuyLimit={event.rebuy_limit_per_player}
+          />
+        </div>
       )}
 
       <section className="space-y-4">
