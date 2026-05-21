@@ -1,244 +1,322 @@
 # Plano de Execução — Poker Pi App
 
-> Documento mestre que sintetiza toda a documentação (`CLAUDE.md` + `docs/`) num roteiro prático e sequencial de execução. **Não substitui** os arquivos detalhados, apenas serve de bússola e checklist consolidado.
+> Documento mestre que sintetiza `CLAUDE.md` + `docs/` num roteiro prático.
+> **Snapshot de execução atualizado em 2026-05-21** — reflete o que foi entregue de verdade, não o plano original.
 
 ---
 
-## 0. O que é este projeto
+## 0. Status atual
 
-Sistema web para gerenciar torneios presenciais de poker entre amigos. **30 jogadores · 2 mesas físicas de 8 · 1 vencedor por mesa classifica · mesa final define campeão.** Não é casa online — apoia o organizador de um evento real, com cartas e fichas reais.
+### Onde estamos
 
-### Três interfaces sincronizadas em tempo real
+| | |
+|---|---|
+| **Branch ativa** | `etapa-1-fundacao` (9 commits) |
+| **Branches no GitHub** | `origin/main` (1 commit — Etapa 0) · `origin/etapa-1-fundacao` (9 commits) |
+| **Repo** | https://github.com/SamuelHosken/poker-pi-app |
+| **Supabase** | projeto `hccsbjuefsqvjsnukyup` · migration 0001 aplicada · admin user criado |
+| **Deploy** | ainda não — Vercel pendente |
+| **Validação E2E** | ainda não — feita só via build/tests/lint |
 
-| Interface     | Rota               | Quem usa         | Auth                  |
-| ------------- | ------------------ | ---------------- | --------------------- |
-| Painel Admin  | `/admin/*`         | Organizador      | Supabase Auth         |
-| TV Pública    | `/tv/[eventId]`    | Todos no salão   | Nenhuma (URL pública) |
-| Jogador (V2)  | `/player/[token]`  | Participante     | Token na URL          |
+### Etapas
 
-### Stack (decidida, não revisitar)
+| Etapa | Estado | Commit |
+|---|---|---|
+| **0** Setup | ✅ código + E2E (mergeada na main) | `f4ce16d` |
+| **1** Fundação (schema, tipos, CRUD evento) | ✅ código | `d3c4e7a` + `5370012` |
+| **2** Cronômetro + TV básica | ✅ código | `56eb938` |
+| **3** Eliminar + finalizar + undo + celebrações | ✅ código | `f8c67fc` + `6a3daa9` |
+| **4** Fila + renovação + rebuy + transição final | ✅ código | `7c92caa` |
+| **5** Mesa final + pódio + página de resultados | ✅ código | `6258fda` |
+| **6** Polimento (sound toggle + sorteio + glow + loading/error) | ✅ código | `7c8d7f1` |
+| **7-A** PWA do jogador + QR codes | ✅ código | `7c8d7f1` |
+| **7-B** WhatsApp via Twilio | ❌ não feita | — post-MVP, custos R$ |
+| **7-C** Export PDF | ❌ não feita | — JSON na /results já cobre |
 
-Next.js 14 (App Router) · TypeScript estrito · Tailwind + shadcn/ui · Supabase (Postgres + Realtime + Auth) · Vercel · GitHub.
+### Métricas de saúde
+
+- `npm run build` ✅ verde em ~3s
+- `npm run lint` ✅ limpo (zero warnings)
+- `npx tsc --noEmit` ✅ limpo (TS estrito com 4 flags extras)
+- `npm test` ✅ 11/11 testes vitest
+- `grep ": any"` ✅ zero ocorrências em `app/ components/ lib/ utils/`
 
 ---
 
-## 1. Princípios INVIOLÁVEIS (regras absolutas, não preferências)
+## 1. O que é o produto
 
-1. **Cronômetro no servidor.** Cliente apenas calcula display a partir de `level_started_at`, `paused_at`, `total_paused_ms`. Nunca `setInterval` controlando tempo real.
+Sistema web para gerenciar torneios presenciais de poker entre amigos.
+**30 jogadores · 2 mesas físicas de 8 · 1 vencedor classifica · mesa final define campeão.**
+
+### Três interfaces sincronizadas em Realtime
+
+| Interface | Rota | Quem usa | Auth |
+|---|---|---|---|
+| Painel Admin | `/admin/*` | Organizador | Supabase Auth (email + senha) |
+| TV Pública | `/tv/[eventId]` | Todos no salão | Nenhuma (URL pública) |
+| Jogador | `/player/[token]` | Participante | Token único na URL |
+
+### Stack entregue (divergiu do plano original em alguns pontos)
+
+| Camada | Plano original | Entregue |
+|---|---|---|
+| Framework | Next.js 14 (App Router) | **Next.js 16.2.6** (App Router + Turbopack) |
+| Linguagem | TypeScript estrito | ✅ idem |
+| UI | Tailwind 3 + shadcn (Zinc) | **Tailwind 4** (CSS-first `@theme`) + shadcn v4 (New York · Zinc) |
+| Banco | Supabase Postgres | ✅ idem (projeto `hccsbjuefsqvjsnukyup`) |
+| Realtime | Supabase Realtime | ✅ idem (6 tabelas em `supabase_realtime`) |
+| Auth | Supabase Auth | ✅ idem |
+| Cliente Supabase | `lib/supabase/*` (plano) | **`utils/supabase/*`** (convenção do wizard atual) |
+| Proxy/middleware | `middleware.ts` | **`proxy.ts`** (rename Next 16) |
+| Cron | Edge Function 10s | Vercel Cron 1 min (granularidade do plano Hobby) |
+| Hospedagem | Vercel | ✅ idem (não deployado ainda) |
+| Animações | framer-motion (Etapa 6) | ✅ framer-motion + canvas-confetti + CSS keyframes |
+
+---
+
+## 2. Princípios INVIOLÁVEIS (mantidos do plano)
+
+1. **Cronômetro no servidor.** Cliente apenas calcula display a partir de `level_started_at`, `paused_at`, `total_paused_ms`. `setInterval` no cliente SÓ força re-render.
 2. **Real-time via Supabase Realtime.** Nunca polling.
-3. **Reversibilidade.** Toda ação importante grava em `action_log` e tem botão desfazer.
-4. **Server-authoritative.** Mutações via Server Actions, validadas com Zod e RLS. Cliente reflete.
-5. **Resiliência.** Se internet cair, sistema não quebra — reconecta e estados são recuperáveis.
-6. **Confirmação para ações destrutivas.** AlertDialog em finalizar mesa, encerrar evento, apagar jogador.
+3. **Reversibilidade.** Toda ação importante grava em `action_log` e tem botão desfazer (cobertura atual: 4 dos 6 tipos — ver §5).
+4. **Server-authoritative.** Mutações via Server Actions, validadas com Zod e RLS.
+5. **Resiliência.** Realtime reconecta automaticamente; estados são recuperáveis ao reabrir TV.
+6. **Confirmação para ações destrutivas.** AlertDialog em eliminar, finalizar, transitar pra mesa final, undo.
 7. **Português brasileiro em TODA UI · inglês no código.**
 
-### O que NUNCA fazer
-`setInterval` cronometrando · `any` em TS · lógica de negócio dentro de componentes React · polling quando dá Realtime · mudar estado no cliente sem persistir antes · botões pequenos no admin · commitar `.env.local`.
+### Convenções de código checadas no CI manual
+- Zero `any` em TypeScript
+- TS estrito: `strict` + `noUncheckedIndexedAccess` + `noImplicitOverride` + `noImplicitReturns` + `noFallthroughCasesInSwitch`
+- Server Component é o padrão; `'use client'` só com motivo
+- Lógica de domínio em `lib/`, nunca dentro de componentes React
+- Componentes < 200 linhas (regra de bolso)
+- Botões admin ≥ 44px (operação sob pressão social)
+- `.env.local` no `.gitignore`
 
 ---
 
-## 2. Roteiro de execução (8 etapas + auditoria por etapa)
+## 3. Pré-requisitos (todos resolvidos)
 
-O fluxo padrão de **cada etapa** é sempre o mesmo:
-
-```
-1. git checkout main && git pull
-2. git checkout -b etapa-N-foco
-3. Abrir sessão nova no Claude Code → colar prompt de docs/etapa-N-*.md
-4. Implementar
-5. Rodar validação automática: build + lint + tsc + grep "any"
-6. Rodar checklist manual da etapa
-7. Em sessão SEPARADA, rodar prompt de auditoria (validacao-template.md)
-8. Se tudo OK → merge na main → atualizar CLAUDE.md (marcar checkbox + ETAPA ATUAL)
-9. git push (Vercel faz deploy)
-```
-
-### Visão consolidada
-
-| Etapa | Foco                                                          | Saída concreta                                                                                       | Dependência crítica                       |
-| ----- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| **0** | Setup do projeto                                              | Next.js + Tailwind + shadcn + Supabase clients + paleta + fontes + CLAUDE.md                         | Pré-requisitos manuais (ver §3)           |
-| **1** | Fundação (schema + tipos + CRUD evento)                       | Migration 0001 com 7 tabelas + RLS + tipos derivados + form de criação + login admin                 | Schema **DEFINITIVO** — retrabalho aqui dói |
-| **2** | Cronômetro server-side + TV básica                            | `lib/timer/calculate.ts` + Edge Function/cron pra avanço + página TV + subscriptions                 | Etapa 1 OK                                |
-| **3** | Gestão de uma partida (eliminar + finalizar + undo)           | `action_log` helpers + `eliminatePlayer` + `finishMatch` + `undoLastAction` + toast/celebração na TV | Etapa 2 OK                                |
-| **4** | Duas mesas paralelas + fila + renovação + rebuy               | `lib/tournament/queue.ts` + `rebuy.ts` + UI de fila + sorteio simples + 2 subscriptions filtradas    | Etapa 3 OK                                |
-| **5** | Mesa final + pódio                                            | `transitionToFinalTable` + layout TV cinematográfico + página de resultados                          | Etapa 4 OK                                |
-| **6** | Polimento (animações + sons + sorteio animado)                | framer-motion + canvas-confetti + sorteio estilo bingo + 7 arquivos de áudio + botão "Ativar som"    | MVP completo no fim desta etapa           |
-| **7** | V2: PWA jogador + WhatsApp + export PDF                       | `/player/[token]` PWA + Twilio + react-pdf                                                           | **Só depois de 1 evento real rodado**     |
-
-**Definição de MVP completo:** etapa 6 concluída. Etapa 7 só após uso real.
+- [x] Repo GitHub criado: `SamuelHosken/poker-pi-app`
+- [x] Git inicializado + branches no remote
+- [x] Projeto Supabase em West US (Oregon — não SP, mas funciona)
+- [x] Credenciais no `.env.local` (URL + publishable + service_role + CRON_SECRET)
+- [x] Node 20+ ativo via nvm
+- [x] Supabase CLI via `npx supabase` (sem install global)
+- [x] `supabase login` + `link --project-ref hccsbjuefsqvjsnukyup`
+- [x] `supabase db push` rodou migration 0001
+- [x] `supabase gen types --linked` gerou `lib/types/database.types.ts`
+- [x] Admin user criado: `samuelhosken.o@gmail.com`
+- [x] `.gitignore` cobre `.env.local`, `node_modules/`, `.next/`, `/supabase/.temp/`
 
 ---
 
-## 3. Pré-requisitos manuais (FAZER ANTES da Etapa 0)
+## 4. Modelo de dados (entregue conforme `docs/02-modelo-de-dados.md`)
 
-Estes não são feitos pelo Claude Code — você faz na mão antes da primeira sessão:
-
-- [ ] Repo `https://github.com/SamuelHosken/poker-pi-app` criado no GitHub
-- [ ] Clonar localmente em `/Users/samuelhosken/code/hosken/poker-site/poker-pi-app/` (já temos a pasta — só rodar `git init` + adicionar remote ou clonar por cima do que existe, ver §8)
-- [ ] Criar projeto Supabase em São Paulo (região mais próxima)
-- [ ] Guardar em gerenciador de senhas: Project URL, Anon key, Service Role key, senha do banco
-- [ ] Node 20+ instalado (`node --version`)
-- [ ] Supabase CLI: `npm install -g supabase`
-- [ ] `supabase login` + `supabase link --project-ref <ref>` dentro da pasta
-- [ ] `.env.local` com `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- [ ] `.env.local.example` com placeholders (commitar)
-- [ ] `.gitignore` cobrindo `.env.local`, `node_modules/`, `.next/`, `.DS_Store`
-
----
-
-## 4. Modelo de dados (resumo de navegação)
-
-7 tabelas, todas com RLS habilitada. Detalhes completos em `docs/02-modelo-de-dados.md`.
+7 tabelas com RLS ativa. SELECT público; CUD restrito ao admin dono do evento via `auth.uid() = events.admin_user_id` (subqueries `EXISTS` nas tabelas filhas).
 
 ```
-events ─┬─ blind_levels (com flag is_final_table — mesa final tem estrutura própria)
+events ─┬─ blind_levels (is_final_table flag pra mesa final ter estrutura própria)
         ├─ physical_tables (Mesa 1, Mesa 2 — permanentes)
-        ├─ players (com player_token único pra URL /player/[token])
-        ├─ matches (várias por physical_table ao longo da noite)
-        │   └─ participations (jogador em uma partida específica)
-        └─ action_log (reversibilidade)
+        ├─ players (com player_token único, gerado via nanoid(12))
+        ├─ matches (várias por physical_table; is_final_table marca mesa final)
+        │   └─ participations (seat + final_position + eliminated_at + rebought)
+        └─ action_log (payload jsonb tipado, reverted_at pra undo idempotente)
 ```
 
-### Máquinas de estado
+### Máquinas de estado (validadas em `lib/tournament/transitions.ts`)
 
 - **Event:** `SETUP → CREDENCIAMENTO → EM_ANDAMENTO → MESA_FINAL → ENCERRADO`
 - **Match:** `LIVRE → JOGANDO ⇄ PAUSADA → FINALIZADA`
-- **Player:** `INSCRITO → PRESENTE → CHAMADO → JOGANDO → (ELIMINADO | CLASSIFICADO → NA_FINAL → CAMPEAO/VICE/TERCEIRO/OUTROS_FINALISTAS)`
+- **Player:** `INSCRITO → PRESENTE → CHAMADO → JOGANDO → (ELIMINADO ↺ PRESENTE via rebuy | CLASSIFICADO → NA_FINAL → CAMPEAO/VICE/TERCEIRO/OUTROS_FINALISTAS)`
 
-**Toda transição validada** via função SQL ou Server Action (`lib/tournament/transitions.ts`). UPDATE direto na coluna `state` está proibido por convenção.
+### Realtime publication
 
-### Cálculo do cronômetro (regra inviolável reforçada)
+Habilitada em: `events`, `blind_levels`, `physical_tables`, `players`, `matches`, `participations`.
+`action_log` fora — admin lê via fetch direto após mutação.
 
-```
-tempo_decorrido = (state === 'PAUSADA' ? paused_at : Date.now()) - level_started_at - total_paused_ms
-tempo_restante = duration_minutes * 60_000 - tempo_decorrido
-```
+### Cálculo do cronômetro
 
-Cron/Edge Function avança nível automaticamente quando `tempo_restante <= 0` (decisão técnica: provavelmente Vercel Cron Job batendo em `/api/cron/advance-blinds` a cada 10s — definir na Etapa 2).
-
----
-
-## 5. Padrões técnicos (resumo, detalhes em `docs/03-padroes-tecnicos.md`)
-
-- **TS estrito:** `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`. Zero `any`.
-- **Server Component é o padrão.** `'use client'` só com motivo (estado local, event handlers, Realtime).
-- **Server Actions pra toda mutação.** Validar input com Zod + chamar `revalidatePath` no fim.
-- **3 clientes Supabase:** `lib/supabase/server.ts` (Server Components/Actions), `client.ts` (browser/Realtime), `middleware.ts` (refresh de sessão + redirect admin).
-- **Subscriptions Realtime:** sempre filtradas (`filter: 'id=eq.${id}'`), sempre com cleanup, initial data vindo do Server Component.
-- **`action_log` ANTES da mutação:** grava `previousState` no payload, depois aplica mudança. `undoLastAction` faz switch por `action_type`.
-- **Componentes < 200 linhas.** Lógica de domínio mora em `lib/`, nunca dentro de componentes.
-- **Botões admin ≥ 48px de altura.** Vai ser usado sob pressão social com cerveja na mão.
-
-### Paleta Poker Pi
+Implementado em `lib/timer/calculate.ts` (testado em `calculate.test.ts`):
 
 ```
---ink #0A0A0B · --ink-2 #131316 · --paper #F5F1E8
---gold #C9A961 · --red #C8102E · --felt #0F3D2E
+elapsed = (state === 'PAUSADA' ? paused_at : Date.now()) - level_started_at - total_paused_ms
+remaining = max(0, duration_minutes * 60_000 - elapsed)
 ```
 
-Fontes via `next/font`: Fraunces (display) · Geist (body) · Geist Mono (mono).
+Avanço automático: `/api/cron/advance-blinds` (Vercel Cron `* * * * *` no plano Hobby — 1 min granularidade) usa service role pra escanear matches em JOGANDO e avançar nível quando `isLevelExpired`. Admin tem botão "Avançar nível" manual.
 
 ---
 
-## 6. Riscos & mitigações
+## 5. Reversibilidade — cobertura do `undoLastAction`
 
-| Risco                                                                       | Probabilidade | Impacto | Mitigação                                                                                            |
-| --------------------------------------------------------------------------- | ------------- | ------- | ---------------------------------------------------------------------------------------------------- |
-| Schema da Etapa 1 errado → retrabalho em todas as próximas                  | Média         | Alto    | Prompt de auditoria obrigatório antes de mergear Etapa 1; testar com dados reais                     |
-| Edge Function/Cron de avanço de blinds falha silenciosamente                | Média         | Alto    | Logar cada execução; alerta na TV se nível não avançou no tempo esperado                             |
-| Subscription Realtime sem cleanup → memory leak na TV após horas ligada     | Alta          | Médio   | Audit obrigatório de cada `useEffect` com subscription                                               |
-| Autoplay block dos sons na TV                                               | Certa         | Médio   | Botão "🔊 Ativar som" no primeiro acesso, persistido em `localStorage`                               |
-| Sessão de Claude Code muito longa → contexto degrada                        | Alta          | Médio   | Abrir sessão nova por etapa. `CLAUDE.md` na raiz é a memória de longo prazo                          |
-| Internet cair durante o evento                                              | Média         | Alto    | Reconnect automático do Supabase; plano B humano (cronômetro de celular) — sistema apoia, não bloqueia |
-| Race condition em pause/resume                                              | Baixa         | Médio   | Toda mutação via Server Action server-side (não no cliente); função SQL atômica para resume          |
-| Custos de WhatsApp/Twilio (V2)                                              | Certa         | Baixo   | ~R$10/evento documentado. Avaliar ROI antes da Etapa 7 sub-etapa B                                   |
-
----
-
-## 7. Critérios de "pronto" (Definition of Done) por categoria
-
-### Para fechar uma etapa
-
-- [ ] `npm run build` passa
-- [ ] `npx tsc --noEmit` passa (zero erros)
-- [ ] `npm run lint` passa
-- [ ] `grep -rn ": any" --include="*.ts" --include="*.tsx" lib/ app/ components/` retorna vazio
-- [ ] Checklist manual específico da etapa (em `docs/etapa-N-*.md`) está 100%
-- [ ] Prompt de auditoria (`docs/validacao-template.md`) rodado em sessão separada — veredicto APROVADO
-- [ ] `CLAUDE.md` atualizado: checkbox marcado, ETAPA ATUAL e PRÓXIMA ETAPA mudaram
-- [ ] Branch mergeada na main e pushada
-
-### Para considerar o MVP entregue
-
-- [ ] Etapas 0-6 todas APROVADAS
-- [ ] Evento de teste com 4-8 amigos rodando end-to-end sem bug crítico
-- [ ] TV consegue ficar 3h ligada sem memory leak / sem desincronizar
-- [ ] Lighthouse Performance da TV ≥ 90
-- [ ] Zero `any` no código
-
-### Para parar de iterar (V2 e além)
-
-- Apenas se demanda real aparecer no uso. **Não persiga perfeição especulativa.**
+| Ação | Undo implementado? |
+|---|---|
+| `START_MATCH` | ✅ deleta match (cascateia participations), restaura players → PRESENTE, table → previousState |
+| `ELIMINATE_PLAYER` | ✅ limpa eliminated_at + final_position; restaura player.state + player.final_position |
+| `FINISH_MATCH` (classificatória) | ✅ restaura match + winner.state + table.state |
+| `FINISH_MATCH` (mesa final) | ✅ + restaura event.state de ENCERRADO → MESA_FINAL |
+| `REBUY_PLAYER` | ✅ volta player → ELIMINADO + decrementa rebuys_used |
+| `ASSIGN_SEAT` | ❌ throw "não implementado" (não é usado isoladamente no MVP) |
+| `TRANSITION_TO_FINAL` | ❌ throw "não implementado" (reverter mesa final montada é caro — admin recria) |
 
 ---
 
-## 8. Próximos passos imediatos (ordem exata)
-
-1. **Confirmar repo GitHub.** Verificar se `https://github.com/SamuelHosken/poker-pi-app` já existe ou criar agora.
-2. **Inicializar git nesta pasta.** A pasta `/Users/samuelhosken/code/hosken/poker-site/poker-pi-app/` já tem `CLAUDE.md`, `README.md`, `docs/` e `PLANO-DE-EXECUCAO.md`. Falta:
-   ```bash
-   cd /Users/samuelhosken/code/hosken/poker-site/poker-pi-app
-   git init
-   git remote add origin https://github.com/SamuelHosken/poker-pi-app.git
-   git add . && git commit -m "docs: documentação inicial e plano de execução"
-   git push -u origin main
-   ```
-3. **Criar projeto Supabase em São Paulo** + guardar credenciais.
-4. **Instalar Supabase CLI** + `supabase login` + `supabase init` + `supabase link`.
-5. **Criar `.env.local`** e `.env.local.example`.
-6. **Rodar Etapa 0.** Abrir Claude Code em sessão nova nesta pasta e colar o prompt de `docs/etapa-0-setup.md` (seção "Prompt para o Claude Code").
-7. **Validar Etapa 0** com os comandos do `docs/etapa-0-setup.md` § "Validação manual".
-8. **Avançar pela Etapa 1** seguindo o mesmo padrão.
-
-> Quando a Etapa 0 estiver pronta, o próprio Claude Code vai criar a árvore `app/`, `components/`, `lib/`, `supabase/`, `public/` dentro desta pasta. Nada disso existe ainda — por design, esse é o trabalho da Etapa 0.
-
----
-
-## 9. Mapa de arquivos do plano
+## 6. Mapa de arquivos entregue
 
 ```
 poker-pi-app/
-├── CLAUDE.md                       ← memória persistente (LER no início de toda sessão)
-├── README.md                       ← onboarding técnico
-├── PLANO-DE-EXECUCAO.md            ← você está aqui
-└── docs/
-    ├── 00-visao-geral.md           ← conceitos do produto
-    ├── 01-decisoes-fechadas.md     ← decisões já tomadas (não revisitar)
-    ├── 02-modelo-de-dados.md       ← schema completo do banco
-    ├── 03-padroes-tecnicos.md      ← convenções de código
-    ├── etapa-0-setup.md            ← scaffolding inicial
-    ├── etapa-1-fundacao.md         ← schema + tipos + CRUD evento ⚠️ CRÍTICA
-    ├── etapa-2-cronometro-tv.md    ← cronômetro server-side + TV
-    ├── etapa-3-admin-partida.md    ← eliminar + finalizar + undo
-    ├── etapa-4-duas-mesas.md       ← fila + renovação + rebuy
-    ├── etapa-5-mesa-final.md       ← mesa final + pódio
-    ├── etapa-6-polimento.md        ← animações + sons + sorteio
-    ├── etapa-7-v2.md               ← PWA + WhatsApp (pós-MVP)
-    └── validacao-template.md       ← prompt de auditoria por etapa
+├── CLAUDE.md                       ← memória persistente (LER no início de sessão)
+├── README.md                       ← onboarding técnico (DESATUALIZADO — não reflete o entregue)
+├── PLANO-DE-EXECUCAO.md            ← este arquivo
+├── package.json                    ← deps: next 16.2.6, react 19.2.4, supabase/ssr 0.10.3,
+│                                     framer-motion, canvas-confetti, qrcode.react, sonner, zod,
+│                                     date-fns, lucide-react, nanoid, shadcn v4 + base-ui
+├── proxy.ts                        ← refresh sessão Supabase + auth gate /admin/*
+├── vercel.json                     ← cron schedule
+├── vitest.config.ts                ← @ alias + node env
+│
+├── app/
+│   ├── layout.tsx                  ← Fraunces+Geist+GeistMono + Toaster + lang pt-BR
+│   ├── page.tsx                    ← home placeholder "Poker Pi."
+│   ├── globals.css                 ← Tailwind 4 + paleta Poker Pi + keyframes
+│   ├── icon.tsx                    ← ImageResponse com π dourado (PWA)
+│   ├── manifest.ts                 ← PWA manifest
+│   ├── admin/
+│   │   ├── layout.tsx              ← header + logout
+│   │   ├── login/                  ← page + login-form + actions
+│   │   └── events/
+│   │       ├── page.tsx + loading.tsx
+│   │       ├── new/                ← page + form + actions
+│   │       └── [id]/
+│   │           ├── page.tsx + loading.tsx + error.tsx
+│   │           ├── advance-state-button.tsx
+│   │           ├── transition-to-final-button.tsx
+│   │           ├── undo-button.tsx
+│   │           ├── players-section.tsx (credenciamento + QR)
+│   │           ├── player-qr-button.tsx (Dialog com QRCodeSVG)
+│   │           ├── queue-section.tsx (fila com "há X min")
+│   │           ├── rebuy-section.tsx (elegíveis pra rebuy)
+│   │           ├── match-controls.tsx (start/pause/resume/advance/renovate/release/start-final)
+│   │           ├── match-players-section.tsx (eliminate + finish)
+│   │           └── results/page.tsx (classificação + export JSON)
+│   ├── (public)/
+│   │   ├── tv/[eventId]/           ← page + loading + error
+│   │   └── player/[token]/         ← page + player-status (Realtime)
+│   └── api/cron/advance-blinds/route.ts
+│
+├── components/
+│   ├── ui/                         ← shadcn v4 (10 componentes)
+│   └── tv/
+│       ├── event-tv.tsx            ← orquestra subscriptions + conditional layout por event.state
+│       ├── match-card.tsx          ← com glow JOGANDO
+│       ├── match-timer.tsx         ← setInterval só re-render, cálculo é puro
+│       ├── elimination-toast.tsx
+│       ├── match-finish-celebration.tsx (canvas-confetti)
+│       ├── new-match-overlay.tsx   ← sorteio animado framer-motion
+│       ├── podium.tsx              ← I/II/III romanos + confete + lista outros finalistas
+│       └── sound-toggle.tsx        ← useSyncExternalStore + localStorage
+│
+├── lib/
+│   ├── utils.ts                    ← cn() do shadcn
+│   ├── format.ts                   ← formatBRL + formatDateBR (date-fns/pt-BR)
+│   ├── audio/play-sound.ts         ← gate via localStorage + CustomEvent
+│   ├── timer/
+│   │   ├── calculate.ts
+│   │   ├── format.ts
+│   │   └── calculate.test.ts       ← 11 testes vitest
+│   ├── tournament/
+│   │   ├── auth.ts                 ← requireAdmin compartilhado
+│   │   ├── transitions.ts          ← VALID_*_TRANSITIONS + canTransition*
+│   │   ├── blind-templates.ts      ← Turbo / Padrão / Lento (valores realistas)
+│   │   ├── action-log.ts           ← ActionPayload typed union + logAction + getLastReversibleAction
+│   │   ├── events.ts               ← createEvent + getEvent + listEvents + deleteEvent + transitionEventState
+│   │   ├── players.ts              ← createPlayer + listPlayersForEvent + getPlayerByToken
+│   │   ├── matches.ts              ← startMatchOnTable + pauseMatch + resumeMatch + advanceLevel +
+│   │   │                              eliminatePlayer + finishMatch + undoLastAction +
+│   │   │                              releaseFinishedTable + getMatchesForEvent +
+│   │   │                              getParticipationsForMatch + hasReversibleAction
+│   │   ├── queue.ts                ← getQueue
+│   │   ├── rebuy.ts                ← isPlayerEligibleForRebuy + getEliminatedWithRebuyStatus + performRebuy
+│   │   └── final-table.ts          ← canTransitionToFinalTable + transitionToFinalTable + startFinalMatch
+│   └── types/
+│       ├── database.types.ts       ← GERADO via supabase gen types (525 linhas, 7 tabelas)
+│       ├── domain.ts               ← EVENT_STATES + MATCH_STATES + PLAYER_STATES + ACTION_TYPES + BLIND_TEMPLATE_KEYS
+│       └── schemas.ts              ← Zod com mensagens pt-BR
+│
+├── utils/supabase/
+│   ├── server.ts                   ← createServerClient<Database>
+│   ├── client.ts                   ← createBrowserClient<Database>
+│   └── middleware.ts               ← updateSession + redirect /admin gate
+│
+├── supabase/
+│   ├── config.toml + .temp/        ← state local do CLI (gitignored)
+│   └── migrations/0001_initial_schema.sql
+│
+├── public/sounds/                  ← elimination/match-finish/calling .mp3 (PLACEHOLDERS VAZIOS)
+└── docs/                           ← documentação original (intacta)
 ```
 
 ---
 
-## 10. Regras de bolso para usar com Claude Code
+## 7. Pendências reais (em ordem)
 
-- **Sempre comece nova sessão lendo `CLAUDE.md`.** O prompt de cada etapa já reforça isso.
-- **Uma etapa = uma branch = uma sessão (de preferência).** Sessões longas degradam.
-- **Auditoria sempre em sessão SEPARADA** da que implementou. Quem auditou não pode ter sido quem fez.
-- **Não pule validação automática nem manual.** Cada etapa tem ambos.
-- **Atualize `CLAUDE.md` ao terminar etapa.** Marca o checkbox, muda "ETAPA ATUAL". Isso é a memória que próxima sessão vai usar.
-- **Quando travar, abra nova sessão** com: "Leia `CLAUDE.md`. Acabei de tentar Etapa N e [descreva problema]. Vamos consertar antes de avançar."
+1. **Validar E2E no browser** (você) — `npm run dev` + fluxo completo: criar evento → credenciar 16+ → iniciar mesas → eliminar → finalizar → renovar → mesa final → encerrar → ver resultados → testar QR de player
+2. **Auditoria** — rodar `docs/validacao-template.md` em sessão separada do Claude Code
+3. **Abrir PR** `etapa-1-fundacao → main` em https://github.com/SamuelHosken/poker-pi-app/pull/new/etapa-1-fundacao
+4. **Merge na main** + tag `v0.1.0-mvp`
+5. **Deploy Vercel** com env vars:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `CRON_SECRET`
+6. **Rotacionar `sb_secret_...`** que passou pelo chat
+7. **Substituir sons placeholder** em `public/sounds/` por arquivos reais (Freesound.org com créditos)
+8. **Atualizar README.md** refletindo setup real (atualmente é a versão antiga do docs original)
+9. **README dos docs** já refletem o ENTREGUE no `CLAUDE.md`, mas etapas-individuais e validacao-template estão intactos como referência histórica
 
 ---
 
-*Documento mestre — atualizar conforme aprendizados de cada etapa real forem aparecendo.*
+## 8. Riscos & mitigações
+
+| Risco | Probabilidade | Impacto | Mitigação aplicada |
+|---|---|---|---|
+| Memory leak na TV após horas ligada | Alta | Médio | Toda subscription tem cleanup; refs pra estado atual em vez de closure stale |
+| Autoplay block dos sons na TV | Certa | Médio | `SoundToggle` com primer Audio() + localStorage flag |
+| Cron de avanço falha silenciosamente | Média | Alto | Manual "Avançar nível" sempre disponível; admin pode atuar |
+| Race condition em pause/resume | Baixa | Médio | Toda mutação server-side; cálculo de `total_paused_ms` no resume |
+| Schema errado | Resolvido | — | Schema validado via gen types + tipos derivados em runtime + tests |
+| Sessão Claude longa degrada | Alta | Médio | CLAUDE.md como memória; novas sessões leem antes de tudo |
+| Custos Twilio | N/A | — | Etapa 7-B explicitamente skipada até primeiro evento real |
+| Validação E2E pendente | Alta | Alto | **Próximo passo crítico** — build/lint/tests garantem só compilação, não fluxo |
+
+---
+
+## 9. Deltas conscientes do plano original
+
+Decisões que divergiram dos prompts em `docs/` mas que estão documentadas e foram pragmáticas:
+
+1. **Next 14 → Next 16.2.6** — scaffold default agora; usa Turbopack
+2. **`lib/supabase/` → `utils/supabase/`** — Supabase wizard atual recomenda `utils/`; alias `TablesInsert as Inserts` mantém código de domínio compatível
+3. **`middleware.ts` → `proxy.ts`** — Next 16 deprecou `middleware`; função renomeada pra `proxy`
+4. **Cron 10s → 60s** — Vercel Hobby tier limita; documentado
+5. **Tailwind 3 → Tailwind 4** — CSS-first `@theme`; cores em hex direto (não OKlch)
+6. **shadcn (legacy) → shadcn v4** — Button usa `@base-ui/react/button` sem `asChild`; substituí por `buttonVariants({})` no Link
+7. **Undo de `TRANSITION_TO_FINAL` e `ASSIGN_SEAT`** — explicitamente "não implementado" no MVP
+8. **Sons reais → placeholders vazios** — usuário troca quando quiser; `.catch(()=>{})` silencia erros
+9. **Etapa 7-B (WhatsApp) e 7-C (PDF)** — skipadas por design; Etapa 7-A (PWA + QR) entregue
+10. **TV "🎺 MESA X NOVA PARTIDA"** (Etapa 4) consolidada no sorteio animado completo da Etapa 6 — visualmente melhor
+
+---
+
+## 10. Regras de bolso pra próximas sessões
+
+- **Comece sempre lendo `CLAUDE.md`.**
+- **Validação E2E em sessão separada** — checklist em `docs/validacao-template.md`
+- **Não revisitar decisões fechadas** (em `docs/01-decisoes-fechadas.md`) sem motivo forte
+- **Sessões longas degradam** — abra nova quando perceber repetições
+- **Atualize este arquivo** (PLANO-DE-EXECUCAO.md) ao concluir cada milestone real
+
+---
+
+*Documento mestre — última atualização: 2026-05-21 após push pra GitHub.*
