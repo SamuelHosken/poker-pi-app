@@ -11,7 +11,7 @@ import {
 import { canTransitionEvent, transitionErrorMessage } from "@/lib/tournament/transitions";
 import { getBlindTemplate } from "@/lib/tournament/blind-templates";
 import type { EventState } from "@/lib/types/domain";
-import type { Tables, Inserts } from "@/lib/types/database.types";
+import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
 
 type Event = Tables<"events">;
 type BlindLevel = Tables<"blind_levels">;

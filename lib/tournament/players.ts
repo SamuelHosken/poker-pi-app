@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/lib/tournament/auth";
 import { CreatePlayerSchema } from "@/lib/types/schemas";
-import type { Tables, Inserts } from "@/lib/types/database.types";
+import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
 
 type Player = Tables<"players">;
 

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/lib/tournament/auth";
 import { canTransitionMatch, transitionErrorMessage } from "@/lib/tournament/transitions";
-import type { Tables, Inserts } from "@/lib/types/database.types";
+import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
 import type { MatchState } from "@/lib/types/domain";
 
 type Match = Tables<"matches">;
