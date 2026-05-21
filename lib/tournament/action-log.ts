@@ -20,8 +20,10 @@ export type ActionPayload =
       matchId: string;
       playerId: string;
       participationId: string;
+      isFinalTable: boolean;
       previousState: {
         playerState: PlayerState;
+        playerFinalPosition: number | null;
       };
     }
   | {
@@ -30,6 +32,7 @@ export type ActionPayload =
       winnerPlayerId: string;
       winnerParticipationId: string;
       physicalTableId: string;
+      isFinalTable: boolean;
       previousState: {
         match: {
           state: MatchState;
@@ -39,6 +42,8 @@ export type ActionPayload =
         winnerPlayerState: PlayerState;
         winnerFinalPosition: number | null;
         physicalTableState: PhysicalTableState;
+        eventState?: "MESA_FINAL"; // só presente quando isFinalTable=true
+        winnerPlayerFinalPosition?: number | null; // event-level final_position
       };
     }
   | {

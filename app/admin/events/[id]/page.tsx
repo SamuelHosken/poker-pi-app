@@ -18,6 +18,7 @@ import { MatchPlayersSection } from "./match-players-section";
 import { UndoButton } from "./undo-button";
 import { QueueSection } from "./queue-section";
 import { RebuySection } from "./rebuy-section";
+import { TransitionToFinalButton } from "./transition-to-final-button";
 
 const STATE_LABEL: Record<string, string> = {
   SETUP: "Setup",
@@ -67,13 +68,18 @@ export default async function EventDetailPage({
     );
   }
 
-  // Carrega participations apenas das partidas ativas (não-FINALIZADAS)
-  const activeMatchIds = Object.values(activeMatchByTable)
-    .filter((m): m is NonNullable<typeof m> => !!m)
-    .map((m) => m.id);
+  // Carrega participations das partidas ativas + mesa final (mesmo se LIVRE)
+  const matchIdsToLoad = Array.from(
+    new Set([
+      ...Object.values(activeMatchByTable)
+        .filter((m): m is NonNullable<typeof m> => !!m)
+        .map((m) => m.id),
+      ...matches.filter((m) => m.is_final_table).map((m) => m.id),
+    ]),
+  );
   const participationsByMatch = Object.fromEntries(
     await Promise.all(
-      activeMatchIds.map(async (mid) => [mid, await getParticipationsForMatch(mid)] as const),
+      matchIdsToLoad.map(async (mid) => [mid, await getParticipationsForMatch(mid)] as const),
     ),
   );
 
@@ -147,18 +153,12 @@ export default async function EventDetailPage({
           />
         )}
         {event.state === "EM_ANDAMENTO" && (
-          <div title={finalEligibility.canTransition ? undefined : finalEligibility.reason}>
-            <AdvanceStateButton
-              eventId={event.id}
-              targetState="MESA_FINAL"
-              label={
-                finalEligibility.canTransition
-                  ? `Ir para Mesa Final (${finalEligibility.classifiedCount} classificados)`
-                  : `Mesa Final: ${finalEligibility.classifiedCount} classificados`
-              }
-              disabled={!finalEligibility.canTransition}
-            />
-          </div>
+          <TransitionToFinalButton
+            eventId={event.id}
+            classifiedCount={finalEligibility.classifiedCount}
+            enabled={finalEligibility.canTransition}
+            reason={finalEligibility.reason}
+          />
         )}
       </div>
 
@@ -176,43 +176,63 @@ export default async function EventDetailPage({
         </div>
       )}
 
+      {event.state === "ENCERRADO" && (
+        <EncerradoSummary
+          eventId={event.id}
+          players={players}
+        />
+      )}
+
       <section className="space-y-4">
         <h2 className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
-          Mesas físicas
+          {event.state === "MESA_FINAL" ? "Mesa Final" : "Mesas físicas"}
         </h2>
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {physicalTables.map((t) => {
-            const match = activeMatchByTable[t.id];
-            const parts = match ? participationsByMatch[match.id] : undefined;
-            return (
-              <li
-                key={t.id}
-                className="space-y-3 rounded-lg border border-line bg-ink-2 p-5"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-display text-2xl text-paper">
-                    Mesa {t.table_number}
-                  </span>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                    {TABLE_STATE_LABEL[t.state] ?? t.state}
-                  </span>
-                </div>
+        <ul className={`grid gap-3 ${
+          event.state === "MESA_FINAL" || event.state === "ENCERRADO"
+            ? "grid-cols-1"
+            : "grid-cols-1 sm:grid-cols-2"
+        }`}>
+          {physicalTables
+            .filter((t) =>
+              event.state === "MESA_FINAL" || event.state === "ENCERRADO"
+                ? matches.some((m) => m.physical_table_id === t.id && m.is_final_table)
+                : true,
+            )
+            .map((t) => {
+              const match =
+                event.state === "MESA_FINAL" || event.state === "ENCERRADO"
+                  ? matches.find((m) => m.physical_table_id === t.id && m.is_final_table)
+                  : activeMatchByTable[t.id];
+              const parts = match ? participationsByMatch[match.id] : undefined;
+              return (
+                <li
+                  key={t.id}
+                  className="space-y-3 rounded-lg border border-line bg-ink-2 p-5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-display text-2xl text-paper">
+                      {match?.is_final_table ? "Mesa Final" : `Mesa ${t.table_number}`}
+                    </span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+                      {TABLE_STATE_LABEL[t.state] ?? t.state}
+                    </span>
+                  </div>
 
-                {event.state === "EM_ANDAMENTO" && (
-                  <MatchControls
-                    table={t}
-                    match={match}
-                    presentes={presentes}
-                    tableSize={event.table_size}
-                  />
-                )}
+                  {(event.state === "EM_ANDAMENTO" || event.state === "MESA_FINAL") && (
+                    <MatchControls
+                      table={t}
+                      match={match}
+                      presentes={presentes}
+                      tableSize={event.table_size}
+                    />
+                  )}
 
-                {match && parts && parts.length > 0 && (
-                  <MatchPlayersSection matchId={match.id} participations={parts} />
-                )}
-              </li>
-            );
-          })}
+                  {match && parts && parts.length > 0 && (
+                    <MatchPlayersSection matchId={match.id} participations={parts} />
+                  )}
+                </li>
+              );
+            })}
         </ul>
       </section>
 
@@ -258,5 +278,50 @@ export default async function EventDetailPage({
         </div>
       </section>
     </main>
+  );
+}
+
+function EncerradoSummary({
+  eventId,
+  players,
+}: {
+  eventId: string;
+  players: { id: string; name: string; nickname: string | null; state: string; final_position: number | null }[];
+}) {
+  const champ = players.find((p) => p.state === "CAMPEAO");
+  const vice = players.find((p) => p.state === "VICE");
+  const terceiro = players.find((p) => p.state === "TERCEIRO");
+
+  return (
+    <section className="space-y-4 rounded-lg border border-gold/40 bg-gradient-to-b from-ink-2 to-ink p-6">
+      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
+        Torneio encerrado
+      </span>
+      <div className="space-y-1">
+        <h2 className="font-display text-5xl font-light tracking-tight text-paper">
+          {champ ? (
+            <>
+              Campeão:{" "}
+              <em className="not-italic italic text-gold">{champ.name}</em>
+            </>
+          ) : (
+            "Campeão não definido"
+          )}
+        </h2>
+        {(vice || terceiro) && (
+          <p className="text-sm text-gray-soft">
+            {vice && <>Vice: {vice.name}</>}
+            {vice && terceiro && " · "}
+            {terceiro && <>3º: {terceiro.name}</>}
+          </p>
+        )}
+      </div>
+      <Link
+        href={`/admin/events/${eventId}/results`}
+        className="inline-flex h-11 items-center rounded-md border border-gold/40 px-5 font-mono text-xs uppercase tracking-[0.18em] text-gold hover:bg-gold/10"
+      >
+        Ver classificação completa
+      </Link>
+    </section>
   );
 }

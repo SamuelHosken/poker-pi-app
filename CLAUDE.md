@@ -166,8 +166,8 @@ poker-pi-app/
 
 ## 10. Status atual do projeto
 
-**ETAPA ATUAL:** 4 (concluída — código; aguardando validação E2E em sessão única)
-**PRÓXIMA ETAPA:** 5 (Mesa final + pódio)
+**ETAPA ATUAL:** 5 (concluída — código; aguardando validação E2E)
+**PRÓXIMA ETAPA:** 6 (Polimento: animações + sons + sorteio animado)
 
 ### Roteiro de etapas
 
@@ -176,7 +176,7 @@ poker-pi-app/
 - [x] Etapa 2: Cronômetro server-side + TV básica → `docs/etapa-2-cronometro-tv.md`
 - [x] Etapa 3: Painel admin de uma partida → `docs/etapa-3-admin-partida.md`
 - [x] Etapa 4: Duas mesas + fila + renovação → `docs/etapa-4-duas-mesas.md`
-- [ ] Etapa 5: Mesa final + pódio → `docs/etapa-5-mesa-final.md`
+- [x] Etapa 5: Mesa final + pódio → `docs/etapa-5-mesa-final.md`
 - [ ] Etapa 6: Polimento (animações, sons, sorteio) → `docs/etapa-6-polimento.md`
 - [ ] Etapa 7: V2 (PWA jogador, WhatsApp) → `docs/etapa-7-v2.md`
 

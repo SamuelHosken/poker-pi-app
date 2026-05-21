@@ -326,13 +326,23 @@ export async function eliminatePlayer(input: {
   // Carrega estado anterior do player pra log
   const { data: player, error: plErr } = await supabase
     .from("players")
-    .select("state")
+    .select("state, final_position")
     .eq("id", playerId)
     .maybeSingle();
   if (plErr) throw new Error(`Erro ao ler jogador: ${plErr.message}`);
   if (!player) throw new Error("Jogador não encontrado.");
 
   const now = new Date().toISOString();
+
+  // Mapeia estado do player conforme o tipo de mesa
+  let newPlayerState: PlayerState = "ELIMINADO";
+  let newPlayerFinalPosition: number | null = player.final_position;
+  if (match.is_final_table) {
+    newPlayerFinalPosition = finalPosition;
+    if (finalPosition === 2) newPlayerState = "VICE";
+    else if (finalPosition === 3) newPlayerState = "TERCEIRO";
+    else newPlayerState = "OUTROS_FINALISTAS";
+  }
 
   const { error: updPartErr } = await supabase
     .from("participations")
@@ -342,7 +352,10 @@ export async function eliminatePlayer(input: {
 
   const { error: updPlErr } = await supabase
     .from("players")
-    .update({ state: "ELIMINADO" })
+    .update({
+      state: newPlayerState,
+      final_position: newPlayerFinalPosition,
+    })
     .eq("id", playerId);
   if (updPlErr) throw new Error(`Erro ao atualizar jogador: ${updPlErr.message}`);
 
@@ -351,7 +364,11 @@ export async function eliminatePlayer(input: {
     matchId,
     playerId,
     participationId: participation.id,
-    previousState: { playerState: player.state as PlayerState },
+    isFinalTable: match.is_final_table,
+    previousState: {
+      playerState: player.state as PlayerState,
+      playerFinalPosition: player.final_position,
+    },
   });
 
   revalidatePath(`/admin/events/${match.event_id}`);
@@ -390,7 +407,7 @@ export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: st
 
   const { data: winnerPlayer, error: wpErr } = await supabase
     .from("players")
-    .select("state")
+    .select("state, final_position")
     .eq("id", winner.player_id)
     .maybeSingle();
   if (wpErr) throw new Error(`Erro ao ler vencedor: ${wpErr.message}`);
@@ -404,7 +421,21 @@ export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: st
   if (ptErr) throw new Error(`Erro ao ler mesa física: ${ptErr.message}`);
   if (!physicalTable) throw new Error("Mesa física não encontrada.");
 
+  // Carrega event state pra log + decidir se vai pra ENCERRADO
+  const { data: eventRow, error: evErr } = await supabase
+    .from("events")
+    .select("state")
+    .eq("id", match.event_id)
+    .maybeSingle();
+  if (evErr) throw new Error(`Erro ao ler evento: ${evErr.message}`);
+  if (!eventRow) throw new Error("Evento não encontrado.");
+
   const now = new Date().toISOString();
+  const isFinal = match.is_final_table;
+
+  // Estado e final_position do vencedor dependem do tipo de mesa
+  const winnerNewState: PlayerState = isFinal ? "CAMPEAO" : "CLASSIFICADO";
+  const winnerFinalPositionNew = isFinal ? 1 : winnerPlayer.final_position;
 
   const { error: updMatchErr } = await supabase
     .from("matches")
@@ -424,9 +455,9 @@ export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: st
 
   const { error: updWinPlErr } = await supabase
     .from("players")
-    .update({ state: "CLASSIFICADO" })
+    .update({ state: winnerNewState, final_position: winnerFinalPositionNew })
     .eq("id", winner.player_id);
-  if (updWinPlErr) throw new Error(`Erro ao classificar vencedor: ${updWinPlErr.message}`);
+  if (updWinPlErr) throw new Error(`Erro ao atualizar vencedor: ${updWinPlErr.message}`);
 
   const { error: updTblErr } = await supabase
     .from("physical_tables")
@@ -434,12 +465,27 @@ export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: st
     .eq("id", match.physical_table_id);
   if (updTblErr) throw new Error(`Erro ao atualizar mesa: ${updTblErr.message}`);
 
+  // Mesa final → evento vai pra ENCERRADO
+  if (isFinal) {
+    if (eventRow.state !== "MESA_FINAL") {
+      throw new Error(
+        `Evento esperava MESA_FINAL ao finalizar mesa final (atual: ${eventRow.state}).`,
+      );
+    }
+    const { error: updEvErr } = await supabase
+      .from("events")
+      .update({ state: "ENCERRADO" })
+      .eq("id", match.event_id);
+    if (updEvErr) throw new Error(`Erro ao encerrar evento: ${updEvErr.message}`);
+  }
+
   await logAction(supabase, match.event_id, {
     type: "FINISH_MATCH",
     matchId,
     winnerPlayerId: winner.player_id,
     winnerParticipationId: winner.id,
     physicalTableId: match.physical_table_id,
+    isFinalTable: isFinal,
     previousState: {
       match: {
         state: match.state as MatchState,
@@ -449,6 +495,12 @@ export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: st
       winnerPlayerState: winnerPlayer.state as PlayerState,
       winnerFinalPosition: winner.final_position,
       physicalTableState: physicalTable.state as MatchState,
+      ...(isFinal
+        ? {
+            eventState: "MESA_FINAL" as const,
+            winnerPlayerFinalPosition: winnerPlayer.final_position,
+          }
+        : {}),
     },
   });
 
@@ -481,7 +533,10 @@ export async function undoLastAction(eventId: string): Promise<{ undone: ActionP
         .eq("id", payload.participationId);
       await supabase
         .from("players")
-        .update({ state: payload.previousState.playerState })
+        .update({
+          state: payload.previousState.playerState,
+          final_position: payload.previousState.playerFinalPosition,
+        })
         .eq("id", payload.playerId);
       break;
     }
@@ -501,12 +556,24 @@ export async function undoLastAction(eventId: string): Promise<{ undone: ActionP
         .eq("id", payload.winnerParticipationId);
       await supabase
         .from("players")
-        .update({ state: prev.winnerPlayerState })
+        .update({
+          state: prev.winnerPlayerState,
+          ...(payload.isFinalTable
+            ? { final_position: prev.winnerPlayerFinalPosition ?? null }
+            : {}),
+        })
         .eq("id", payload.winnerPlayerId);
       await supabase
         .from("physical_tables")
         .update({ state: prev.physicalTableState })
         .eq("id", payload.physicalTableId);
+      // Mesa final: restaurar event.state ENCERRADO → MESA_FINAL
+      if (payload.isFinalTable && prev.eventState) {
+        await supabase
+          .from("events")
+          .update({ state: prev.eventState })
+          .eq("id", eventId);
+      }
       break;
     }
     case "START_MATCH": {

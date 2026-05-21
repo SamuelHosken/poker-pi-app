@@ -13,6 +13,7 @@ import {
   MatchFinishCelebration,
   type CelebrationData,
 } from "./match-finish-celebration";
+import { Podium } from "./podium";
 
 type Event = Tables<"events">;
 type PhysicalTable = Tables<"physical_tables">;
@@ -211,20 +212,55 @@ export function EventTV({
         </span>
       </header>
 
-      <section className="flex-1 grid auto-rows-fr gap-6 p-10 lg:grid-cols-2">
-        {tables.map((t) => (
-          <MatchCard
-            key={t.id}
-            table={t}
-            match={activeMatchByTable[t.id]}
-            level={
-              activeMatchByTable[t.id]?.current_level_id
-                ? levelsById[activeMatchByTable[t.id]!.current_level_id!]
-                : undefined
+      {event.state === "ENCERRADO" ? (
+        <section className="flex-1">
+          <Podium players={players} />
+        </section>
+      ) : event.state === "MESA_FINAL" ? (
+        <section className="flex flex-1 items-center justify-center p-10">
+          {(() => {
+            const finalMatch = matches.find((m) => m.is_final_table);
+            const finalTable = finalMatch
+              ? tables.find((t) => t.id === finalMatch.physical_table_id)
+              : undefined;
+            if (!finalMatch || !finalTable) {
+              return (
+                <p className="font-display text-3xl italic text-gray-soft">
+                  Aguardando montagem da Mesa Final…
+                </p>
+              );
             }
-          />
-        ))}
-      </section>
+            return (
+              <div className="w-full max-w-3xl">
+                <MatchCard
+                  table={finalTable}
+                  match={finalMatch}
+                  level={
+                    finalMatch.current_level_id
+                      ? levelsById[finalMatch.current_level_id]
+                      : undefined
+                  }
+                />
+              </div>
+            );
+          })()}
+        </section>
+      ) : (
+        <section className="flex-1 grid auto-rows-fr gap-6 p-10 lg:grid-cols-2">
+          {tables.map((t) => (
+            <MatchCard
+              key={t.id}
+              table={t}
+              match={activeMatchByTable[t.id]}
+              level={
+                activeMatchByTable[t.id]?.current_level_id
+                  ? levelsById[activeMatchByTable[t.id]!.current_level_id!]
+                  : undefined
+              }
+            />
+          ))}
+        </section>
+      )}
 
       <footer className="border-t border-line px-10 py-4 flex items-center justify-between font-mono text-xs uppercase tracking-[0.18em] text-gray-soft">
         <span>

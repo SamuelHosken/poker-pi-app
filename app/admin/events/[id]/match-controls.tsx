@@ -19,6 +19,7 @@ import {
   advanceLevel,
   releaseFinishedTable,
 } from "@/lib/tournament/matches";
+import { startFinalMatch } from "@/lib/tournament/final-table";
 import type { Tables } from "@/lib/types/database.types";
 
 type PhysicalTable = Tables<"physical_tables">;
@@ -36,6 +37,11 @@ export function MatchControls({
   presentes: Player[];
   tableSize: number;
 }) {
+  // Mesa final criada mas ainda não iniciada
+  if (match && match.is_final_table && match.state === "LIVRE") {
+    return <StartFinalMatchButton matchId={match.id} />;
+  }
+
   if (table.state === "JOGANDO" && match) {
     return <PauseAndAdvanceControls matchId={match.id} />;
   }
@@ -66,6 +72,29 @@ export function MatchControls({
       tableSize={tableSize}
       variant="start"
     />
+  );
+}
+
+function StartFinalMatchButton({ matchId }: { matchId: string }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <Button
+      type="button"
+      onClick={() =>
+        startTransition(async () => {
+          try {
+            await startFinalMatch(matchId);
+            toast.success("Mesa Final iniciada");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Erro");
+          }
+        })
+      }
+      disabled={pending}
+      className="h-12 w-full bg-gold text-ink hover:bg-gold/90 disabled:opacity-50"
+    >
+      {pending ? "Iniciando…" : "Iniciar Mesa Final"}
+    </Button>
   );
 }
 
