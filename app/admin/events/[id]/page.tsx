@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getEvent } from "@/lib/tournament/events";
-import { listPlayersForEvent } from "@/lib/tournament/players";
+import { listPlayersForEvent, listProfilesAvailableForEvent } from "@/lib/tournament/players";
 import {
   getMatchesForEvent,
   getParticipationsForMatch,
@@ -41,12 +41,20 @@ export default async function EventDetailPage({
 }) {
   const { id } = await params;
 
-  const [detail, players, matchesData, canUndo, eliminatedRebuy] = await Promise.all([
+  const [
+    detail,
+    players,
+    matchesData,
+    canUndo,
+    eliminatedRebuy,
+    availableProfiles,
+  ] = await Promise.all([
     getEvent(id),
     listPlayersForEvent(id),
     getMatchesForEvent(id),
     hasReversibleAction(id),
     getEliminatedWithRebuyStatus(id),
+    listProfilesAvailableForEvent(id),
   ]);
 
   if (!detail) notFound();
@@ -149,7 +157,11 @@ export default async function EventDetailPage({
       </div>
 
       {(event.state === "CREDENCIAMENTO" || event.state === "EM_ANDAMENTO") && (
-        <PlayersSection eventId={event.id} players={players} />
+        <PlayersSection
+          eventId={event.id}
+          players={players}
+          availableProfiles={availableProfiles}
+        />
       )}
 
       {event.state === "EM_ANDAMENTO" && (

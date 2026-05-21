@@ -340,6 +340,7 @@ export type Database = {
           nickname: string | null
           phone: string | null
           player_token: string
+          profile_id: string | null
           rebuys_used: number
           state: string
           updated_at: string
@@ -354,6 +355,7 @@ export type Database = {
           nickname?: string | null
           phone?: string | null
           player_token: string
+          profile_id?: string | null
           rebuys_used?: number
           state?: string
           updated_at?: string
@@ -368,6 +370,7 @@ export type Database = {
           nickname?: string | null
           phone?: string | null
           player_token?: string
+          profile_id?: string | null
           rebuys_used?: number
           state?: string
           updated_at?: string
@@ -380,7 +383,41 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "players_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean
+          name: string
+          nickname: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_admin?: boolean
+          name: string
+          nickname?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          name?: string
+          nickname?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

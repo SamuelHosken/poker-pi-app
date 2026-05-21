@@ -29,7 +29,7 @@ export async function loginAction(
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   });
@@ -43,7 +43,18 @@ export async function loginAction(
     };
   }
 
-  redirect("/admin/events");
+  // V1.2: redirect baseado em is_admin do profile
+  let destination = "/me";
+  if (signInData.user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", signInData.user.id)
+      .maybeSingle();
+    if (profile?.is_admin) destination = "/admin/events";
+  }
+
+  redirect(destination);
 }
 
 export async function logoutAction(): Promise<void> {
