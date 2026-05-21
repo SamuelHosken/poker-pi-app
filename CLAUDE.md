@@ -166,15 +166,15 @@ poker-pi-app/
 
 ## 10. Status atual do projeto
 
-**ETAPA ATUAL:** 0 (concluída)
-**PRÓXIMA ETAPA:** 1 (Fundação)
+**ETAPA ATUAL:** 3 (concluída — código; aguardando validação E2E em sessão única)
+**PRÓXIMA ETAPA:** 4 (Duas mesas + fila + renovação + rebuy)
 
 ### Roteiro de etapas
 
 - [x] Etapa 0: Setup do projeto, CLAUDE.md, estrutura de pastas → `docs/etapa-0-setup.md`
-- [ ] Etapa 1: Fundação (schema, tipos, CRUD evento) → `docs/etapa-1-fundacao.md`
-- [ ] Etapa 2: Cronômetro server-side + TV básica → `docs/etapa-2-cronometro-tv.md`
-- [ ] Etapa 3: Painel admin de uma partida → `docs/etapa-3-admin-partida.md`
+- [x] Etapa 1: Fundação (schema, tipos, CRUD evento) → `docs/etapa-1-fundacao.md`
+- [x] Etapa 2: Cronômetro server-side + TV básica → `docs/etapa-2-cronometro-tv.md`
+- [x] Etapa 3: Painel admin de uma partida → `docs/etapa-3-admin-partida.md`
 - [ ] Etapa 4: Duas mesas + fila + renovação → `docs/etapa-4-duas-mesas.md`
 - [ ] Etapa 5: Mesa final + pódio → `docs/etapa-5-mesa-final.md`
 - [ ] Etapa 6: Polimento (animações, sons, sorteio) → `docs/etapa-6-polimento.md`
