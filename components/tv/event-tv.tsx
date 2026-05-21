@@ -1,15 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { Tables } from "@/lib/types/database.types";
+import { playSound } from "@/lib/audio/play-sound";
 import { MatchCard } from "./match-card";
+import {
+  EliminationToast,
+  type EliminationToastData,
+} from "./elimination-toast";
+import {
+  MatchFinishCelebration,
+  type CelebrationData,
+} from "./match-finish-celebration";
 
 type Event = Tables<"events">;
 type PhysicalTable = Tables<"physical_tables">;
 type Match = Tables<"matches">;
 type BlindLevel = Tables<"blind_levels">;
 type Player = Tables<"players">;
+type Participation = Tables<"participations">;
 
 const STATE_LABEL: Record<string, string> = {
   SETUP: "Setup",
@@ -37,13 +47,40 @@ export function EventTV({
   const [matches, setMatches] = useState(initialMatches);
   const [players, setPlayers] = useState(initialPlayers);
 
+  const [toasts, setToasts] = useState<EliminationToastData[]>([]);
+  const [celebration, setCelebration] = useState<CelebrationData | null>(null);
+
   const levelsById = useMemo(() => {
     const m: Record<string, BlindLevel> = {};
     for (const lvl of levels) m[lvl.id] = lvl;
     return m;
   }, [levels]);
 
-  // Realtime: event + tables + matches + players
+  // Refs com state atual pra acesso dentro dos handlers de subscription
+  // (que capturam closure no momento da inscrição).
+  const playersRef = useRef(initialPlayers);
+  const tablesRef = useRef(initialTables);
+  const matchesRef = useRef(initialMatches);
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+  useEffect(() => {
+    tablesRef.current = tables;
+  }, [tables]);
+  useEffect(() => {
+    matchesRef.current = matches;
+  }, [matches]);
+
+  // Refs de dedup pra eventos que disparam ações visuais (toast/celebração).
+  const seenEliminations = useRef<Set<string>>(new Set());
+  const seenFinishes = useRef<Set<string>>(new Set());
+  // Pré-popula com FINALIZADAs já existentes — evita celebração ao montar.
+  useEffect(() => {
+    for (const m of initialMatches) {
+      if (m.state === "FINALIZADA") seenFinishes.current.add(m.id);
+    }
+  }, [initialMatches]);
+
   useEffect(() => {
     const supabase = createClient();
     const filter = `event_id=eq.${event.id}`;
@@ -66,7 +103,27 @@ export function EventTV({
         "postgres_changes",
         { event: "*", schema: "public", table: "matches", filter },
         (payload) => {
-          setMatches((prev) => upsertById(prev, payload.new as Match, payload.eventType));
+          const next = payload.new as Match;
+          setMatches((prev) => upsertById(prev, next, payload.eventType));
+
+          if (
+            payload.eventType === "UPDATE" &&
+            next.state === "FINALIZADA" &&
+            !seenFinishes.current.has(next.id) &&
+            next.winner_player_id
+          ) {
+            seenFinishes.current.add(next.id);
+            const winner = playersRef.current.find((pp) => pp.id === next.winner_player_id);
+            const ptable = tablesRef.current.find((tt) => tt.id === next.physical_table_id);
+            if (winner && ptable) {
+              setCelebration({
+                matchId: next.id,
+                winnerName: winner.name,
+                winnerNickname: winner.nickname,
+                tableNumber: ptable.table_number,
+              });
+            }
+          }
         },
       )
       .on(
@@ -76,12 +133,53 @@ export function EventTV({
           setPlayers((prev) => upsertById(prev, payload.new as Player, payload.eventType));
         },
       )
+      // Participations não tem event_id, então filtramos no handler
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "participations" },
+        (payload) => {
+          const p = payload.new as Participation;
+          // Pertence ao nosso evento?
+          const m = matchesRef.current.find((mm) => mm.id === p.match_id);
+          if (!m) return;
+          if (m.event_id !== event.id) return;
+
+          if (!p.eliminated_at) return;
+          if (seenEliminations.current.has(p.id)) return;
+
+          // Filtra eliminações antigas (>30s) — caso de reconexão tardia
+          const ageMs = Date.now() - new Date(p.eliminated_at).getTime();
+          if (ageMs > 30_000) return;
+
+          seenEliminations.current.add(p.id);
+
+          const player = playersRef.current.find((pp) => pp.id === p.player_id);
+          const ptable = tablesRef.current.find((tt) => tt.id === m.physical_table_id);
+          if (!player || !ptable) return;
+
+          playSound("elimination");
+          setToasts((prev) => [
+            ...prev,
+            {
+              id: p.id,
+              playerName: player.name,
+              nickname: player.nickname,
+              finalPosition: p.final_position,
+              tableNumber: ptable.table_number,
+            },
+          ]);
+        },
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [event.id]);
+
+  function dismissToast(id: string) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }
 
   const activeMatchByTable = useMemo(() => {
     const map: Record<string, Match | undefined> = {};
@@ -129,9 +227,36 @@ export function EventTV({
       </section>
 
       <footer className="border-t border-line px-10 py-4 flex items-center justify-between font-mono text-xs uppercase tracking-[0.18em] text-gray-soft">
-        <span>Na fila: <span className="text-paper">{presentes}</span></span>
-        <span>Classificados: <span className="text-gold">{classificados.length}</span></span>
+        <span>
+          Na fila: <span className="text-paper">{presentes}</span>
+        </span>
+        <span className="flex items-center gap-4 truncate">
+          <span>
+            Classificados: <span className="text-gold">{classificados.length}</span>
+          </span>
+          {classificados.length > 0 && (
+            <span className="truncate font-display text-sm italic text-paper">
+              {classificados.map((p) => p.nickname || p.name).join(" · ")}
+            </span>
+          )}
+        </span>
       </footer>
+
+      {/* Stack de toasts de eliminação */}
+      <div className="pointer-events-none fixed right-6 top-6 z-40 flex flex-col gap-3">
+        {toasts.map((t) => (
+          <EliminationToast key={t.id} data={t} onDismiss={dismissToast} />
+        ))}
+      </div>
+
+      {/* Overlay de celebração quando uma mesa finaliza */}
+      {celebration && (
+        <MatchFinishCelebration
+          key={celebration.matchId}
+          data={celebration}
+          onDone={() => setCelebration(null)}
+        />
+      )}
     </div>
   );
 }

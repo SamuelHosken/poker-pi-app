@@ -5,11 +5,19 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/lib/tournament/auth";
 import { canTransitionMatch, transitionErrorMessage } from "@/lib/tournament/transitions";
+import {
+  logAction,
+  getLastReversibleAction,
+  markActionReverted,
+  type ActionPayload,
+} from "@/lib/tournament/action-log";
 import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
-import type { MatchState } from "@/lib/types/domain";
+import type { MatchState, PlayerState } from "@/lib/types/domain";
 
 type Match = Tables<"matches">;
 type BlindLevel = Tables<"blind_levels">;
+type Participation = Tables<"participations">;
+type Player = Tables<"players">;
 
 /**
  * Embaralha um array (Fisher-Yates), retorna nova cópia.
@@ -28,8 +36,6 @@ function shuffle<T>(arr: ReadonlyArray<T>): T[] {
 
 /**
  * Inicia uma nova partida na mesa física com os jogadores selecionados.
- * Cria match (JOGANDO), participations com cadeiras sorteadas, e atualiza
- * players → JOGANDO, physical_table → JOGANDO. Loga START_MATCH.
  */
 export async function startMatchOnTable(input: {
   physicalTableId: string;
@@ -45,7 +51,6 @@ export async function startMatchOnTable(input: {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // 1. Busca mesa + evento
   const { data: table, error: tableErr } = await supabase
     .from("physical_tables")
     .select("*")
@@ -58,7 +63,6 @@ export async function startMatchOnTable(input: {
     throw new Error(`Mesa não está LIVRE (estado atual: ${table.state}).`);
   }
 
-  // 2. Primeiro nível (classificatórias)
   const { data: firstLevel, error: levelErr } = await supabase
     .from("blind_levels")
     .select("*")
@@ -71,7 +75,6 @@ export async function startMatchOnTable(input: {
   if (levelErr) throw new Error(`Erro ao buscar nível inicial: ${levelErr.message}`);
   if (!firstLevel) throw new Error("Evento não tem estrutura de blinds configurada.");
 
-  // 3. Próximo match_number do evento
   const { data: lastMatch } = await supabase
     .from("matches")
     .select("match_number")
@@ -83,7 +86,6 @@ export async function startMatchOnTable(input: {
   const matchNumber = (lastMatch?.match_number ?? 0) + 1;
   const startedAt = new Date().toISOString();
 
-  // 4. Cria match
   const matchInsert: Inserts<"matches"> = {
     event_id: table.event_id,
     physical_table_id: physicalTableId,
@@ -106,11 +108,7 @@ export async function startMatchOnTable(input: {
     throw new Error(`Erro ao criar partida: ${matchErr?.message ?? "desconhecido"}`);
   }
 
-  // 5. Participations (com cadeiras)
-  const seats = randomizeSeats
-    ? shuffle(playerIds)
-    : playerIds.slice();
-
+  const seats = randomizeSeats ? shuffle(playerIds) : playerIds.slice();
   const participations: Inserts<"participations">[] = seats.map((playerId, idx) => ({
     match_id: match.id,
     player_id: playerId,
@@ -119,37 +117,28 @@ export async function startMatchOnTable(input: {
 
   const { error: partErr } = await supabase.from("participations").insert(participations);
   if (partErr) {
-    // cleanup best-effort
     await supabase.from("matches").delete().eq("id", match.id);
     throw new Error(`Erro ao registrar participações: ${partErr.message}`);
   }
 
-  // 6. Players → JOGANDO
   const { error: playerErr } = await supabase
     .from("players")
     .update({ state: "JOGANDO" })
     .in("id", playerIds);
-
   if (playerErr) throw new Error(`Erro ao atualizar jogadores: ${playerErr.message}`);
 
-  // 7. Mesa física → JOGANDO
   const { error: tblErr } = await supabase
     .from("physical_tables")
     .update({ state: "JOGANDO" })
     .eq("id", physicalTableId);
-
   if (tblErr) throw new Error(`Erro ao atualizar mesa: ${tblErr.message}`);
 
-  // 8. action_log
-  await supabase.from("action_log").insert({
-    event_id: table.event_id,
-    action_type: "START_MATCH",
-    payload: {
-      matchId: match.id,
-      physicalTableId,
-      playerIds,
-      previousState: { matchState: "LIVRE", tableState: "LIVRE" },
-    },
+  await logAction(supabase, table.event_id, {
+    type: "START_MATCH",
+    matchId: match.id,
+    physicalTableId,
+    playerIds,
+    previousState: { matchState: "LIVRE", tableState: "LIVRE" },
   });
 
   revalidatePath(`/admin/events/${table.event_id}`);
@@ -233,10 +222,6 @@ export async function resumeMatch(matchId: string): Promise<void> {
   revalidatePath(`/tv/${match.event_id}`);
 }
 
-/**
- * Avança para o próximo nível de blind. Se já está no último, fica.
- * Zera total_paused_ms (pausas pertencem ao nível anterior).
- */
 export async function advanceLevel(matchId: string): Promise<{ advanced: boolean }> {
   await requireAdmin();
   const match = await loadMatch(matchId);
@@ -250,7 +235,6 @@ export async function advanceLevel(matchId: string): Promise<{ advanced: boolean
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // Carrega nível atual pra saber level_number
   const { data: currentLevel, error: curErr } = await supabase
     .from("blind_levels")
     .select("*")
@@ -259,7 +243,6 @@ export async function advanceLevel(matchId: string): Promise<{ advanced: boolean
   if (curErr) throw new Error(`Erro ao ler nível atual: ${curErr.message}`);
   if (!currentLevel) throw new Error("Nível atual não encontrado.");
 
-  // Próximo nível: mesmo evento, mesmo is_final_table, level_number maior
   const { data: nextLevel, error: nextErr } = await supabase
     .from("blind_levels")
     .select("*")
@@ -272,7 +255,6 @@ export async function advanceLevel(matchId: string): Promise<{ advanced: boolean
   if (nextErr) throw new Error(`Erro ao buscar próximo nível: ${nextErr.message}`);
 
   if (!nextLevel) {
-    // último nível — não avança, mas não é erro
     return { advanced: false };
   }
 
@@ -294,9 +276,262 @@ export async function advanceLevel(matchId: string): Promise<{ advanced: boolean
 }
 
 /**
- * Carrega todas as matches de um evento com nível atual em payload separado.
- * Útil pra TV e admin.
+ * Elimina um jogador da partida.
+ *
+ * final_position é calculado como o número de jogadores ainda na mesa
+ * (incluindo o que está saindo). Ex.: mesa de 8, primeiro eliminado fica
+ * em posição 8; quando resta só 1 não-eliminado, esse é o vencedor (1º).
  */
+export async function eliminatePlayer(input: {
+  matchId: string;
+  playerId: string;
+}): Promise<{ finalPosition: number }> {
+  const { matchId, playerId } = input;
+  await requireAdmin();
+  const match = await loadMatch(matchId);
+
+  if (match.state === "FINALIZADA") {
+    throw new Error("Partida já finalizada — não dá pra eliminar mais.");
+  }
+
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: participation, error: partErr } = await supabase
+    .from("participations")
+    .select("*")
+    .eq("match_id", matchId)
+    .eq("player_id", playerId)
+    .maybeSingle();
+
+  if (partErr) throw new Error(`Erro ao buscar participação: ${partErr.message}`);
+  if (!participation) throw new Error("Jogador não está nesta partida.");
+  if (participation.eliminated_at) {
+    throw new Error("Jogador já foi eliminado.");
+  }
+
+  // Posição final = quantos ainda estão na mesa (incluindo o que sai agora)
+  const { count, error: cntErr } = await supabase
+    .from("participations")
+    .select("*", { count: "exact", head: true })
+    .eq("match_id", matchId)
+    .is("eliminated_at", null);
+  if (cntErr) throw new Error(`Erro ao contar restantes: ${cntErr.message}`);
+  const finalPosition = count ?? 1;
+
+  // Carrega estado anterior do player pra log
+  const { data: player, error: plErr } = await supabase
+    .from("players")
+    .select("state")
+    .eq("id", playerId)
+    .maybeSingle();
+  if (plErr) throw new Error(`Erro ao ler jogador: ${plErr.message}`);
+  if (!player) throw new Error("Jogador não encontrado.");
+
+  const now = new Date().toISOString();
+
+  const { error: updPartErr } = await supabase
+    .from("participations")
+    .update({ eliminated_at: now, final_position: finalPosition })
+    .eq("id", participation.id);
+  if (updPartErr) throw new Error(`Erro ao atualizar participação: ${updPartErr.message}`);
+
+  const { error: updPlErr } = await supabase
+    .from("players")
+    .update({ state: "ELIMINADO" })
+    .eq("id", playerId);
+  if (updPlErr) throw new Error(`Erro ao atualizar jogador: ${updPlErr.message}`);
+
+  await logAction(supabase, match.event_id, {
+    type: "ELIMINATE_PLAYER",
+    matchId,
+    playerId,
+    participationId: participation.id,
+    previousState: { playerState: player.state as PlayerState },
+  });
+
+  revalidatePath(`/admin/events/${match.event_id}`);
+  revalidatePath(`/tv/${match.event_id}`);
+  return { finalPosition };
+}
+
+/**
+ * Finaliza a partida. Só funciona quando resta exatamente 1 jogador não-eliminado
+ * — esse vira o vencedor (CLASSIFICADO + final_position=1).
+ */
+export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: string }> {
+  await requireAdmin();
+  const match = await loadMatch(matchId);
+
+  if (match.state === "FINALIZADA") {
+    throw new Error("Partida já está finalizada.");
+  }
+
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: remaining, error: remErr } = await supabase
+    .from("participations")
+    .select("*")
+    .eq("match_id", matchId)
+    .is("eliminated_at", null);
+
+  if (remErr) throw new Error(`Erro ao buscar restantes: ${remErr.message}`);
+  if (!remaining || remaining.length !== 1) {
+    throw new Error(
+      `Finalizar mesa só com 1 jogador restante (atual: ${remaining?.length ?? 0}).`,
+    );
+  }
+  const winner = remaining[0]!;
+
+  const { data: winnerPlayer, error: wpErr } = await supabase
+    .from("players")
+    .select("state")
+    .eq("id", winner.player_id)
+    .maybeSingle();
+  if (wpErr) throw new Error(`Erro ao ler vencedor: ${wpErr.message}`);
+  if (!winnerPlayer) throw new Error("Vencedor não encontrado.");
+
+  const { data: physicalTable, error: ptErr } = await supabase
+    .from("physical_tables")
+    .select("state")
+    .eq("id", match.physical_table_id)
+    .maybeSingle();
+  if (ptErr) throw new Error(`Erro ao ler mesa física: ${ptErr.message}`);
+  if (!physicalTable) throw new Error("Mesa física não encontrada.");
+
+  const now = new Date().toISOString();
+
+  const { error: updMatchErr } = await supabase
+    .from("matches")
+    .update({
+      state: "FINALIZADA",
+      winner_player_id: winner.player_id,
+      finished_at: now,
+    })
+    .eq("id", matchId);
+  if (updMatchErr) throw new Error(`Erro ao finalizar partida: ${updMatchErr.message}`);
+
+  const { error: updWinPartErr } = await supabase
+    .from("participations")
+    .update({ final_position: 1 })
+    .eq("id", winner.id);
+  if (updWinPartErr) throw new Error(`Erro ao atualizar participação do vencedor: ${updWinPartErr.message}`);
+
+  const { error: updWinPlErr } = await supabase
+    .from("players")
+    .update({ state: "CLASSIFICADO" })
+    .eq("id", winner.player_id);
+  if (updWinPlErr) throw new Error(`Erro ao classificar vencedor: ${updWinPlErr.message}`);
+
+  const { error: updTblErr } = await supabase
+    .from("physical_tables")
+    .update({ state: "FINALIZADA" })
+    .eq("id", match.physical_table_id);
+  if (updTblErr) throw new Error(`Erro ao atualizar mesa: ${updTblErr.message}`);
+
+  await logAction(supabase, match.event_id, {
+    type: "FINISH_MATCH",
+    matchId,
+    winnerPlayerId: winner.player_id,
+    winnerParticipationId: winner.id,
+    physicalTableId: match.physical_table_id,
+    previousState: {
+      match: {
+        state: match.state as MatchState,
+        winner_player_id: match.winner_player_id,
+        finished_at: match.finished_at,
+      },
+      winnerPlayerState: winnerPlayer.state as PlayerState,
+      winnerFinalPosition: winner.final_position,
+      physicalTableState: physicalTable.state as MatchState,
+    },
+  });
+
+  revalidatePath(`/admin/events/${match.event_id}`);
+  revalidatePath(`/tv/${match.event_id}`);
+  return { winnerPlayerId: winner.player_id };
+}
+
+/**
+ * Desfaz a última ação reversível do evento.
+ *
+ * Suporta: ELIMINATE_PLAYER, FINISH_MATCH, START_MATCH.
+ * (REBUY_PLAYER e TRANSITION_TO_FINAL serão tratados nas Etapas 4 e 5.)
+ */
+export async function undoLastAction(eventId: string): Promise<{ undone: ActionPayload["type"] | null }> {
+  await requireAdmin();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const last = await getLastReversibleAction(supabase, eventId);
+  if (!last) return { undone: null };
+
+  const { row, payload } = last;
+
+  switch (payload.type) {
+    case "ELIMINATE_PLAYER": {
+      await supabase
+        .from("participations")
+        .update({ eliminated_at: null, final_position: null })
+        .eq("id", payload.participationId);
+      await supabase
+        .from("players")
+        .update({ state: payload.previousState.playerState })
+        .eq("id", payload.playerId);
+      break;
+    }
+    case "FINISH_MATCH": {
+      const prev = payload.previousState;
+      await supabase
+        .from("matches")
+        .update({
+          state: prev.match.state,
+          winner_player_id: prev.match.winner_player_id,
+          finished_at: prev.match.finished_at,
+        })
+        .eq("id", payload.matchId);
+      await supabase
+        .from("participations")
+        .update({ final_position: prev.winnerFinalPosition })
+        .eq("id", payload.winnerParticipationId);
+      await supabase
+        .from("players")
+        .update({ state: prev.winnerPlayerState })
+        .eq("id", payload.winnerPlayerId);
+      await supabase
+        .from("physical_tables")
+        .update({ state: prev.physicalTableState })
+        .eq("id", payload.physicalTableId);
+      break;
+    }
+    case "START_MATCH": {
+      // Deletar match cascateia pra participations
+      await supabase.from("matches").delete().eq("id", payload.matchId);
+      await supabase
+        .from("players")
+        .update({ state: "PRESENTE" })
+        .in("id", payload.playerIds);
+      await supabase
+        .from("physical_tables")
+        .update({ state: payload.previousState.tableState })
+        .eq("id", payload.physicalTableId);
+      break;
+    }
+    case "ASSIGN_SEAT":
+    case "REBUY_PLAYER":
+    case "TRANSITION_TO_FINAL": {
+      throw new Error(`Desfazer ${payload.type} ainda não implementado nesta etapa.`);
+    }
+  }
+
+  await markActionReverted(supabase, row.id);
+
+  revalidatePath(`/admin/events/${eventId}`);
+  revalidatePath(`/tv/${eventId}`);
+  return { undone: payload.type };
+}
+
 export async function getMatchesForEvent(eventId: string): Promise<{
   matches: Match[];
   levelsById: Record<string, BlindLevel>;
@@ -317,4 +552,53 @@ export async function getMatchesForEvent(eventId: string): Promise<{
   for (const lvl of levels ?? []) levelsById[lvl.id] = lvl;
 
   return { matches: matches ?? [], levelsById };
+}
+
+/**
+ * Lista participations de uma partida com player anexado (via consulta separada).
+ */
+export async function getParticipationsForMatch(matchId: string): Promise<
+  Array<Participation & { player: Pick<Player, "id" | "name" | "nickname" | "state"> }>
+> {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: parts, error } = await supabase
+    .from("participations")
+    .select("*")
+    .eq("match_id", matchId)
+    .order("seat_number", { ascending: true });
+  if (error) throw new Error(`Erro ao buscar participações: ${error.message}`);
+  if (!parts || parts.length === 0) return [];
+
+  const playerIds = parts.map((p) => p.player_id);
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, name, nickname, state")
+    .in("id", playerIds);
+
+  const playersById = new Map((players ?? []).map((p) => [p.id, p]));
+  return parts.map((p) => ({
+    ...p,
+    player: playersById.get(p.player_id) ?? {
+      id: p.player_id,
+      name: "—",
+      nickname: null,
+      state: "INSCRITO",
+    },
+  }));
+}
+
+/**
+ * Indica se ainda existem ações reversíveis no evento.
+ */
+export async function hasReversibleAction(eventId: string): Promise<boolean> {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const { count } = await supabase
+    .from("action_log")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .is("reverted_at", null);
+  return (count ?? 0) > 0;
 }

@@ -2,11 +2,17 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getEvent } from "@/lib/tournament/events";
 import { listPlayersForEvent } from "@/lib/tournament/players";
-import { getMatchesForEvent } from "@/lib/tournament/matches";
+import {
+  getMatchesForEvent,
+  getParticipationsForMatch,
+  hasReversibleAction,
+} from "@/lib/tournament/matches";
 import { formatBRL, formatDateBR } from "@/lib/format";
 import { AdvanceStateButton } from "./advance-state-button";
 import { PlayersSection } from "./players-section";
 import { MatchControls } from "./match-controls";
+import { MatchPlayersSection } from "./match-players-section";
+import { UndoButton } from "./undo-button";
 
 const STATE_LABEL: Record<string, string> = {
   SETUP: "Setup",
@@ -32,10 +38,11 @@ export default async function EventDetailPage({
 }) {
   const { id } = await params;
 
-  const [detail, players, matchesData] = await Promise.all([
+  const [detail, players, matchesData, canUndo] = await Promise.all([
     getEvent(id),
     listPlayersForEvent(id),
     getMatchesForEvent(id),
+    hasReversibleAction(id),
   ]);
 
   if (!detail) notFound();
@@ -51,16 +58,29 @@ export default async function EventDetailPage({
     );
   }
 
+  // Carrega participations apenas das partidas ativas (não-FINALIZADAS)
+  const activeMatchIds = Object.values(activeMatchByTable)
+    .filter((m): m is NonNullable<typeof m> => !!m)
+    .map((m) => m.id);
+  const participationsByMatch = Object.fromEntries(
+    await Promise.all(
+      activeMatchIds.map(async (mid) => [mid, await getParticipationsForMatch(mid)] as const),
+    ),
+  );
+
   const canStart = presentes.length >= MIN_PLAYERS_TO_START;
 
   return (
     <main className="mx-auto w-full max-w-4xl px-6 py-10 space-y-10">
-      <Link
-        href="/admin/events"
-        className="inline-block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"
-      >
-        ← Eventos
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/admin/events"
+          className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"
+        >
+          ← Eventos
+        </Link>
+        <UndoButton eventId={event.id} enabled={canUndo} />
+      </div>
 
       <header className="space-y-3">
         <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
@@ -128,30 +148,38 @@ export default async function EventDetailPage({
           Mesas físicas
         </h2>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {physicalTables.map((t) => (
-            <li
-              key={t.id}
-              className="space-y-3 rounded-lg border border-line bg-ink-2 p-5"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-display text-2xl text-paper">
-                  Mesa {t.table_number}
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                  {TABLE_STATE_LABEL[t.state] ?? t.state}
-                </span>
-              </div>
+          {physicalTables.map((t) => {
+            const match = activeMatchByTable[t.id];
+            const parts = match ? participationsByMatch[match.id] : undefined;
+            return (
+              <li
+                key={t.id}
+                className="space-y-3 rounded-lg border border-line bg-ink-2 p-5"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-display text-2xl text-paper">
+                    Mesa {t.table_number}
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+                    {TABLE_STATE_LABEL[t.state] ?? t.state}
+                  </span>
+                </div>
 
-              {event.state === "EM_ANDAMENTO" && (
-                <MatchControls
-                  table={t}
-                  match={activeMatchByTable[t.id]}
-                  presentes={presentes}
-                  tableSize={event.table_size}
-                />
-              )}
-            </li>
-          ))}
+                {event.state === "EM_ANDAMENTO" && (
+                  <MatchControls
+                    table={t}
+                    match={match}
+                    presentes={presentes}
+                    tableSize={event.table_size}
+                  />
+                )}
+
+                {match && parts && parts.length > 0 && (
+                  <MatchPlayersSection matchId={match.id} participations={parts} />
+                )}
+              </li>
+            );
+          })}
         </ul>
       </section>
 
