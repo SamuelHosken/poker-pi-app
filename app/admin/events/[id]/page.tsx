@@ -1,8 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getEvent } from "@/lib/tournament/events";
+import { listPlayersForEvent } from "@/lib/tournament/players";
+import { getMatchesForEvent } from "@/lib/tournament/matches";
 import { formatBRL, formatDateBR } from "@/lib/format";
 import { AdvanceStateButton } from "./advance-state-button";
+import { PlayersSection } from "./players-section";
+import { MatchControls } from "./match-controls";
 
 const STATE_LABEL: Record<string, string> = {
   SETUP: "Setup",
@@ -19,16 +23,35 @@ const TABLE_STATE_LABEL: Record<string, string> = {
   FINALIZADA: "Finalizada",
 };
 
+const MIN_PLAYERS_TO_START = 16;
+
 export default async function EventDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const detail = await getEvent(id);
-  if (!detail) notFound();
 
+  const [detail, players, matchesData] = await Promise.all([
+    getEvent(id),
+    listPlayersForEvent(id),
+    getMatchesForEvent(id),
+  ]);
+
+  if (!detail) notFound();
   const { event, blindLevels, physicalTables } = detail;
+  const { matches } = matchesData;
+
+  const presentes = players.filter((p) => p.state === "PRESENTE");
+
+  const activeMatchByTable: Record<string, (typeof matches)[number] | undefined> = {};
+  for (const t of physicalTables) {
+    activeMatchByTable[t.id] = matches.find(
+      (m) => m.physical_table_id === t.id && m.state !== "FINALIZADA",
+    );
+  }
+
+  const canStart = presentes.length >= MIN_PLAYERS_TO_START;
 
   return (
     <main className="mx-auto w-full max-w-4xl px-6 py-10 space-y-10">
@@ -61,30 +84,72 @@ export default async function EventDetailPage({
             {STATE_LABEL[event.state] ?? event.state}
           </span>
         </div>
+
+        <div className="font-mono text-xs text-gray-soft">
+          TV pública:{" "}
+          <Link
+            href={`/tv/${event.id}`}
+            target="_blank"
+            className="text-gold underline-offset-4 hover:underline"
+          >
+            /tv/{event.id}
+          </Link>
+        </div>
       </header>
 
-      {event.state === "SETUP" && (
-        <AdvanceStateButton
-          eventId={event.id}
-          targetState="CREDENCIAMENTO"
-          label="Avançar para Credenciamento"
-        />
+      <div className="flex flex-wrap gap-3">
+        {event.state === "SETUP" && (
+          <AdvanceStateButton
+            eventId={event.id}
+            targetState="CREDENCIAMENTO"
+            label="Avançar para Credenciamento"
+          />
+        )}
+        {event.state === "CREDENCIAMENTO" && (
+          <AdvanceStateButton
+            eventId={event.id}
+            targetState="EM_ANDAMENTO"
+            label={
+              canStart
+                ? `Avançar para Em andamento (${presentes.length} presentes)`
+                : `Aguardando: ${presentes.length}/${MIN_PLAYERS_TO_START} presentes`
+            }
+            disabled={!canStart}
+          />
+        )}
+      </div>
+
+      {(event.state === "CREDENCIAMENTO" || event.state === "EM_ANDAMENTO") && (
+        <PlayersSection eventId={event.id} players={players} />
       )}
 
       <section className="space-y-4">
         <h2 className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
           Mesas físicas
         </h2>
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {physicalTables.map((t) => (
             <li
               key={t.id}
-              className="rounded-lg border border-line bg-ink-2 p-4 text-center"
+              className="space-y-3 rounded-lg border border-line bg-ink-2 p-5"
             >
-              <div className="font-display text-2xl text-paper">Mesa {t.table_number}</div>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                {TABLE_STATE_LABEL[t.state] ?? t.state}
+              <div className="flex items-center justify-between">
+                <span className="font-display text-2xl text-paper">
+                  Mesa {t.table_number}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+                  {TABLE_STATE_LABEL[t.state] ?? t.state}
+                </span>
               </div>
+
+              {event.state === "EM_ANDAMENTO" && (
+                <MatchControls
+                  table={t}
+                  match={activeMatchByTable[t.id]}
+                  presentes={presentes}
+                  tableSize={event.table_size}
+                />
+              )}
             </li>
           ))}
         </ul>

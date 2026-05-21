@@ -10,10 +10,12 @@ export function AdvanceStateButton({
   eventId,
   targetState,
   label,
+  disabled = false,
 }: {
   eventId: string;
   targetState: EventState;
   label: string;
+  disabled?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -32,7 +34,7 @@ export function AdvanceStateButton({
     <Button
       type="button"
       onClick={handleClick}
-      disabled={pending}
+      disabled={pending || disabled}
       className="h-12 bg-gold text-ink hover:bg-gold/90 disabled:opacity-50"
     >
       {pending ? "Atualizando…" : label}
