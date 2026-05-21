@@ -7,18 +7,15 @@ import {
   getParticipationsForMatch,
   hasReversibleAction,
 } from "@/lib/tournament/matches";
-import { getQueue } from "@/lib/tournament/queue";
 import { getEliminatedWithRebuyStatus } from "@/lib/tournament/rebuy";
-import { canTransitionToFinalTable } from "@/lib/tournament/final-table";
 import { formatBRL, formatDateBR } from "@/lib/format";
 import { AdvanceStateButton } from "./advance-state-button";
 import { PlayersSection } from "./players-section";
 import { MatchControls } from "./match-controls";
 import { MatchPlayersSection } from "./match-players-section";
 import { UndoButton } from "./undo-button";
-import { QueueSection } from "./queue-section";
 import { RebuySection } from "./rebuy-section";
-import { TransitionToFinalButton } from "./transition-to-final-button";
+import { EndEventButton } from "./end-event-button";
 
 const STATE_LABEL: Record<string, string> = {
   SETUP: "Setup",
@@ -44,16 +41,13 @@ export default async function EventDetailPage({
 }) {
   const { id } = await params;
 
-  const [detail, players, matchesData, canUndo, queue, eliminatedRebuy, finalEligibility] =
-    await Promise.all([
-      getEvent(id),
-      listPlayersForEvent(id),
-      getMatchesForEvent(id),
-      hasReversibleAction(id),
-      getQueue(id),
-      getEliminatedWithRebuyStatus(id),
-      canTransitionToFinalTable(id),
-    ]);
+  const [detail, players, matchesData, canUndo, eliminatedRebuy] = await Promise.all([
+    getEvent(id),
+    listPlayersForEvent(id),
+    getMatchesForEvent(id),
+    hasReversibleAction(id),
+    getEliminatedWithRebuyStatus(id),
+  ]);
 
   if (!detail) notFound();
   const { event, blindLevels, physicalTables } = detail;
@@ -152,14 +146,6 @@ export default async function EventDetailPage({
             disabled={!canStart}
           />
         )}
-        {event.state === "EM_ANDAMENTO" && (
-          <TransitionToFinalButton
-            eventId={event.id}
-            classifiedCount={finalEligibility.classifiedCount}
-            enabled={finalEligibility.canTransition}
-            reason={finalEligibility.reason}
-          />
-        )}
       </div>
 
       {(event.state === "CREDENCIAMENTO" || event.state === "EM_ANDAMENTO") && (
@@ -167,13 +153,10 @@ export default async function EventDetailPage({
       )}
 
       {event.state === "EM_ANDAMENTO" && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <QueueSection queue={queue} />
-          <RebuySection
-            eliminated={eliminatedRebuy}
-            rebuyLimit={event.rebuy_limit_per_player}
-          />
-        </div>
+        <RebuySection
+          eliminated={eliminatedRebuy}
+          rebuyLimit={event.rebuy_limit_per_player}
+        />
       )}
 
       {event.state === "ENCERRADO" && (
@@ -277,6 +260,12 @@ export default async function EventDetailPage({
           </table>
         </div>
       </section>
+
+      {event.state === "EM_ANDAMENTO" && (
+        <div className="flex justify-center pt-6">
+          <EndEventButton eventId={event.id} />
+        </div>
+      )}
     </main>
   );
 }

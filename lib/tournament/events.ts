@@ -10,7 +10,8 @@ import {
 } from "@/lib/types/schemas";
 import { canTransitionEvent, transitionErrorMessage } from "@/lib/tournament/transitions";
 import { getBlindTemplate } from "@/lib/tournament/blind-templates";
-import type { EventState } from "@/lib/types/domain";
+import { logAction } from "@/lib/tournament/action-log";
+import type { EventState, PlayerState } from "@/lib/types/domain";
 import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
 
 type Event = Tables<"events">;
@@ -205,4 +206,70 @@ export async function transitionEventState(input: unknown): Promise<void> {
 
   revalidatePath("/admin/events");
   revalidatePath(`/admin/events/${id}`);
+}
+
+/**
+ * V1.1 — Encerra o evento manualmente (fallback quando detectChampionAndEndEvent
+ * não rolou ou todos foram embora antes do fim).
+ *
+ * Se houver exatamente 1 jogador em JOGANDO, ele vira CAMPEAO + final_position=1.
+ * Caso contrário, evento encerra sem campeão definido.
+ */
+export async function endEventManually(eventId: string): Promise<{ crownedChampionId: string | null }> {
+  await requireAdmin();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: event, error: eErr } = await supabase
+    .from("events")
+    .select("state")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (eErr) throw new Error(`Erro ao ler evento: ${eErr.message}`);
+  if (!event) throw new Error("Evento não encontrado.");
+  if (event.state !== "EM_ANDAMENTO") {
+    throw new Error(`Evento não está EM_ANDAMENTO (atual: ${event.state}).`);
+  }
+
+  // Pega o último jogador ativo, se houver exatamente 1
+  const { data: activePlayers } = await supabase
+    .from("players")
+    .select("id, state, final_position")
+    .eq("event_id", eventId)
+    .eq("state", "JOGANDO");
+
+  let crownedChampionId: string | null = null;
+  let previousChampionState: { state: PlayerState; finalPosition: number | null } | null = null;
+
+  if (activePlayers && activePlayers.length === 1) {
+    const champion = activePlayers[0]!;
+    previousChampionState = {
+      state: champion.state as PlayerState,
+      finalPosition: champion.final_position,
+    };
+    crownedChampionId = champion.id;
+    const { error: pErr } = await supabase
+      .from("players")
+      .update({ state: "CAMPEAO", final_position: 1 })
+      .eq("id", champion.id);
+    if (pErr) throw new Error(`Erro ao coroar campeão: ${pErr.message}`);
+  }
+
+  const { error: upErr } = await supabase
+    .from("events")
+    .update({ state: "ENCERRADO" })
+    .eq("id", eventId);
+  if (upErr) throw new Error(`Erro ao encerrar evento: ${upErr.message}`);
+
+  await logAction(supabase, eventId, {
+    type: "EVENT_MANUALLY_ENDED",
+    eventId,
+    previousState: { state: "EM_ANDAMENTO" },
+    crownedChampionId,
+    previousChampionState,
+  });
+
+  revalidatePath(`/admin/events/${eventId}`);
+  revalidatePath(`/tv/${eventId}`);
+  return { crownedChampionId };
 }

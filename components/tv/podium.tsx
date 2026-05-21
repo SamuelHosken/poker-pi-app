@@ -8,12 +8,33 @@ import type { Tables } from "@/lib/types/database.types";
 type Player = Tables<"players">;
 
 export function Podium({ players }: { players: Player[] }) {
-  const champ = players.find((p) => p.state === "CAMPEAO");
-  const vice = players.find((p) => p.state === "VICE");
-  const terceiro = players.find((p) => p.state === "TERCEIRO");
-  const outros = players
-    .filter((p) => p.state === "OUTROS_FINALISTAS")
+  // V1.1: identifica pódio por final_position puro (1=campeão, 2=vice, 3=3º).
+  // Fallback pra state (VICE/TERCEIRO) cobre dados pré-V1.1.
+  const withFinalPosition = players
+    .filter((p) => p.final_position != null)
     .sort((a, b) => (a.final_position ?? 99) - (b.final_position ?? 99));
+
+  const champ =
+    withFinalPosition.find((p) => p.final_position === 1) ??
+    players.find((p) => p.state === "CAMPEAO");
+  const vice =
+    withFinalPosition.find((p) => p.final_position === 2) ??
+    players.find((p) => p.state === "VICE");
+  const terceiro =
+    withFinalPosition.find((p) => p.final_position === 3) ??
+    players.find((p) => p.state === "TERCEIRO");
+
+  const outros = withFinalPosition.filter((p) => {
+    if (p.final_position == null) return false;
+    if (p.final_position <= 3) return false;
+    return true;
+  });
+  // Compat: players antigos com state OUTROS_FINALISTAS sem final_position
+  // ainda aparecem (caso raro mas possível)
+  const legacyOutros = players.filter(
+    (p) => p.state === "OUTROS_FINALISTAS" && !outros.some((o) => o.id === p.id),
+  );
+  outros.push(...legacyOutros);
 
   // Confete + som de campeão quando o pódio aparece
   useEffect(() => {

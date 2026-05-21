@@ -11,8 +11,9 @@ import {
   markActionReverted,
   type ActionPayload,
 } from "@/lib/tournament/action-log";
+import { detectChampionAndEndEvent } from "@/lib/tournament/champion-detection";
 import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
-import type { MatchState, PlayerState } from "@/lib/types/domain";
+import type { EventState, MatchState, PlayerState } from "@/lib/types/domain";
 
 type Match = Tables<"matches">;
 type BlindLevel = Tables<"blind_levels">;
@@ -59,13 +60,13 @@ export async function startMatchOnTable(input: {
 
   if (tableErr) throw new Error(`Erro ao buscar mesa: ${tableErr.message}`);
   if (!table) throw new Error("Mesa não encontrada.");
-  // Aceita LIVRE (primeira partida) ou FINALIZADA (renovação após mesa terminar).
-  if (table.state !== "LIVRE" && table.state !== "FINALIZADA") {
+  // V1.1: mesas não renovam. Só aceita LIVRE.
+  if (table.state !== "LIVRE") {
     throw new Error(
-      `Mesa não pode iniciar partida no estado atual (${table.state}). Aguarde finalizar.`,
+      `Esta mesa já foi usada. Em V1.1 mesas não renovam — mesa fica em ${table.state}.`,
     );
   }
-  const previousTableState = table.state as "LIVRE" | "FINALIZADA";
+  const previousTableState = "LIVRE" as const;
 
   const { data: firstLevel, error: levelErr } = await supabase
     .from("blind_levels")
@@ -334,15 +335,22 @@ export async function eliminatePlayer(input: {
 
   const now = new Date().toISOString();
 
-  // Mapeia estado do player conforme o tipo de mesa
-  let newPlayerState: PlayerState = "ELIMINADO";
-  let newPlayerFinalPosition: number | null = player.final_position;
-  if (match.is_final_table) {
-    newPlayerFinalPosition = finalPosition;
-    if (finalPosition === 2) newPlayerState = "VICE";
-    else if (finalPosition === 3) newPlayerState = "TERCEIRO";
-    else newPlayerState = "OUTROS_FINALISTAS";
-  }
+  // V1.1: sempre ELIMINADO (sem mapeamento VICE/TERCEIRO/OUTROS_FINALISTAS).
+  // final_position é salvo no PARTICIPATION pra o Pódio. No player, também
+  // gravamos final_position pra que o Pódio identifique 2º, 3º, etc. pelo
+  // valor (1=campeão via detectChampion, 2=penúltimo eliminado, etc.).
+  // Calculamos a posição event-wide: total de eliminações + 1 = posição
+  // do que está saindo agora (contando que o campeão será 1).
+  const newPlayerState: PlayerState = "ELIMINADO";
+
+  // Posição event-wide: quantos players ainda estão JOGANDO no evento todo
+  // (incluindo o que sai agora) = posição final desse player.
+  const { count: eventActiveCount } = await supabase
+    .from("players")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", match.event_id)
+    .eq("state", "JOGANDO");
+  const newPlayerFinalPosition = eventActiveCount ?? finalPosition;
 
   const { error: updPartErr } = await supabase
     .from("participations")
@@ -373,12 +381,27 @@ export async function eliminatePlayer(input: {
 
   revalidatePath(`/admin/events/${match.event_id}`);
   revalidatePath(`/tv/${match.event_id}`);
+
+  // V1.1: detecta automaticamente se sobrou apenas 1 jogador no evento.
+  // Se sim, ele vira CAMPEAO e event vai pra ENCERRADO.
+  const { championDetected } = await detectChampionAndEndEvent(match.event_id);
+  if (championDetected) {
+    revalidatePath(`/admin/events/${match.event_id}`);
+    revalidatePath(`/tv/${match.event_id}`);
+  }
+
   return { finalPosition };
 }
 
 /**
- * Finaliza a partida. Só funciona quando resta exatamente 1 jogador não-eliminado
- * — esse vira o vencedor (CLASSIFICADO + final_position=1).
+ * @deprecated V1.1: Mesas não terminam mais automaticamente.
+ *   - Mesas classificatórias deixaram de existir como conceito (não há mais
+ *     CLASSIFICADO/MESA_FINAL na V1.1)
+ *   - O fluxo agora é: eliminate → eliminate → ... → detectChampionAndEndEvent
+ *     (em champion-detection.ts) define CAMPEAO + ENCERRADO automaticamente
+ *
+ * Esta função permanece exportada APENAS para compatibilidade com undo de
+ * dados anteriores à V1.1. Não deve ser chamada de UIs novas.
  */
 export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: string }> {
   await requireAdmin();
@@ -599,6 +622,38 @@ export async function undoLastAction(eventId: string): Promise<{ undone: ActionP
         .eq("id", payload.playerId);
       break;
     }
+    case "CHAMPION_DETECTED": {
+      // V1.1: reverte CAMPEAO → estado anterior + ENCERRADO → estado anterior
+      await supabase
+        .from("players")
+        .update({
+          state: payload.previousChampionState.state,
+          final_position: payload.previousChampionState.finalPosition,
+        })
+        .eq("id", payload.championId);
+      await supabase
+        .from("events")
+        .update({ state: payload.previousEventState.state as EventState })
+        .eq("id", payload.eventId);
+      break;
+    }
+    case "EVENT_MANUALLY_ENDED": {
+      // V1.1: reverte ENCERRADO → estado anterior + (se aplicável) descoroar
+      if (payload.crownedChampionId && payload.previousChampionState) {
+        await supabase
+          .from("players")
+          .update({
+            state: payload.previousChampionState.state,
+            final_position: payload.previousChampionState.finalPosition,
+          })
+          .eq("id", payload.crownedChampionId);
+      }
+      await supabase
+        .from("events")
+        .update({ state: payload.previousState.state as EventState })
+        .eq("id", payload.eventId);
+      break;
+    }
     case "ASSIGN_SEAT":
     case "TRANSITION_TO_FINAL": {
       throw new Error(`Desfazer ${payload.type} ainda não implementado nesta etapa.`);
@@ -612,35 +667,9 @@ export async function undoLastAction(eventId: string): Promise<{ undone: ActionP
   return { undone: payload.type };
 }
 
-/**
- * Libera uma mesa FINALIZADA — volta pro estado LIVRE sem iniciar nova partida.
- * Útil quando o organizador quer aguardar fila crescer antes de renovar.
- */
-export async function releaseFinishedTable(physicalTableId: string): Promise<void> {
-  await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const { data: table, error: tErr } = await supabase
-    .from("physical_tables")
-    .select("*")
-    .eq("id", physicalTableId)
-    .maybeSingle();
-  if (tErr) throw new Error(`Erro ao ler mesa: ${tErr.message}`);
-  if (!table) throw new Error("Mesa não encontrada.");
-  if (table.state !== "FINALIZADA") {
-    throw new Error(`Só dá pra liberar mesa FINALIZADA (atual: ${table.state}).`);
-  }
-
-  const { error: updErr } = await supabase
-    .from("physical_tables")
-    .update({ state: "LIVRE" })
-    .eq("id", physicalTableId);
-  if (updErr) throw new Error(`Erro ao liberar mesa: ${updErr.message}`);
-
-  revalidatePath(`/admin/events/${table.event_id}`);
-  revalidatePath(`/tv/${table.event_id}`);
-}
+// V1.1: `releaseFinishedTable` removida. Mesas não renovam mais.
+// Comentário preservado por arqueologia: a função antes transicionava
+// physical_tables.state FINALIZADA → LIVRE pra preparar pra próxima partida.
 
 export async function getMatchesForEvent(eventId: string): Promise<{
   matches: Match[];

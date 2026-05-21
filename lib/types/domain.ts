@@ -40,6 +40,9 @@ export const ACTION_TYPES = [
   "START_MATCH",
   "REBUY_PLAYER",
   "TRANSITION_TO_FINAL",
+  // V1.1 adicionou estes dois
+  "CHAMPION_DETECTED",
+  "EVENT_MANUALLY_ENDED",
 ] as const;
 export type ActionType = (typeof ACTION_TYPES)[number];
 

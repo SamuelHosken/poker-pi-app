@@ -23,12 +23,19 @@ export function MatchTimer({ match, level }: { match: Match; level: BlindLevel }
   }, [match.state]);
 
   const remaining = calculateTimeRemainingMs(match, level);
+  const isExpired = remaining < 0;
+
+  // V1.1: cronômetro pode ficar negativo. Cor vermelha quando expirado.
+  const colorClass =
+    match.state === "PAUSADA"
+      ? "text-red-poker"
+      : isExpired
+        ? "text-red-poker"
+        : "text-paper";
 
   return (
     <div
-      className={`font-mono text-[120px] leading-none tabular-nums ${
-        match.state === "PAUSADA" ? "text-red-poker" : "text-paper"
-      }`}
+      className={`font-mono text-[120px] leading-none tabular-nums ${colorClass}`}
       aria-live="off"
     >
       {formatTime(remaining)}

@@ -166,21 +166,35 @@ poker-pi-app/
 
 ## 10. Status atual do projeto
 
-**ETAPA ATUAL:** 6 + 7-A (concluídas — código; aguardando validação E2E)
-**PRÓXIMA ETAPA:** validar end-to-end e merge na main
+**ITERAÇÃO ATUAL:** V1.1 — Simplificação (concluída no código; aguardando validação E2E)
+**PRÓXIMA ITERAÇÃO:** V1.2 — Salas estilo Discord (player entra/troca/auto-elimina + chip display)
 
-### Roteiro de etapas
+### Roteiro
 
-- [x] Etapa 0: Setup do projeto, CLAUDE.md, estrutura de pastas → `docs/etapa-0-setup.md`
-- [x] Etapa 1: Fundação (schema, tipos, CRUD evento) → `docs/etapa-1-fundacao.md`
-- [x] Etapa 2: Cronômetro server-side + TV básica → `docs/etapa-2-cronometro-tv.md`
-- [x] Etapa 3: Painel admin de uma partida → `docs/etapa-3-admin-partida.md`
-- [x] Etapa 4: Duas mesas + fila + renovação → `docs/etapa-4-duas-mesas.md`
-- [x] Etapa 5: Mesa final + pódio → `docs/etapa-5-mesa-final.md`
-- [x] Etapa 6: Polimento (animações, sons, sorteio) → `docs/etapa-6-polimento.md`
-- [~] Etapa 7-A: PWA do jogador + QR codes → `docs/etapa-7-v2.md`
-- [ ] Etapa 7-B: WhatsApp (Twilio) — post-MVP, requer creds
-- [ ] Etapa 7-C: Export PDF — opcional, JSON já cobre exporta
+- [x] Etapa 0: Setup do projeto, CLAUDE.md, estrutura de pastas
+- [x] Etapa 1: Fundação (schema, tipos, CRUD evento)
+- [x] Etapa 2: Cronômetro server-side + TV básica
+- [x] Etapa 3: Painel admin de uma partida
+- [x] Etapa 4: Duas mesas + fila + renovação
+- [x] Etapa 5: Mesa final + pódio
+- [x] Etapa 6: Polimento (animações, sons, sorteio)
+- [~] Etapa 7-A: PWA do jogador + QR codes
+- [x] **Iteração V1.1: Simplificação** → `docs/iteracao-v1-1-simplificacao.md`
+- [ ] Iteração V1.2: Salas Discord (player ativo no celular + chip display)
+
+### V1.1 — o que mudou (resumo)
+
+- Mesas **não renovam** mais (`startMatchOnTable` rejeita FINALIZADA; `releaseFinishedTable` removida)
+- **Fila de espera** removida como conceito visual (UI panel deletado, `getQueue` deletado)
+- **Mesa final** removida como fase (transições neutralizadas em `final-table.ts`; `transitionToFinalTable` + `startFinalMatch` lançam erro)
+- **Cron de avanço de blinds** removido (`/api/cron/advance-blinds` deletado, `vercel.json` deletado)
+- **Cronômetro pode ficar negativo** (sem clamp em 0; cor vermelha quando expirado)
+- **`detectChampionAndEndEvent`** hookado no `eliminatePlayer` — quando sobra 1 jogador em JOGANDO no evento todo, automaticamente vira CAMPEAO + event vai pra ENCERRADO
+- Botão **"Encerrar evento manualmente"** no rodapé do detalhe (fallback)
+- Pódio identifica por `final_position` puro (compat com state legado mantida)
+- Estados deprecados (MESA_FINAL, CLASSIFICADO, NA_FINAL, VICE, TERCEIRO, OUTROS_FINALISTAS, CHAMADO) mantidos no enum por compat com histórico
+- `next-themes` desinstalada (não usada)
+- `finishMatch` marcada `@deprecated` (mantida pra undo de dados antigos)
 
 ---
 

@@ -7,12 +7,12 @@ type BlindLevel = Tables<"blind_levels">;
 /**
  * Calcula o tempo restante do nível atual da partida, em milissegundos.
  *
+ * V1.1: pode retornar valor **negativo** quando o tempo já passou. Admin
+ * avança nível manualmente — o cronômetro fica acumulando "atraso" até lá.
+ *
  * REGRA INVIOLÁVEL: este é o ÚNICO local de cálculo de cronômetro.
  * Cliente apenas chama esta função; nenhuma lógica de `setInterval`
  * controlando contagem regressiva pode existir fora daqui.
- *
- * @returns ms restantes (>= 0). Retorna 0 se nível ainda não começou
- *          ou se tempo já acabou.
  */
 export function calculateTimeRemainingMs(
   match: Pick<Match, "state" | "level_started_at" | "paused_at" | "total_paused_ms">,
@@ -33,11 +33,13 @@ export function calculateTimeRemainingMs(
     elapsed = now - levelStarted - totalPaused;
   }
 
-  return Math.max(0, durationMs - elapsed);
+  // V1.1: sem clamp em 0 — pode ficar negativo (admin avança manualmente).
+  return durationMs - elapsed;
 }
 
 /**
- * Indica se o nível atual já expirou (deve avançar).
+ * Indica se o nível atual já expirou.
+ * (V1.1: continua válido — `<= 0` cobre o caso negativo também.)
  */
 export function isLevelExpired(
   match: Pick<Match, "state" | "level_started_at" | "paused_at" | "total_paused_ms">,

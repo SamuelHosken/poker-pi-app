@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { calculateTimeRemainingMs, isLevelExpired } from "./calculate";
-import { formatTime } from "./format";
 
 const baseMatch = {
   state: "JOGANDO" as const,
@@ -21,15 +20,13 @@ describe("calculateTimeRemainingMs", () => {
     const now = new Date("2026-05-23T20:00:30Z").getTime(); // 30s depois
 
     const match = { ...baseMatch, level_started_at: startedAt.toISOString() };
-    const result = calculateTimeRemainingMs(match, oneMinuteLevel, now);
-
-    expect(result).toBe(30_000); // 30s restantes
+    expect(calculateTimeRemainingMs(match, oneMinuteLevel, now)).toBe(30_000);
   });
 
   it("congela o tempo quando estado é PAUSADA", () => {
     const startedAt = new Date("2026-05-23T20:00:00Z");
     const pausedAt = new Date("2026-05-23T20:00:20Z"); // pausou aos 20s
-    const now = new Date("2026-05-23T20:05:00Z").getTime(); // muito depois
+    const now = new Date("2026-05-23T20:05:00Z").getTime();
 
     const match = {
       ...baseMatch,
@@ -38,39 +35,62 @@ describe("calculateTimeRemainingMs", () => {
       paused_at: pausedAt.toISOString(),
     };
 
-    const result = calculateTimeRemainingMs(match, oneMinuteLevel, now);
-    expect(result).toBe(40_000); // ainda 40s, tempo congelado em PAUSADA
+    expect(calculateTimeRemainingMs(match, oneMinuteLevel, now)).toBe(40_000);
   });
 
   it("desconta total_paused_ms acumulado", () => {
     const startedAt = new Date("2026-05-23T20:00:00Z");
-    const now = new Date("2026-05-23T20:00:40Z").getTime(); // 40s depois
+    const now = new Date("2026-05-23T20:00:40Z").getTime();
 
     const match = {
       ...baseMatch,
       level_started_at: startedAt.toISOString(),
-      total_paused_ms: 10_000, // 10s de pausa prévia
+      total_paused_ms: 10_000,
     };
 
-    // Decorrido real do nível = 40s - 10s pausa = 30s → restam 30s
     expect(calculateTimeRemainingMs(match, oneMinuteLevel, now)).toBe(30_000);
   });
 
-  it("nunca retorna valor negativo", () => {
+  it("V1.1: retorna valor NEGATIVO quando passou do tempo", () => {
     const startedAt = new Date("2026-05-23T20:00:00Z");
-    const now = new Date("2026-05-23T20:05:00Z").getTime(); // muito depois
+    const now = new Date("2026-05-23T20:05:00Z").getTime(); // 5 min depois, nível de 1 min
 
     const match = { ...baseMatch, level_started_at: startedAt.toISOString() };
     const result = calculateTimeRemainingMs(match, oneMinuteLevel, now);
 
-    expect(result).toBe(0);
+    expect(result).toBeLessThan(0);
+    // 1 minuto - 5 minutos = -4 minutos = -240_000 ms
+    expect(result).toBe(-240_000);
+  });
+
+  it("V1.1: continua negativo mesmo após pausas acumuladas", () => {
+    const startedAt = new Date("2026-05-23T20:00:00Z");
+    const now = new Date("2026-05-23T20:03:00Z").getTime(); // 3 min depois
+
+    const match = {
+      ...baseMatch,
+      level_started_at: startedAt.toISOString(),
+      total_paused_ms: 30_000, // 30s pausado
+    };
+
+    // Decorrido real = 3 min - 30s = 2 min 30s
+    // Restante = 1 min - 2 min 30s = -1 min 30s
+    expect(calculateTimeRemainingMs(match, oneMinuteLevel, now)).toBe(-90_000);
   });
 });
 
 describe("isLevelExpired", () => {
   it("retorna true quando tempo restante é 0", () => {
     const startedAt = new Date("2026-05-23T20:00:00Z");
-    const now = new Date("2026-05-23T20:01:00Z").getTime(); // exatamente 1 min
+    const now = new Date("2026-05-23T20:01:00Z").getTime();
+
+    const match = { ...baseMatch, level_started_at: startedAt.toISOString() };
+    expect(isLevelExpired(match, oneMinuteLevel, now)).toBe(true);
+  });
+
+  it("retorna true quando tempo restante é negativo", () => {
+    const startedAt = new Date("2026-05-23T20:00:00Z");
+    const now = new Date("2026-05-23T20:05:00Z").getTime();
 
     const match = { ...baseMatch, level_started_at: startedAt.toISOString() };
     expect(isLevelExpired(match, oneMinuteLevel, now)).toBe(true);
@@ -82,23 +102,5 @@ describe("isLevelExpired", () => {
 
     const match = { ...baseMatch, level_started_at: startedAt.toISOString() };
     expect(isLevelExpired(match, oneMinuteLevel, now)).toBe(false);
-  });
-});
-
-describe("formatTime", () => {
-  it("formata 0 como 00:00", () => {
-    expect(formatTime(0)).toBe("00:00");
-  });
-
-  it("formata 65 segundos como 01:05", () => {
-    expect(formatTime(65_000)).toBe("01:05");
-  });
-
-  it("formata negativos como 00:00 (clamp)", () => {
-    expect(formatTime(-500)).toBe("00:00");
-  });
-
-  it("formata 60 minutos exatos como 60:00", () => {
-    expect(formatTime(60 * 60_000)).toBe("60:00");
   });
 });

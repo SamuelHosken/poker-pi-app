@@ -241,7 +241,10 @@ export function EventTV({
         <section className="flex-1">
           <Podium players={players} />
         </section>
-      ) : event.state === "MESA_FINAL" ? (
+      ) : /* V1.1: MESA_FINAL layout mantido para compatibilidade com eventos
+              criados antes de V1.1. Novos eventos vão direto EM_ANDAMENTO →
+              ENCERRADO (via detectChampionAndEndEvent no eliminatePlayer). */
+      event.state === "MESA_FINAL" ? (
         <section className="flex flex-1 items-center justify-center p-10">
           {(() => {
             const finalMatch = matches.find((m) => m.is_final_table);

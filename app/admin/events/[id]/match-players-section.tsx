@@ -13,13 +13,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { eliminatePlayer, finishMatch } from "@/lib/tournament/matches";
+import { eliminatePlayer } from "@/lib/tournament/matches";
 import type { Tables } from "@/lib/types/database.types";
 
 type Participation = Tables<"participations"> & {
   player: { id: string; name: string; nickname: string | null; state: string };
 };
 
+/**
+ * V1.1: removeu botão "Finalizar mesa". Mesa não termina mais — admin
+ * elimina jogadores até sobrar 1, e detectChampionAndEndEvent (rodando
+ * automaticamente após cada eliminação) define o campeão.
+ */
 export function MatchPlayersSection({
   matchId,
   participations,
@@ -36,9 +41,6 @@ export function MatchPlayersSection({
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
           Na mesa · {remaining.length} restante{remaining.length === 1 ? "" : "s"}
         </span>
-        {remaining.length === 1 && remaining[0] && (
-          <FinishMatchButton matchId={matchId} winnerName={remaining[0].player.name} />
-        )}
       </div>
 
       <ul className="space-y-1.5">
@@ -132,7 +134,8 @@ function EliminateButton({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar {playerName}?</AlertDialogTitle>
           <AlertDialogDescription>
-            Vai marcar como ELIMINADO e atribuir posição final na partida. Pode ser desfeito.
+            Vai marcar como ELIMINADO e atribuir posição final. Se for o penúltimo,
+            o último restante vira CAMPEAO automaticamente. Pode ser desfeito.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -149,56 +152,3 @@ function EliminateButton({
     </AlertDialog>
   );
 }
-
-function FinishMatchButton({
-  matchId,
-  winnerName,
-}: {
-  matchId: string;
-  winnerName: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
-
-  function handleConfirm() {
-    startTransition(async () => {
-      try {
-        await finishMatch(matchId);
-        toast.success(`Mesa finalizada · ${winnerName} classificado`);
-        setOpen(false);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Erro");
-      }
-    });
-  }
-
-  return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        className="rounded-md bg-gold px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink hover:bg-gold/90"
-      >
-        Finalizar mesa
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Finalizar a mesa?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {winnerName} será marcado como CLASSIFICADO (vai pra mesa final).
-            A mesa física fica FINALIZADA. Pode ser desfeito.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirm}
-            disabled={pending}
-            className="bg-gold text-ink hover:bg-gold/90"
-          >
-            {pending ? "Finalizando…" : "Confirmar"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-

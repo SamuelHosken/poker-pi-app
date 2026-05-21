@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json, Tables } from "@/lib/types/database.types";
 import type {
   ActionType,
+  EventState,
   MatchState,
   PhysicalTableState,
   PlayerState,
@@ -76,6 +77,33 @@ export type ActionPayload =
       previousState: {
         eventState: "EM_ANDAMENTO";
       };
+    }
+  // V1.1: detecção automática de campeão após cada eliminação
+  | {
+      type: "CHAMPION_DETECTED";
+      eventId: string;
+      championId: string;
+      previousChampionState: {
+        state: PlayerState;
+        finalPosition: number | null;
+      };
+      previousEventState: {
+        state: EventState;
+      };
+    }
+  // V1.1: admin encerrou o evento manualmente (fallback)
+  | {
+      type: "EVENT_MANUALLY_ENDED";
+      eventId: string;
+      previousState: {
+        state: EventState;
+      };
+      // Se havia exatamente 1 jogador ativo na hora, foi marcado como CAMPEAO:
+      crownedChampionId?: string | null;
+      previousChampionState?: {
+        state: PlayerState;
+        finalPosition: number | null;
+      } | null;
     };
 
 export async function logAction(

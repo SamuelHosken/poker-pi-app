@@ -188,4 +188,25 @@ Estas decisões podem ser tomadas em etapas mais avançadas:
 
 ---
 
+## V1.1 — Decisões (2026-05-21)
+
+Iteração de simplificação aplicada após MVP feature-complete. Decisões abaixo são **definitivas para V1.1** e não devem ser revisitadas sem motivo forte. Documento completo: `docs/iteracao-v1-1-simplificacao.md`.
+
+| Item | Decisão V1.1 |
+|---|---|
+| Mesas | **Contínuas** — não renovam, não terminam. Mesa joga até evento acabar |
+| Quando mesa esvazia | Fica em JOGANDO com 0 participações ativas. Não muda estado |
+| Cronômetro | Pode ficar **negativo** após zerar (sem clamp em 0). Cor vermelha quando expirado |
+| Avanço de nível | **Manual** — admin clica "Avançar nível". Sem cron automático |
+| Vencedor | Detectado **automaticamente** quando sobra 1 jogador em JOGANDO no evento todo. Vira CAMPEAO + event → ENCERRADO |
+| Fallback | Botão "Encerrar evento manualmente" no rodapé. Se 1 player em JOGANDO, coroa; senão encerra sem campeão |
+| Mesa final | **Removida** como fase. Não há mais transição EM_ANDAMENTO → MESA_FINAL |
+| Estados de Player simplificados | INSCRITO, PRESENTE, JOGANDO, ELIMINADO, CAMPEAO (resto deprecated) |
+| Estados de Event simplificados | SETUP, CREDENCIAMENTO, EM_ANDAMENTO, ENCERRADO (MESA_FINAL deprecated) |
+| Pódio | Identifica I/II/III por `final_position` puro (1=campeão, 2=penúltimo eliminado, etc.) |
+| Fila de espera | Não é mais conceito visual separado. Dialog "Iniciar partida" mostra todos PRESENTE direto |
+| Compat com dados antigos | Tudo preservado. Eventos antigos com MESA_FINAL/CLASSIFICADO/VICE/TERCEIRO continuam renderizando |
+
+---
+
 *Próximo passo: ler `02-modelo-de-dados.md` para entender a estrutura do banco.*

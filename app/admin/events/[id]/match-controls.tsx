@@ -17,15 +17,22 @@ import {
   pauseMatch,
   resumeMatch,
   advanceLevel,
-  releaseFinishedTable,
 } from "@/lib/tournament/matches";
-import { startFinalMatch } from "@/lib/tournament/final-table";
 import type { Tables } from "@/lib/types/database.types";
 
 type PhysicalTable = Tables<"physical_tables">;
 type Match = Tables<"matches">;
 type Player = Tables<"players">;
 
+/**
+ * V1.1: mesas não renovam mais.
+ * - LIVRE → mostra "Iniciar partida"
+ * - JOGANDO → mostra Pausar + Avançar nível
+ * - PAUSADA → mostra Retomar
+ * - FINALIZADA → mostra apenas badge "Mesa finalizada (histórico)" — não permite ação
+ *
+ * Botão "Iniciar Mesa Final" e "Renovar mesa" foram removidos.
+ */
 export function MatchControls({
   table,
   match,
@@ -37,11 +44,6 @@ export function MatchControls({
   presentes: Player[];
   tableSize: number;
 }) {
-  // Mesa final criada mas ainda não iniciada
-  if (match && match.is_final_table && match.state === "LIVRE") {
-    return <StartFinalMatchButton matchId={match.id} />;
-  }
-
   if (table.state === "JOGANDO" && match) {
     return <PauseAndAdvanceControls matchId={match.id} />;
   }
@@ -52,15 +54,9 @@ export function MatchControls({
 
   if (table.state === "FINALIZADA") {
     return (
-      <div className="space-y-2">
-        <StartMatchControl
-          physicalTableId={table.id}
-          presentes={presentes}
-          tableSize={tableSize}
-          variant="renovate"
-        />
-        <ReleaseTableButton physicalTableId={table.id} />
-      </div>
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
+        Mesa finalizada (histórico)
+      </p>
     );
   }
 
@@ -70,31 +66,7 @@ export function MatchControls({
       physicalTableId={table.id}
       presentes={presentes}
       tableSize={tableSize}
-      variant="start"
     />
-  );
-}
-
-function StartFinalMatchButton({ matchId }: { matchId: string }) {
-  const [pending, startTransition] = useTransition();
-  return (
-    <Button
-      type="button"
-      onClick={() =>
-        startTransition(async () => {
-          try {
-            await startFinalMatch(matchId);
-            toast.success("Mesa Final iniciada");
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Erro");
-          }
-        })
-      }
-      disabled={pending}
-      className="h-12 w-full bg-gold text-ink hover:bg-gold/90 disabled:opacity-50"
-    >
-      {pending ? "Iniciando…" : "Iniciar Mesa Final"}
-    </Button>
   );
 }
 
@@ -102,15 +74,11 @@ function StartMatchControl({
   physicalTableId,
   presentes,
   tableSize,
-  variant,
 }: {
   physicalTableId: string;
   presentes: Player[];
   tableSize: number;
-  variant: "start" | "renovate";
 }) {
-  const cta = variant === "renovate" ? "Renovar mesa" : "Iniciar partida";
-  const dialogTitle = variant === "renovate" ? "Renovar mesa" : "Selecionar jogadores";
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(presentes.slice(0, tableSize).map((p) => p.id)),
@@ -149,7 +117,7 @@ function StartMatchControl({
   if (presentes.length < 2) {
     return (
       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-        Aguardando jogadores na fila
+        Aguardando jogadores PRESENTE
       </p>
     );
   }
@@ -159,13 +127,13 @@ function StartMatchControl({
       <DialogTrigger
         className="inline-flex h-11 items-center rounded-md bg-gold px-4 text-sm font-medium text-ink hover:bg-gold/90"
       >
-        {cta}
+        Iniciar partida
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogTitle>Selecionar jogadores</DialogTitle>
           <DialogDescription>
-            Sugestão: primeiros {tableSize} jogadores da fila. Marque/desmarque conforme necessário.
+            Sugestão: primeiros {tableSize} jogadores PRESENTE. Marque/desmarque conforme necessário.
           </DialogDescription>
         </DialogHeader>
 
@@ -200,34 +168,11 @@ function StartMatchControl({
             disabled={pending}
             className="h-11 bg-gold text-ink hover:bg-gold/90 disabled:opacity-50"
           >
-            {pending ? "Iniciando…" : cta}
+            {pending ? "Iniciando…" : "Iniciar partida"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function ReleaseTableButton({ physicalTableId }: { physicalTableId: string }) {
-  const [pending, startTransition] = useTransition();
-  return (
-    <button
-      type="button"
-      onClick={() =>
-        startTransition(async () => {
-          try {
-            await releaseFinishedTable(physicalTableId);
-            toast.success("Mesa liberada — pronta pra próxima partida");
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Erro");
-          }
-        })
-      }
-      disabled={pending}
-      className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper disabled:opacity-50"
-    >
-      {pending ? "Liberando…" : "ou deixar mesa livre"}
-    </button>
   );
 }
 
