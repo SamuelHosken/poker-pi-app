@@ -20,7 +20,7 @@ type Profile = Tables<"profiles">;
  * Modo legado (convidado avulso): passar `name`/`nickname` direto, sem profileId.
  * Mantido pra back-compat. Esse player não vai conseguir fazer login.
  *
- * Sempre gera player_token (URL pública /player/[token]) por back-compat.
+ * Sempre gera player_token (coluna NOT NULL UNIQUE no schema).
  */
 export async function createPlayer(input: unknown): Promise<{ id: string; token: string }> {
   const data = CreatePlayerSchema.parse(input);
@@ -106,21 +106,66 @@ export async function listProfilesAvailableForEvent(
 }
 
 /**
- * Busca um jogador pelo token único (rota pública /player/[token]).
- * Retorna null se não existe. RLS permite SELECT público.
+/**
+ * V1.3 — Admin marca/desmarca pagamento de buy-in (ou rebuy).
+ * Toggle `has_paid_buyin`. Quando true, player pode entrar em mesa.
+ * Eliminação zera o flag (precisa marcar rebuy pra voltar a jogar).
  */
-export async function getPlayerByToken(token: string): Promise<Player | null> {
+export async function markPlayerPaid(input: {
+  playerId: string;
+  paid: boolean;
+}): Promise<void> {
+  await requireAdmin();
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { data, error } = await supabase
+  const { data: player } = await supabase
     .from("players")
-    .select("*")
-    .eq("player_token", token)
+    .select("id, event_id, has_paid_buyin")
+    .eq("id", input.playerId)
     .maybeSingle();
+  if (!player) throw new Error("Jogador não encontrado.");
 
-  if (error) throw new Error(`Erro ao buscar jogador: ${error.message}`);
-  return data ?? null;
+  const { error } = await supabase
+    .from("players")
+    .update({ has_paid_buyin: input.paid })
+    .eq("id", input.playerId);
+  if (error) throw new Error(`Erro ao marcar pago: ${error.message}`);
+
+  revalidatePath(`/admin/events/${player.event_id}`);
+  revalidatePath(`/admin/events/${player.event_id}/tv`);
+  revalidatePath("/me");
+}
+
+/**
+ * V1.2 — Remove um jogador do evento (apaga a row em players, cascateia
+ * participações). Só permite quando o player ainda não jogou
+ * (state INSCRITO ou PRESENTE) — players que já passaram por JOGANDO/
+ * ELIMINADO/CAMPEAO etc. têm histórico no action_log e não devem ser apagados.
+ */
+export async function removePlayerFromEvent(playerId: string): Promise<void> {
+  await requireAdmin();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: player, error: pErr } = await supabase
+    .from("players")
+    .select("id, event_id, name, state")
+    .eq("id", playerId)
+    .maybeSingle();
+  if (pErr) throw new Error(`Erro ao buscar jogador: ${pErr.message}`);
+  if (!player) throw new Error("Jogador não encontrado.");
+
+  if (player.state !== "INSCRITO" && player.state !== "PRESENTE") {
+    throw new Error(
+      `Só dá pra remover quem ainda não jogou. ${player.name} está em estado ${player.state}.`,
+    );
+  }
+
+  const { error } = await supabase.from("players").delete().eq("id", playerId);
+  if (error) throw new Error(`Erro ao remover ${player.name}: ${error.message}`);
+
+  revalidatePath(`/admin/events/${player.event_id}`);
 }
 
 /**

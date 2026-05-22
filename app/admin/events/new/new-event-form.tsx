@@ -26,9 +26,15 @@ export function NewEventForm() {
   }
 
   return (
-    <form action={handleSubmit} className="space-y-6">
+    <form action={handleSubmit} className="space-y-5">
       <Field id="name" label="Nome do evento">
-        <Input id="name" name="name" required maxLength={100} className="h-12 bg-ink-2 text-paper" />
+        <Input
+          id="name"
+          name="name"
+          required
+          maxLength={100}
+          className="h-12 bg-ink-2 text-paper"
+        />
       </Field>
 
       <Field id="eventDate" label="Data e hora">
@@ -54,7 +60,7 @@ export function NewEventForm() {
         />
       </Field>
 
-      <fieldset className="space-y-4 rounded-lg border border-line bg-ink-2 p-5">
+      <fieldset className="space-y-4 rounded-lg border border-line bg-ink-2 p-4 sm:p-5">
         <label className="flex items-center gap-3 text-sm text-paper">
           <input
             type="checkbox"
@@ -67,7 +73,7 @@ export function NewEventForm() {
         </label>
 
         {hasRebuy && (
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field id="rebuy" label="Valor (R$)">
               <Input
                 id="rebuy"
@@ -76,7 +82,7 @@ export function NewEventForm() {
                 step="0.01"
                 min="0"
                 defaultValue="45"
-                className="h-11 bg-ink text-paper"
+                className="h-12 bg-ink text-paper"
               />
             </Field>
             <Field id="rebuyLimit" label="Limite/jogador">
@@ -86,7 +92,7 @@ export function NewEventForm() {
                 type="number"
                 min="0"
                 defaultValue="1"
-                className="h-11 bg-ink text-paper"
+                className="h-12 bg-ink text-paper"
               />
             </Field>
             <Field id="rebuyUntilLevel" label="Até o nível">
@@ -96,14 +102,14 @@ export function NewEventForm() {
                 type="number"
                 min="0"
                 defaultValue="3"
-                className="h-11 bg-ink text-paper"
+                className="h-12 bg-ink text-paper"
               />
             </Field>
           </div>
         )}
       </fieldset>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field id="tableSize" label="Tamanho da mesa">
           <Input
             id="tableSize"
@@ -165,7 +171,10 @@ function Field({
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id} className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+      <Label
+        htmlFor={id}
+        className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft"
+      >
         {label}
       </Label>
       {children}

@@ -1,47 +1,53 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
-import { joinTableAsPlayer, leaveCurrentTable } from "@/lib/tournament/player-actions";
+import { Wallet } from "lucide-react";
+import { joinTableAsPlayer } from "@/lib/tournament/player-actions";
 
 export function TableActions({
   physicalTableId,
   youAreHere,
   isBusyElsewhere,
   isFinalized,
+  hasPaid,
+  playerState,
 }: {
   physicalTableId: string;
   youAreHere: boolean;
   isBusyElsewhere: boolean;
   isFinalized: boolean;
+  hasPaid: boolean;
+  playerState: string;
 }) {
-  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  // Pre-warm o RSC payload do destino — só vale se vai conseguir entrar
+  useEffect(() => {
+    if (!isFinalized && !isBusyElsewhere && hasPaid && !youAreHere) {
+      router.prefetch(`/me/mesa/${physicalTableId}`);
+    }
+  }, [router, physicalTableId, isFinalized, isBusyElsewhere, hasPaid, youAreHere]);
 
   function handleJoin() {
+    // Optimistic: navega ANTES do action terminar.
+    router.push(`/me/mesa/${physicalTableId}`);
     startTransition(async () => {
       try {
         await joinTableAsPlayer(physicalTableId);
-        toast.success("Você entrou na mesa");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Erro");
-      }
-    });
-  }
-
-  function handleLeave() {
-    startTransition(async () => {
-      try {
-        await leaveCurrentTable();
-        toast.success("Você saiu da mesa");
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Erro");
+        toast.error(err instanceof Error ? err.message : "Erro ao entrar");
+        router.push("/me");
       }
     });
   }
 
   if (isFinalized) {
     return (
-      <span className="block text-center font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
+      <span className="block py-3 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
         Indisponível
       </span>
     );
@@ -49,20 +55,39 @@ export function TableActions({
 
   if (youAreHere) {
     return (
-      <button
-        type="button"
-        onClick={handleLeave}
-        disabled={pending}
-        className="block w-full rounded-md border border-red-poker/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker hover:bg-red-poker/10 disabled:opacity-50"
+      <Link
+        href={`/me/mesa/${physicalTableId}`}
+        prefetch
+        style={{ touchAction: "manipulation" }}
+        className="flex h-11 w-full items-center justify-center rounded-md border border-gold/60 bg-gold/10 px-3 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-gold hover:bg-gold/20 active:bg-gold/20"
       >
-        {pending ? "Saindo…" : "Você está aqui · Sair"}
-      </button>
+        Você está aqui · Abrir mesa
+      </Link>
+    );
+  }
+
+  // V1.3 — bloqueia entrada se admin não marcou pago.
+  // Eliminado sem rebuy → mensagem específica.
+  if (!hasPaid) {
+    const isEliminated = playerState === "ELIMINADO";
+    return (
+      <div
+        className="flex h-auto min-h-11 w-full items-center gap-2 rounded-md border border-red-poker/40 bg-red-poker/10 px-3 py-2"
+        role="alert"
+      >
+        <Wallet className="size-4 shrink-0 text-red-poker" aria-hidden />
+        <span className="font-mono text-[10px] uppercase leading-tight tracking-[0.18em] text-red-poker">
+          {isEliminated
+            ? "Pague o rebuy com o admin pra voltar"
+            : "Pague o buy-in com o admin pra entrar"}
+        </span>
+      </div>
     );
   }
 
   if (isBusyElsewhere) {
     return (
-      <span className="block text-center font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
+      <span className="block py-3 text-center font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
         Saia da mesa atual antes
       </span>
     );
@@ -72,10 +97,10 @@ export function TableActions({
     <button
       type="button"
       onClick={handleJoin}
-      disabled={pending}
-      className="block w-full rounded-md bg-gold px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink hover:bg-gold/90 disabled:opacity-50"
+      style={{ touchAction: "manipulation" }}
+      className="flex h-11 w-full items-center justify-center rounded-md bg-gold px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink hover:bg-gold/90 active:scale-[0.98]"
     >
-      {pending ? "Entrando…" : "Entrar"}
+      Entrar
     </button>
   );
 }

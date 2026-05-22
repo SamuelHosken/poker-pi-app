@@ -17,12 +17,11 @@ import {
 import { endEventManually } from "@/lib/tournament/events";
 
 /**
- * V1.1 — Fallback pra encerrar o evento manualmente.
- * Detecção automática (detectChampionAndEndEvent) cobre o caso normal de
- * "sobrou 1 jogador". Este botão é pra quando algo deu errado (todos
- * foram embora, deu pau de hardware, etc).
+ * V1.3 — Encerra o evento SEM campeão. Pra coroar alguém, usa
+ * o botão "Definir campeão" acima (que já fecha o evento junto).
  *
- * Posição: rodapé, não muito proeminente.
+ * Este botão serve pra cancelar/abortar: galera foi embora, hardware
+ * pifou, etc. Posição discreta no rodapé.
  */
 export function EndEventButton({ eventId }: { eventId: string }) {
   const router = useRouter();
@@ -32,12 +31,8 @@ export function EndEventButton({ eventId }: { eventId: string }) {
   function handleConfirm() {
     startTransition(async () => {
       try {
-        const res = await endEventManually(eventId);
-        toast.success(
-          res.crownedChampionId
-            ? "Evento encerrado · campeão coroado"
-            : "Evento encerrado sem campeão definido",
-        );
+        await endEventManually(eventId);
+        toast.success("Evento encerrado sem campeão");
         setOpen(false);
         router.refresh();
       } catch (err) {
@@ -49,18 +44,19 @@ export function EndEventButton({ eventId }: { eventId: string }) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid hover:text-red-poker">
-        Encerrar evento manualmente
+        Encerrar sem campeão
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Encerrar o evento agora?</AlertDialogTitle>
+          <AlertDialogTitle>Encerrar o evento sem coroar?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta é uma ação de fallback. Normalmente o evento encerra sozinho
-            quando sobra apenas 1 jogador ativo.
+            Se quiser coroar um campeão, fecha esta janela e usa o botão{" "}
+            <strong>Definir campeão</strong>. Aquele encerra o evento e marca o
+            vencedor numa ação só.
             <br />
             <br />
-            Se houver exatamente 1 jogador em JOGANDO, ele vira <strong>CAMPEAO</strong>.
-            Caso contrário, evento encerra sem campeão definido.
+            Este botão encerra o evento <strong>sem campeão</strong> — pra
+            quando deu errado e galera foi embora.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

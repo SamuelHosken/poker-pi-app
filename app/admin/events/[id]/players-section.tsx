@@ -3,13 +3,33 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { createPlayer } from "@/lib/tournament/players";
+import { ArrowRightLeft, Check, ChevronDown, UserPlus, Trash2, Wallet, WalletMinimal } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { createPlayer, removePlayerFromEvent, markPlayerPaid } from "@/lib/tournament/players";
+import { adminMovePlayer } from "@/lib/tournament/matches";
 import type { Tables } from "@/lib/types/database.types";
-import { PlayerQrButton } from "./player-qr-button";
 
 type Player = Tables<"players">;
 type Profile = Tables<"profiles">;
+type PhysicalTable = Tables<"physical_tables">;
 
 const STATE_LABEL: Record<string, string> = {
   INSCRITO: "Inscrito",
@@ -34,13 +54,17 @@ export function PlayersSection({
   eventId,
   players,
   availableProfiles,
+  physicalTables = [],
 }: {
   eventId: string;
   players: Player[];
   availableProfiles: Profile[];
+  physicalTables?: PhysicalTable[];
 }) {
   const [pending, startTransition] = useTransition();
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+
+  const selectedProfile = availableProfiles.find((p) => p.id === selectedProfileId);
 
   function handleAdd() {
     if (!selectedProfileId) {
@@ -60,7 +84,7 @@ export function PlayersSection({
           nickname: profile.nickname ?? null,
           profileId: profile.id,
         });
-        toast.success(`${profile.name} adicionado ao evento`);
+        toast.success(`${profile.name} adicionado`);
         setSelectedProfileId("");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro desconhecido");
@@ -72,84 +96,408 @@ export function PlayersSection({
 
   return (
     <section className="space-y-4">
-      <h2 className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
-        Credenciamento · {presentes.length} presente{presentes.length === 1 ? "" : "s"}
-      </h2>
+      {/* Header com hierarquia clara */}
+      <div className="space-y-1">
+        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
+          Credenciamento
+        </span>
+        <h2 className="font-display text-2xl font-light leading-tight text-paper sm:text-3xl">
+          {presentes.length}{" "}
+          <span className="text-gray-soft">
+            {presentes.length === 1 ? "pessoa presente" : "pessoas presentes"}
+          </span>
+        </h2>
+      </div>
 
-      <div className="space-y-3 rounded-lg border border-line bg-ink-2 p-3">
+      {/* Card de ação: adicionar pessoa */}
+      <div className="space-y-4 rounded-xl border border-line bg-ink-2 p-4 sm:p-5">
         {availableProfiles.length === 0 ? (
-          <p className="text-sm text-gray-soft">
-            Todos os perfis cadastrados já estão neste evento.{" "}
+          <div className="flex flex-col items-center gap-3 py-2 text-center">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+              Todas as pessoas já estão neste evento
+            </span>
             <Link
               href="/admin/profiles/new"
-              className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold underline-offset-4 hover:underline"
+              className="inline-flex h-11 items-center gap-2 rounded-md border border-gold/40 bg-gold/5 px-4 text-sm text-gold transition-colors hover:bg-gold/10"
             >
-              Cadastrar nova pessoa →
+              <UserPlus className="size-4" aria-hidden />
+              Cadastrar nova pessoa
             </Link>
-          </p>
+          </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={selectedProfileId}
-              onChange={(e) => setSelectedProfileId(e.target.value)}
-              className="h-11 flex-1 min-w-[220px] rounded-md border border-line bg-ink px-3 text-sm text-paper"
-              disabled={pending}
-            >
-              <option value="">Selecione uma pessoa…</option>
-              {availableProfiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.nickname ? ` (${p.nickname})` : ""}
-                </option>
-              ))}
-            </select>
-            <Button
+          <>
+            <div className="space-y-2">
+              <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+                Adicionar pessoa ao evento
+              </span>
+
+              <ProfilePicker
+                profiles={availableProfiles}
+                value={selectedProfileId}
+                onChange={setSelectedProfileId}
+                disabled={pending}
+                selectedLabel={
+                  selectedProfile
+                    ? selectedProfile.nickname
+                      ? `${selectedProfile.name} — ${selectedProfile.nickname}`
+                      : selectedProfile.name
+                    : null
+                }
+              />
+            </div>
+
+            <button
               type="button"
               onClick={handleAdd}
               disabled={pending || !selectedProfileId}
-              className="h-11 bg-gold text-ink hover:bg-gold/90 disabled:opacity-50"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-gold text-sm font-medium text-ink transition-colors hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {pending ? "Adicionando…" : "Adicionar ao evento"}
-            </Button>
-          </div>
+              {pending ? "Adicionando…" : "+ Adicionar"}
+            </button>
+
+            <div className="flex items-center gap-3 pt-1">
+              <span className="h-px flex-1 bg-line" aria-hidden />
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-gray-mid">
+                ou
+              </span>
+              <span className="h-px flex-1 bg-line" aria-hidden />
+            </div>
+
+            <Link
+              href="/admin/profiles/new"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-line text-sm text-gray-soft transition-colors hover:border-gold/40 hover:text-gold"
+            >
+              <UserPlus className="size-4" aria-hidden />
+              Cadastrar nova pessoa
+            </Link>
+          </>
         )}
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-          Não vê quem você quer?{" "}
-          <Link
-            href="/admin/profiles/new"
-            className="text-gold underline-offset-4 hover:underline"
-          >
-            Cadastrar nova pessoa
-          </Link>
-        </p>
       </div>
 
+      {/* Lista de pessoas no evento */}
       {players.length > 0 && (
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {players.map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center justify-between gap-2 rounded-md border border-line bg-ink-2 px-4 py-2.5"
-            >
-              <div className="min-w-0 flex-1">
-                <span className="text-paper">{p.name}</span>
-                {p.nickname && (
-                  <span className="ml-2 font-display italic text-gold">{p.nickname}</span>
+        <div className="space-y-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+            No evento · {players.length}
+          </span>
+          <ul className="space-y-2">
+            {players.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center gap-3 rounded-md border border-line bg-ink-2 p-3 sm:p-3.5"
+              >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink font-display text-base font-light text-gold">
+                  {p.name.charAt(0).toUpperCase()}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm text-paper">{p.name}</div>
+                  <div className="flex items-center gap-2 truncate">
+                    {p.nickname && (
+                      <span className="truncate font-display text-xs italic text-gold">
+                        {p.nickname}
+                      </span>
+                    )}
+                    {!p.profile_id && (
+                      <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-gray-mid">
+                        convidado
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+                  {STATE_LABEL[p.state] ?? p.state}
+                </span>
+
+                <PaidToggle
+                  playerId={p.id}
+                  playerName={p.name}
+                  isPaid={p.has_paid_buyin}
+                  playerState={p.state}
+                />
+
+                {physicalTables.length > 0 && p.has_paid_buyin && (
+                  <MovePlayerButton
+                    playerId={p.id}
+                    playerName={p.name}
+                    physicalTables={physicalTables}
+                  />
                 )}
-                {!p.profile_id && (
-                  <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-                    convidado
-                  </span>
+
+                {(p.state === "INSCRITO" || p.state === "PRESENTE") && (
+                  <RemovePlayerButton playerId={p.id} playerName={p.name} />
                 )}
-              </div>
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                {STATE_LABEL[p.state] ?? p.state}
-              </span>
-              <PlayerQrButton playerName={p.name} token={p.player_token} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Picker customizado de profile: botão estilizado abre Dialog com lista
+ * (substitui o <select> nativo que renderizava com cores do OS).
+ */
+function ProfilePicker({
+  profiles,
+  value,
+  onChange,
+  disabled,
+  selectedLabel,
+}: {
+  profiles: Profile[];
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+  selectedLabel: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+
+  function handleSelect(id: string) {
+    onChange(id);
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        disabled={disabled}
+        className="flex h-12 w-full items-center justify-between rounded-md border border-line bg-ink px-4 text-left text-sm transition-colors hover:border-gold/40 focus:border-gold focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <span className={selectedLabel ? "truncate text-paper" : "truncate text-gray-mid"}>
+          {selectedLabel ?? "Selecione uma pessoa…"}
+        </span>
+        <ChevronDown className="ml-2 size-4 shrink-0 text-gray-soft" aria-hidden />
+      </DialogTrigger>
+      <DialogContent className="max-h-[80svh] w-[calc(100vw-2rem)] max-w-md gap-0 overflow-hidden p-0 sm:w-full">
+        <DialogHeader className="border-b border-line p-4">
+          <DialogTitle className="font-display text-xl font-light text-paper">
+            Selecionar pessoa
+          </DialogTitle>
+          <DialogDescription className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+            {profiles.length} {profiles.length === 1 ? "perfil disponível" : "perfis disponíveis"}
+          </DialogDescription>
+        </DialogHeader>
+
+        <ul className="max-h-[60svh] overflow-y-auto p-2">
+          {profiles.map((p) => {
+            const isSelected = p.id === value;
+            return (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => handleSelect(p.id)}
+                  className={`flex w-full items-center gap-3 rounded-md p-3 text-left transition-colors ${
+                    isSelected
+                      ? "bg-gold/10 text-paper"
+                      : "text-paper hover:bg-smoke"
+                  }`}
+                >
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink-2 font-display text-base font-light text-gold">
+                    {p.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm">{p.name}</div>
+                    {p.nickname && (
+                      <div className="truncate font-display text-xs italic text-gold">
+                        {p.nickname}
+                      </div>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <Check className="size-5 shrink-0 text-gold" aria-hidden />
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PaidToggle({
+  playerId,
+  playerName,
+  isPaid,
+  playerState,
+}: {
+  playerId: string;
+  playerName: string;
+  isPaid: boolean;
+  playerState: string;
+}) {
+  const [pending, startTransition] = useTransition();
+
+  function handle() {
+    startTransition(async () => {
+      try {
+        await markPlayerPaid({ playerId, paid: !isPaid });
+        toast.success(
+          !isPaid
+            ? `${playerName} marcado como pago`
+            : `${playerName} desmarcado`,
+        );
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro");
+      }
+    });
+  }
+
+  // Pra ELIMINADO mostra label "Rebuy" pra ser mais claro o significado
+  const isEliminated = playerState === "ELIMINADO";
+  const label = isEliminated && !isPaid ? "Rebuy" : isPaid ? "Pago" : "Marcar";
+
+  return (
+    <button
+      type="button"
+      onClick={handle}
+      disabled={pending}
+      aria-label={isPaid ? `Desmarcar pagamento de ${playerName}` : `Marcar ${playerName} como pago`}
+      style={{ touchAction: "manipulation" }}
+      className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border px-2.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors disabled:opacity-50 ${
+        isPaid
+          ? "border-gold/50 bg-gold/10 text-gold"
+          : "border-red-poker/40 bg-red-poker/5 text-red-poker hover:bg-red-poker/10"
+      }`}
+    >
+      {isPaid ? (
+        <Wallet className="size-3.5" aria-hidden />
+      ) : (
+        <WalletMinimal className="size-3.5" aria-hidden />
+      )}
+      {label}
+    </button>
+  );
+}
+
+function MovePlayerButton({
+  playerId,
+  playerName,
+  physicalTables,
+}: {
+  playerId: string;
+  playerName: string;
+  physicalTables: PhysicalTable[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function handle(tableId: string) {
+    startTransition(async () => {
+      try {
+        await adminMovePlayer({ playerId, targetTableId: tableId });
+        toast.success(`${playerName} movido`);
+        setOpen(false);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro");
+      }
+    });
+  }
+
+  const available = physicalTables.filter((t) => t.state !== "FINALIZADA");
+  if (available.length === 0) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        aria-label={`Mover ${playerName} de mesa`}
+        className="flex size-9 shrink-0 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-gold/40 hover:text-gold"
+      >
+        <ArrowRightLeft className="size-4" aria-hidden />
+      </DialogTrigger>
+      <DialogContent className="max-w-md gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b border-line p-4">
+          <DialogTitle>Mover {playerName}</DialogTitle>
+          <DialogDescription>
+            Coloca em outra mesa. Se a mesa destino tá LIVRE, vira JOGANDO
+            quando ele entra.
+          </DialogDescription>
+        </DialogHeader>
+        <ul className="max-h-[50svh] overflow-y-auto p-2">
+          {available.map((t) => (
+            <li key={t.id}>
+              <button
+                type="button"
+                onClick={() => handle(t.id)}
+                disabled={pending}
+                className="flex w-full items-center gap-3 rounded-md p-3 text-left text-paper transition-colors hover:bg-smoke disabled:opacity-50"
+              >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-ink-2 font-display text-lg text-gold">
+                  {t.table_number}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm">Mesa {t.table_number}</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+                    {t.state}
+                  </div>
+                </div>
+              </button>
             </li>
           ))}
         </ul>
-      )}
-    </section>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RemovePlayerButton({
+  playerId,
+  playerName,
+}: {
+  playerId: string;
+  playerName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function handleConfirm() {
+    startTransition(async () => {
+      try {
+        await removePlayerFromEvent(playerId);
+        toast.success(`${playerName} removido`);
+        setOpen(false);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro");
+      }
+    });
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger
+        aria-label={`Remover ${playerName}`}
+        className="flex size-9 shrink-0 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-red-poker/40 hover:text-red-poker"
+      >
+        <Trash2 className="size-4" aria-hidden />
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remover {playerName}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vai tirar {playerName} deste evento. Útil pra apagar convidado
+            antigo (cadastrado antes de existirem perfis) ou alguém adicionado
+            por engano.
+            <br />
+            <br />
+            Só funciona enquanto a pessoa ainda não jogou.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirm}
+            disabled={pending}
+            className="bg-red-poker text-white hover:bg-red-poker/90"
+          >
+            {pending ? "Removendo…" : "Remover"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

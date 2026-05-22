@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getMyProfile } from "@/lib/tournament/profiles";
+import { AvatarImage } from "@/components/ui/avatar-image";
 import { getMyEvents } from "@/lib/tournament/player-actions";
 import { formatDateBR } from "@/lib/format";
 import { LogoutMeButton } from "./logout-me-button";
@@ -26,39 +26,71 @@ const TABLE_STATE_LABEL: Record<string, string> = {
 };
 
 export default async function MePage() {
-  const profile = await getMyProfile();
-  if (!profile) redirect("/admin/login");
+  // Profile + events em paralelo.
+  const [profile, myEvents] = await Promise.all([getMyProfile(), getMyEvents()]);
 
-  const myEvents = await getMyEvents();
+  // V1.3: admin também pode jogar — não redireciona mais pra /admin/events.
+  // Admin que quer voltar pro painel tem link no header.
 
-  // Se for admin, oferece atalho pro painel
+  // V1.2 fix anti-loop: se sessão tá em limbo (cookie válido mas profile null),
+  // não redirecionamos — mostramos uma página de "sessão inválida" com botão de
+  // logout. Evita loop redirect com /admin/login.
+  if (!profile) {
+    return (
+      <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-ink px-4 py-8 text-center text-paper sm:px-6">
+        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-red-poker">
+          Sessão inválida
+        </span>
+        <h1 className="max-w-md font-display text-2xl font-light tracking-tight sm:text-3xl">
+          Não conseguimos identificar seu perfil.
+        </h1>
+        <p className="max-w-md text-sm text-gray-soft">
+          Sua sessão está em estado inconsistente (cookie válido mas perfil
+          não encontrado). Faça logout e login novamente.
+        </p>
+        <LogoutMeButton />
+      </main>
+    );
+  }
+
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-6 py-10">
-      <header className="flex items-baseline justify-between gap-3">
-        <div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
-            Poker Pi
-          </span>
-          <h1 className="mt-1 font-display text-3xl font-light tracking-tight text-paper">
-            Olá, {profile.name}
-          </h1>
-          {profile.nickname && (
-            <p className="font-display text-base italic text-gold">{profile.nickname}</p>
-          )}
-        </div>
+    <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+      {profile.is_admin && (
+        <Link
+          href="/admin/events"
+          prefetch
+          className="mb-4 inline-flex h-9 w-fit items-center gap-2 rounded-md border border-gold/30 bg-gold/5 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gold transition-colors hover:bg-gold/10"
+        >
+          ← Painel admin
+        </Link>
+      )}
+      <header className="flex items-start justify-between gap-3">
+        <Link
+          href="/me/perfil"
+          prefetch
+          aria-label="Meu perfil"
+          style={{ touchAction: "manipulation" }}
+          className="flex min-w-0 flex-1 items-center gap-3"
+        >
+          <AvatarImage name={profile.name} url={profile.avatar_url} size="md" />
+          <div className="min-w-0 flex-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
+              Poker Pi
+            </span>
+            <h1 className="mt-0.5 font-display text-xl font-light leading-tight tracking-tight text-paper sm:text-2xl break-words">
+              Olá, {profile.name.split(" ")[0]}
+            </h1>
+            {profile.nickname && (
+              <p className="truncate font-display text-sm italic text-gold">
+                {profile.nickname}
+              </p>
+            )}
+          </div>
+        </Link>
         <LogoutMeButton />
       </header>
 
-      {profile.is_admin && (
-        <p className="mt-6 rounded-md border border-gold/30 bg-ink-2 px-4 py-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-          Você é admin. Ir pro painel:{" "}
-          <Link href="/admin/events" className="underline-offset-4 hover:underline">
-            /admin/events
-          </Link>
-        </p>
-      )}
-
-      <section className="mt-10 space-y-5 flex-1">
+      <section className="mt-8 space-y-4 flex-1 sm:mt-10 sm:space-y-5">
         <h2 className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
           Seus eventos
         </h2>
@@ -73,7 +105,7 @@ export default async function MePage() {
             </p>
           </div>
         ) : (
-          <ul className="space-y-4">
+          <ul className="space-y-3 sm:space-y-4">
             {myEvents.map((ev) => {
               const isActive = ev.event.state === "EM_ANDAMENTO";
               const inSomeTable = ev.myMatchTableId !== null;
@@ -81,41 +113,42 @@ export default async function MePage() {
               return (
                 <li
                   key={ev.event.id}
-                  className="rounded-lg border border-line bg-ink-2 p-5 space-y-4"
+                  className="rounded-lg border border-line bg-ink-2 p-4 space-y-3 sm:p-5 sm:space-y-4"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="font-display text-xl font-light text-paper">
-                        {ev.event.name}
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-display text-lg font-light text-paper sm:text-xl break-words">
+                          {ev.event.name}
+                        </div>
+                        <div className="mt-1 font-mono text-[11px] text-gray-soft">
+                          {formatDateBR(ev.event.event_date)}
+                        </div>
                       </div>
-                      <div className="mt-1 font-mono text-xs text-gray-soft">
-                        {formatDateBR(ev.event.event_date)} ·{" "}
-                        <span className="text-gold">
-                          {EVENT_STATE_LABEL[ev.event.state] ?? ev.event.state}
-                        </span>
-                      </div>
+                      <span className="shrink-0 rounded-full border border-gold/40 px-3 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+                        {EVENT_STATE_LABEL[ev.event.state] ?? ev.event.state}
+                      </span>
                     </div>
-                    <div className="rounded-full border border-line px-3 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+                    <div className="inline-flex rounded-full border border-line px-3 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
                       Você: {ev.player.state}
                     </div>
                   </div>
 
                   {isActive ? (
-                    <div className="space-y-2 border-t border-line pt-4">
+                    <div className="space-y-2 border-t border-line pt-3 sm:pt-4">
                       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
                         Mesas disponíveis
                       </p>
-                      <ul className="grid grid-cols-2 gap-2">
+                      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {ev.tables.map((t) => {
                           const youAreHere = ev.myMatchTableId === t.id;
-                          const isBusyElsewhere =
-                            inSomeTable && !youAreHere;
+                          const isBusyElsewhere = inSomeTable && !youAreHere;
                           const isFinalized = t.state === "FINALIZADA";
 
                           return (
                             <li
                               key={t.id}
-                              className={`rounded-md border p-3 ${
+                              className={`rounded-md border p-3 space-y-2 ${
                                 youAreHere
                                   ? "border-gold/60 bg-gold/5"
                                   : "border-line bg-ink"
@@ -129,14 +162,14 @@ export default async function MePage() {
                                   {TABLE_STATE_LABEL[t.state] ?? t.state}
                                 </span>
                               </div>
-                              <div className="mt-2">
-                                <TableActions
-                                  physicalTableId={t.id}
-                                  youAreHere={youAreHere}
-                                  isBusyElsewhere={isBusyElsewhere}
-                                  isFinalized={isFinalized}
-                                />
-                              </div>
+                              <TableActions
+                                physicalTableId={t.id}
+                                youAreHere={youAreHere}
+                                isBusyElsewhere={isBusyElsewhere}
+                                isFinalized={isFinalized}
+                                hasPaid={ev.player.has_paid_buyin}
+                                playerState={ev.player.state}
+                              />
                             </li>
                           );
                         })}

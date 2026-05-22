@@ -52,10 +52,10 @@ export default async function ResultsPage({
   });
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-10 space-y-8">
+    <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
       <Link
         href={`/admin/events/${id}`}
-        className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"
+        className="inline-block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"
       >
         ← Evento
       </Link>
@@ -64,7 +64,7 @@ export default async function ResultsPage({
         <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
           Classificação final
         </span>
-        <h1 className="font-display text-4xl font-light tracking-tight text-paper">
+        <h1 className="font-display text-3xl font-light leading-tight tracking-tight text-paper sm:text-4xl break-words">
           {event.name}
         </h1>
         <p className="font-mono text-xs text-gray-soft">
@@ -72,7 +72,64 @@ export default async function ResultsPage({
         </p>
       </header>
 
-      <div className="overflow-hidden rounded-lg border border-line">
+      {/* Mobile: cards verticais */}
+      <ul className="space-y-2 sm:hidden">
+        {sorted.map((p) => {
+          const positionLabel =
+            p.state === "CAMPEAO"
+              ? "1º"
+              : p.state === "VICE"
+                ? "2º"
+                : p.state === "TERCEIRO"
+                  ? "3º"
+                  : p.final_position != null
+                    ? `${p.final_position}º`
+                    : "—";
+          const isPodium =
+            p.state === "CAMPEAO" || p.state === "VICE" || p.state === "TERCEIRO";
+          const isChamp = p.state === "CAMPEAO";
+
+          return (
+            <li
+              key={p.id}
+              className={`flex items-center gap-3 rounded-md border p-3 ${
+                isChamp
+                  ? "border-gold/60 bg-gold/5"
+                  : isPodium
+                    ? "border-line bg-ink-2"
+                    : "border-line bg-ink-2"
+              }`}
+            >
+              <div
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md font-mono text-lg font-medium ${
+                  isChamp
+                    ? "bg-gold text-ink"
+                    : isPodium
+                      ? "border border-gold/40 text-gold"
+                      : "border border-line text-gray-soft"
+                }`}
+              >
+                {positionLabel}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-paper">{p.name}</div>
+                {p.nickname && (
+                  <div className="truncate font-display text-xs italic text-gold">
+                    {p.nickname}
+                  </div>
+                )}
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
+                  {PLAYER_STATE_LABEL[p.state] ?? p.state}
+                  {p.rebuys_used > 0 && ` · ${p.rebuys_used} rebuy${p.rebuys_used === 1 ? "" : "s"}`}
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Desktop: tabela */}
+      <div className="hidden overflow-hidden rounded-lg border border-line sm:block">
         <table className="w-full text-sm">
           <thead className="bg-ink-2 text-gray-soft">
             <tr>
@@ -184,7 +241,7 @@ function ExportJsonLink({
     <a
       href={dataUri}
       download={`poker-pi-resultados-${eventId}.json`}
-      className="inline-flex h-10 items-center rounded-md border border-line px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:border-gold/50 hover:text-gold"
+      className="inline-flex h-11 w-full items-center justify-center rounded-md border border-line px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:border-gold/50 hover:text-gold sm:w-auto"
     >
       Exportar JSON
     </a>

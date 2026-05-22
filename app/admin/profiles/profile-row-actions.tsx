@@ -13,7 +13,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { setAdminFlag, deleteProfile } from "@/lib/tournament/profiles";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  setAdminFlag,
+  deleteProfile,
+  adminUpdatePassword,
+} from "@/lib/tournament/profiles";
 
 export function ProfileRowActions({
   profileId,
@@ -26,7 +39,10 @@ export function ProfileRowActions({
 }) {
   const [pendingAdmin, startAdmin] = useTransition();
   const [pendingDelete, startDelete] = useTransition();
+  const [pendingPassword, startPassword] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
 
   function handleToggleAdmin() {
     startAdmin(async () => {
@@ -53,19 +69,75 @@ export function ProfileRowActions({
     });
   }
 
+  function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    startPassword(async () => {
+      try {
+        await adminUpdatePassword({ profileId, newPassword });
+        toast.success(`Senha de ${name} atualizada`);
+        setPasswordOpen(false);
+        setNewPassword("");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro");
+      }
+    });
+  }
+
+  function handlePasswordOpen(next: boolean) {
+    if (!next) setNewPassword("");
+    setPasswordOpen(next);
+  }
+
   return (
-    <div className="flex justify-end gap-2">
+    <div className="grid grid-cols-3 gap-2">
       <button
         type="button"
         onClick={handleToggleAdmin}
         disabled={pendingAdmin}
-        className="rounded-md border border-line px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:border-gold/50 hover:text-gold disabled:opacity-50"
+        className="h-10 rounded-md border border-line px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft transition-colors hover:border-gold/50 hover:text-gold disabled:opacity-50"
       >
-        {pendingAdmin ? "..." : isAdmin ? "Tirar admin" : "Promover admin"}
+        {pendingAdmin ? "..." : isAdmin ? "Tirar admin" : "Promover"}
       </button>
 
+      <Dialog open={passwordOpen} onOpenChange={handlePasswordOpen}>
+        <DialogTrigger className="h-10 rounded-md border border-line px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft transition-colors hover:border-gold/50 hover:text-gold">
+          Senha
+        </DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Trocar senha de {name}</DialogTitle>
+            <DialogDescription>
+              Define uma nova senha pra {name}. Avise a pessoa pessoalmente.
+              Mínimo 6 caracteres.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePasswordSubmit} className="space-y-3">
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Nova senha"
+              minLength={6}
+              autoComplete="new-password"
+              autoFocus
+              required
+              className="h-12 w-full rounded-md border border-line bg-ink px-3 text-sm text-paper focus:border-gold focus:outline-none"
+            />
+            <DialogFooter>
+              <button
+                type="submit"
+                disabled={pendingPassword || newPassword.length < 6}
+                className="h-11 rounded-md bg-gold px-5 text-sm font-medium text-ink hover:bg-gold/90 disabled:opacity-50"
+              >
+                {pendingPassword ? "Salvando…" : "Salvar senha"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogTrigger className="rounded-md border border-red-poker/40 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker hover:bg-red-poker/10">
+        <AlertDialogTrigger className="h-10 rounded-md border border-red-poker/40 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker hover:bg-red-poker/10">
           Apagar
         </AlertDialogTrigger>
         <AlertDialogContent>

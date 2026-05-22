@@ -11,7 +11,8 @@ export type CelebrationData = {
   tableNumber: number;
 };
 
-const DURATION_MS = 8000;
+const DURATION_MS = 4500;
+const FADE_OUT_START_MS = DURATION_MS - 500;
 
 export function MatchFinishCelebration({
   data,
@@ -55,8 +56,10 @@ export function MatchFinishCelebration({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-ink via-ink-2 to-ink text-center"
-      style={{ animation: "fade-in 300ms ease-out forwards, fade-out 500ms 7500ms forwards" }}
+      className="pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center bg-ink/85 backdrop-blur-sm text-center"
+      style={{
+        animation: `fade-in 250ms ease-out forwards, fade-out 500ms ${FADE_OUT_START_MS}ms forwards`,
+      }}
     >
       <span className="font-mono text-sm uppercase tracking-[0.4em] text-gold">
         Mesa {data.tableNumber} · Vencedor
