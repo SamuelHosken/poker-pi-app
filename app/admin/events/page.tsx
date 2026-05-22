@@ -19,19 +19,21 @@ export default async function EventsListPage() {
   const events = await listEvents();
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-10">
-      <header className="mb-8 flex items-end justify-between">
+    <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
+      <header className="space-y-4 sm:flex sm:items-end sm:justify-between sm:space-y-0">
         <div>
           <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
             Eventos
           </span>
-          <h1 className="mt-1 font-display text-4xl font-light tracking-tight text-paper">
+          <h1 className="mt-1 font-display text-3xl font-light tracking-tight text-paper sm:text-4xl">
             Seus torneios
           </h1>
         </div>
         <Link
           href="/admin/events/new"
-          className={buttonVariants({ className: "h-12 bg-gold text-ink hover:bg-gold/90" })}
+          className={buttonVariants({
+            className: "h-12 w-full bg-gold text-ink hover:bg-gold/90 sm:w-auto",
+          })}
         >
           + Criar evento
         </Link>
@@ -49,22 +51,38 @@ export default async function EventsListPage() {
             <li key={ev.id}>
               <Link
                 href={`/admin/events/${ev.id}`}
-                className="flex items-center justify-between rounded-lg border border-line bg-ink-2 px-5 py-4 transition-colors hover:border-gold/50 hover:bg-smoke"
+                className="block rounded-lg border border-line bg-ink-2 p-4 transition-colors hover:border-gold/50 hover:bg-smoke sm:p-5"
               >
-                <div>
-                  <div className="font-display text-xl font-light text-paper">{ev.name}</div>
-                  <div className="mt-1 font-mono text-xs text-gray-soft">
-                    {formatDateBR(ev.event_date)} · {formatBRL(ev.buy_in_cents)}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display text-lg font-light text-paper sm:text-xl break-words">
+                      {ev.name}
+                    </div>
+                    <div className="mt-1 font-mono text-xs text-gray-soft">
+                      {formatDateBR(ev.event_date)}
+                    </div>
+                    <div className="mt-0.5 font-mono text-xs text-gray-soft">
+                      {formatBRL(ev.buy_in_cents)}
+                    </div>
                   </div>
+                  <span className="shrink-0 rounded-full border border-line px-3 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+                    {STATE_LABEL[ev.state] ?? ev.state}
+                  </span>
                 </div>
-                <span className="rounded-full border border-line px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-                  {STATE_LABEL[ev.state] ?? ev.state}
-                </span>
               </Link>
             </li>
           ))}
         </ul>
       )}
+
+      <div className="pt-4 text-center">
+        <Link
+          href="/admin/events/lixeira"
+          className="inline-flex h-10 items-center gap-2 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"
+        >
+          Lixeira →
+        </Link>
+      </div>
     </main>
   );
 }

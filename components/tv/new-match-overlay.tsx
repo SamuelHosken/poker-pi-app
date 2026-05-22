@@ -14,9 +14,9 @@ export type NewMatchData = {
   isFinalTable: boolean;
 };
 
-const FETCH_RETRY_DELAY_MS = 400;
-const FETCH_MAX_RETRIES = 6;
-const TOTAL_DISPLAY_MS = 7000;
+const FETCH_RETRY_DELAY_MS = 300;
+const FETCH_MAX_RETRIES = 4;
+const TOTAL_DISPLAY_MS = 3500;
 
 export function NewMatchOverlay({
   data,
@@ -77,7 +77,7 @@ export function NewMatchOverlay({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="pointer-events-none fixed inset-0 z-40 flex flex-col items-center justify-center bg-ink/95 px-10 backdrop-blur"
+      className="pointer-events-none fixed inset-0 z-40 flex flex-col items-center justify-center bg-ink/65 px-10 backdrop-blur-sm"
     >
       <motion.div
         initial={{ y: 30, opacity: 0 }}

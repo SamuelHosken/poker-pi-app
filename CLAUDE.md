@@ -166,8 +166,8 @@ poker-pi-app/
 
 ## 10. Status atual do projeto
 
-**ITERAÇÃO ATUAL:** V1.1 — Simplificação (concluída no código; aguardando validação E2E)
-**PRÓXIMA ITERAÇÃO:** V1.2 — Salas estilo Discord (player entra/troca/auto-elimina + chip display)
+**ITERAÇÃO ATUAL:** V1.2 — Perfis cadastrados + Self-service de mesa (concluída no código; aguardando validação E2E)
+**PRÓXIMA ITERAÇÃO:** V1.3 — Chip display na TV + histórico de tempo em mesa (post-validação)
 
 ### Roteiro
 
@@ -180,7 +180,8 @@ poker-pi-app/
 - [x] Etapa 6: Polimento (animações, sons, sorteio)
 - [~] Etapa 7-A: PWA do jogador + QR codes
 - [x] **Iteração V1.1: Simplificação** → `docs/iteracao-v1-1-simplificacao.md`
-- [ ] Iteração V1.2: Salas Discord (player ativo no celular + chip display)
+- [x] **Iteração V1.2: Perfis cadastrados + Self-service de mesa** → `docs/iteracao-v1-2-perfis.md`
+- [ ] Iteração V1.3: Chip display na TV + histórico (futuro)
 
 ### V1.1 — o que mudou (resumo)
 
@@ -195,6 +196,20 @@ poker-pi-app/
 - Estados deprecados (MESA_FINAL, CLASSIFICADO, NA_FINAL, VICE, TERCEIRO, OUTROS_FINALISTAS, CHAMADO) mantidos no enum por compat com histórico
 - `next-themes` desinstalada (não usada)
 - `finishMatch` marcada `@deprecated` (mantida pra undo de dados antigos)
+
+### V1.2 — o que mudou (resumo)
+
+- **Nova tabela `profiles`** vinculada 1:1 com `auth.users` (id compartilhado, trigger `handle_new_user` auto-cria profile)
+- **`players.profile_id`** FK opcional → liga player a profile cadastrado
+- **Tela `/admin/profiles`** lista/cria/edita perfis (admin pode promover/rebaixar admin, apagar)
+- **PlayersSection** agora usa dropdown de profiles em vez de input livre de nome
+- **`/me`** — UI nova do player: lista eventos onde está, mesas, botões "Entrar"/"Sair"
+- **Login redirect smart**: `is_admin=true` → `/admin/events`, senão → `/me`
+- **Auth gate** em proxy.ts agora valida `profile.is_admin` em `/admin/*`
+- **`joinTableAsPlayer`** + **`leaveCurrentTable`** Server Actions — player se auto-junta/sai
+- **Mesa LIVRE vira JOGANDO** quando primeiro player entra (cria match com level_started_at=now)
+- **Compat com convidados antigos** mantida (profile_id nullable em players)
+- `requireAdmin()` mais estrito — valida `profile.is_admin`
 
 ---
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { Tables } from "@/lib/types/database.types";
 import { playSound } from "@/lib/audio/play-sound";
+import { playSynth } from "@/lib/audio/synth";
 import { MatchCard } from "./match-card";
 import {
   EliminationToast,
@@ -16,6 +17,11 @@ import {
 import { Podium } from "./podium";
 import { AnimatedNewMatch, type NewMatchData } from "./new-match-overlay";
 import { SoundToggle } from "./sound-toggle";
+import { ChipDisplayOverlay } from "./chip-display-overlay";
+import { TvPausedOverlay } from "./tv-paused-overlay";
+import { RealtimeStatus } from "./realtime-status";
+import { useReactions } from "@/lib/realtime/use-reactions";
+import type { PokerSeat } from "./poker-table";
 
 type Event = Tables<"events">;
 type PhysicalTable = Tables<"physical_tables">;
@@ -38,21 +44,37 @@ export function EventTV({
   initialMatches,
   levels,
   initialPlayers,
+  initialParticipations,
+  avatarByProfile = {},
 }: {
   event: Event;
   initialTables: PhysicalTable[];
   initialMatches: Match[];
   levels: BlindLevel[];
   initialPlayers: Player[];
+  initialParticipations: Participation[];
+  avatarByProfile?: Record<string, string | null>;
 }) {
   const [event, setEvent] = useState(initialEvent);
   const [tables, setTables] = useState(initialTables);
   const [matches, setMatches] = useState(initialMatches);
   const [players, setPlayers] = useState(initialPlayers);
+  const [participations, setParticipations] = useState(initialParticipations);
 
   const [toasts, setToasts] = useState<EliminationToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [newMatch, setNewMatch] = useState<NewMatchData | null>(null);
+  // V1.3: IDs de seats em transição (entrada / saída) pra disparar animações
+  const [enteringSeatIds, setEnteringSeatIds] = useState<Set<string>>(new Set());
+  const [ghostSeats, setGhostSeats] = useState<
+    Array<{
+      id: string;
+      playerId: string;
+      matchId: string;
+      seatNumber: number | null;
+      expiresAt: number;
+    }>
+  >([]);
 
   const levelsById = useMemo(() => {
     const m: Record<string, BlindLevel> = {};
@@ -89,10 +111,19 @@ export function EventTV({
   }, [initialMatches]);
 
   const playersById = useMemo(() => {
-    const m = new Map<string, { name: string; nickname: string | null }>();
-    for (const p of players) m.set(p.id, { name: p.name, nickname: p.nickname });
+    const m = new Map<
+      string,
+      { name: string; nickname: string | null; avatarUrl: string | null }
+    >();
+    for (const p of players) {
+      m.set(p.id, {
+        name: p.name,
+        nickname: p.nickname,
+        avatarUrl: p.profile_id ? avatarByProfile[p.profile_id] ?? null : null,
+      });
+    }
     return m;
-  }, [players]);
+  }, [players, avatarByProfile]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -109,15 +140,32 @@ export function EventTV({
         "postgres_changes",
         { event: "*", schema: "public", table: "physical_tables", filter },
         (payload) => {
-          setTables((prev) => upsertById(prev, payload.new as PhysicalTable, payload.eventType));
+          const row = (payload.eventType === "DELETE" ? payload.old : payload.new) as PhysicalTable;
+          setTables((prev) => {
+            const next = upsertById(prev, row, payload.eventType);
+            tablesRef.current = next; // sincroniza ref pra handlers concorrentes
+            return next;
+          });
         },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "matches", filter },
         (payload) => {
-          const next = payload.new as Match;
-          setMatches((prev) => upsertById(prev, next, payload.eventType));
+          const next = (payload.eventType === "DELETE" ? payload.old : payload.new) as Match;
+          // V1.3: detecta mudança de blind (current_level_id mudou) pra tocar som
+          if (payload.eventType === "UPDATE") {
+            const prev = matchesRef.current.find((mm) => mm.id === next.id);
+            if (prev && prev.current_level_id !== next.current_level_id && next.current_level_id) {
+              playSynth("level-up", 0.85);
+            }
+          }
+          setMatches((prevList) => {
+            const after = upsertById(prevList, next, payload.eventType);
+            matchesRef.current = after; // sincroniza pro handler de participations
+            return after;
+          });
+          if (payload.eventType === "DELETE") return;
 
           // Nova partida → sorteio animado (uma vez por match)
           if (payload.eventType === "INSERT" && !seenNewMatches.current.has(next.id)) {
@@ -156,30 +204,100 @@ export function EventTV({
         "postgres_changes",
         { event: "*", schema: "public", table: "players", filter },
         (payload) => {
-          setPlayers((prev) => upsertById(prev, payload.new as Player, payload.eventType));
+          const row = (payload.eventType === "DELETE" ? payload.old : payload.new) as Player;
+          // V1.3: detecta coroação de campeão (state mudou pra CAMPEAO)
+          if (payload.eventType === "UPDATE" && row.state === "CAMPEAO") {
+            const prev = playersRef.current.find((pp) => pp.id === row.id);
+            if (prev && prev.state !== "CAMPEAO") {
+              playSynth("champion", 1);
+            }
+          }
+          setPlayers((prev) => {
+            const next = upsertById(prev, row, payload.eventType);
+            playersRef.current = next;
+            return next;
+          });
         },
       )
-      // Participations não tem event_id, então filtramos no handler
+      // Participations não tem event_id, então filtramos no handler.
+      // V1.3: ampliado pra INSERT/DELETE/UPDATE — assim a TV vê em tempo real
+      // quando alguém entra/sai/é eliminado de mesa (via /me self-service).
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "participations" },
+        { event: "*", schema: "public", table: "participations" },
         (payload) => {
-          const p = payload.new as Participation;
-          // Pertence ao nosso evento?
-          const m = matchesRef.current.find((mm) => mm.id === p.match_id);
-          if (!m) return;
-          if (m.event_id !== event.id) return;
+          const eventType = payload.eventType;
+          const row = (eventType === "DELETE" ? payload.old : payload.new) as Participation;
+          if (!row) return;
 
-          if (!p.eliminated_at) return;
-          if (seenEliminations.current.has(p.id)) return;
+          // DELETE: payload.old só traz o id (sem REPLICA IDENTITY FULL).
+          // Remove pelo id direto — se não está no state, no-op.
+          if (eventType === "DELETE") {
+            setParticipations((prev) => prev.filter((x) => x.id !== row.id));
+            return;
+          }
 
-          // Filtra eliminações antigas (>30s) — caso de reconexão tardia
-          const ageMs = Date.now() - new Date(p.eliminated_at).getTime();
+          // Pertence ao nosso evento? (INSERT/UPDATE têm match_id no payload)
+          const m = matchesRef.current.find((mm) => mm.id === row.match_id);
+          if (!m || m.event_id !== event.id) return;
+
+          // V1.3: animação de entrada (só INSERT novo)
+          if (eventType === "INSERT" && !row.eliminated_at) {
+            setEnteringSeatIds((prev) => {
+              const next = new Set(prev);
+              next.add(row.id);
+              return next;
+            });
+            playSynth("join", 0.8);
+            setTimeout(() => {
+              setEnteringSeatIds((prev) => {
+                if (!prev.has(row.id)) return prev;
+                const next = new Set(prev);
+                next.delete(row.id);
+                return next;
+              });
+            }, 1200);
+          }
+
+          // V1.3: animação de eliminação — captura ghost seat antes de remover
+          if (eventType === "UPDATE" && row.eliminated_at && !seenEliminations.current.has(row.id)) {
+            const ageMs = Date.now() - new Date(row.eliminated_at).getTime();
+            if (ageMs < 30_000) {
+              playSynth("eliminate", 0.9);
+              setGhostSeats((prev) => [
+                ...prev,
+                {
+                  id: row.id,
+                  playerId: row.player_id,
+                  matchId: row.match_id,
+                  seatNumber: row.seat_number,
+                  expiresAt: Date.now() + 2500,
+                },
+              ]);
+              setTimeout(() => {
+                setGhostSeats((prev) => prev.filter((g) => g.id !== row.id));
+              }, 2500);
+            }
+          }
+
+          // Atualiza state de participations (mantém só ativas: eliminated_at null)
+          setParticipations((prev) => {
+            const isActive = !row.eliminated_at;
+            const without = prev.filter((x) => x.id !== row.id);
+            return isActive ? [...without, row] : without;
+          });
+
+          // Toast de eliminação (lógica existente)
+          if (eventType !== "UPDATE") return;
+          if (!row.eliminated_at) return;
+          if (seenEliminations.current.has(row.id)) return;
+
+          const ageMs = Date.now() - new Date(row.eliminated_at).getTime();
           if (ageMs > 30_000) return;
 
-          seenEliminations.current.add(p.id);
+          seenEliminations.current.add(row.id);
 
-          const player = playersRef.current.find((pp) => pp.id === p.player_id);
+          const player = playersRef.current.find((pp) => pp.id === row.player_id);
           const ptable = tablesRef.current.find((tt) => tt.id === m.physical_table_id);
           if (!player || !ptable) return;
 
@@ -187,10 +305,10 @@ export function EventTV({
           setToasts((prev) => [
             ...prev,
             {
-              id: p.id,
+              id: row.id,
               playerName: player.name,
               nickname: player.nickname,
-              finalPosition: p.final_position,
+              finalPosition: row.final_position,
               tableNumber: ptable.table_number,
             },
           ]);
@@ -207,6 +325,9 @@ export function EventTV({
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }
 
+  // Reações em tempo real (broadcast por evento)
+  const { reactions } = useReactions(event.id);
+
   const activeMatchByTable = useMemo(() => {
     const map: Record<string, Match | undefined> = {};
     for (const t of tables) {
@@ -217,6 +338,47 @@ export function EventTV({
     }
     return map;
   }, [tables, matches]);
+
+  // V1.3: seats por match — inclui seats ativos + ghosts (eliminating) + flags
+  // de entrada (entering) pras animações na TV.
+  const seatsByMatch = useMemo(() => {
+    const map: Record<string, PokerSeat[]> = {};
+    for (const p of participations) {
+      if (p.eliminated_at) continue;
+      const player = playersById.get(p.player_id);
+      if (!player) continue;
+      const seat: PokerSeat = {
+        id: p.id,
+        playerId: p.player_id,
+        name: player.name,
+        nickname: player.nickname,
+        seatNumber: p.seat_number,
+        isHighlighted: false,
+        avatarUrl: player.avatarUrl,
+        isEntering: enteringSeatIds.has(p.id),
+      };
+      (map[p.match_id] ??= []).push(seat);
+    }
+    // Adiciona ghost seats — players acabados de eliminar (durante a animação)
+    for (const ghost of ghostSeats) {
+      const player = playersById.get(ghost.playerId);
+      if (!player) continue;
+      (map[ghost.matchId] ??= []).push({
+        id: `ghost-${ghost.id}`,
+        playerId: ghost.playerId,
+        name: player.name,
+        nickname: player.nickname,
+        seatNumber: ghost.seatNumber,
+        isHighlighted: false,
+        avatarUrl: player.avatarUrl,
+        isEliminating: true,
+      });
+    }
+    for (const arr of Object.values(map)) {
+      arr.sort((a, b) => (a.seatNumber ?? 99) - (b.seatNumber ?? 99));
+    }
+    return map;
+  }, [participations, playersById, enteringSeatIds, ghostSeats]);
 
   const presentes = players.filter((p) => p.state === "PRESENTE").length;
   const classificados = players.filter(
@@ -239,7 +401,7 @@ export function EventTV({
 
       {event.state === "ENCERRADO" ? (
         <section className="flex-1">
-          <Podium players={players} />
+          <Podium players={players} avatarByProfile={avatarByProfile} />
         </section>
       ) : /* V1.1: MESA_FINAL layout mantido para compatibilidade com eventos
               criados antes de V1.1. Novos eventos vão direto EM_ANDAMENTO →
@@ -268,6 +430,8 @@ export function EventTV({
                       ? levelsById[finalMatch.current_level_id]
                       : undefined
                   }
+                  seats={seatsByMatch[finalMatch.id] ?? []}
+                  reactions={reactions}
                 />
               </div>
             );
@@ -275,18 +439,19 @@ export function EventTV({
         </section>
       ) : (
         <section className="flex-1 grid auto-rows-fr gap-6 p-10 lg:grid-cols-2">
-          {tables.map((t) => (
-            <MatchCard
-              key={t.id}
-              table={t}
-              match={activeMatchByTable[t.id]}
-              level={
-                activeMatchByTable[t.id]?.current_level_id
-                  ? levelsById[activeMatchByTable[t.id]!.current_level_id!]
-                  : undefined
-              }
-            />
-          ))}
+          {tables.map((t) => {
+            const m = activeMatchByTable[t.id];
+            return (
+              <MatchCard
+                key={t.id}
+                table={t}
+                match={m}
+                level={m?.current_level_id ? levelsById[m.current_level_id] : undefined}
+                seats={m ? (seatsByMatch[m.id] ?? []) : []}
+                reactions={reactions}
+              />
+            );
+          })}
         </section>
       )}
 
@@ -331,6 +496,17 @@ export function EventTV({
 
       {/* Botão flutuante pra ativar som (autoplay policy) */}
       <SoundToggle />
+
+      {/* Overlay "mostrar fichas" — escuta chip_displays */}
+      <ChipDisplayOverlay eventId={event.id} playersById={playersById} />
+
+      {/* Modo pausa geral — cobre tudo quando ativo */}
+      {event.tv_paused_message && event.tv_paused_message.trim().length > 0 && (
+        <TvPausedOverlay eventName={event.name} message={event.tv_paused_message} />
+      )}
+
+      {/* Indicador discreto da conexão Realtime */}
+      <RealtimeStatus eventId={event.id} />
     </div>
   );
 }

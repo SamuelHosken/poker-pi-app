@@ -84,6 +84,7 @@ export type Database = {
           id: string
           is_final_table: boolean
           level_number: number
+          physical_table_id: string
           small_blind: number
         }
         Insert: {
@@ -95,6 +96,7 @@ export type Database = {
           id?: string
           is_final_table?: boolean
           level_number: number
+          physical_table_id: string
           small_blind: number
         }
         Update: {
@@ -106,6 +108,7 @@ export type Database = {
           id?: string
           is_final_table?: boolean
           level_number?: number
+          physical_table_id?: string
           small_blind?: number
         }
         Relationships: [
@@ -116,6 +119,52 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "blind_levels_physical_table_id_fkey"
+            columns: ["physical_table_id"]
+            isOneToOne: false
+            referencedRelation: "physical_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chip_displays: {
+        Row: {
+          amount: number
+          created_at: string
+          event_id: string
+          id: string
+          player_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          event_id: string
+          id?: string
+          player_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chip_displays_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chip_displays_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
         ]
       }
       events: {
@@ -123,6 +172,7 @@ export type Database = {
           admin_user_id: string
           buy_in_cents: number
           created_at: string
+          deleted_at: string | null
           event_date: string
           id: string
           name: string
@@ -132,12 +182,14 @@ export type Database = {
           rebuy_until_level: number
           state: string
           table_size: number
+          tv_paused_message: string | null
           updated_at: string
         }
         Insert: {
           admin_user_id: string
           buy_in_cents: number
           created_at?: string
+          deleted_at?: string | null
           event_date: string
           id?: string
           name: string
@@ -147,12 +199,14 @@ export type Database = {
           rebuy_until_level?: number
           state?: string
           table_size?: number
+          tv_paused_message?: string | null
           updated_at?: string
         }
         Update: {
           admin_user_id?: string
           buy_in_cents?: number
           created_at?: string
+          deleted_at?: string | null
           event_date?: string
           id?: string
           name?: string
@@ -162,6 +216,7 @@ export type Database = {
           rebuy_until_level?: number
           state?: string
           table_size?: number
+          tv_paused_message?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -253,6 +308,7 @@ export type Database = {
         Row: {
           created_at: string
           eliminated_at: string | null
+          eliminated_by_player_id: string | null
           final_position: number | null
           id: string
           match_id: string
@@ -263,6 +319,7 @@ export type Database = {
         Insert: {
           created_at?: string
           eliminated_at?: string | null
+          eliminated_by_player_id?: string | null
           final_position?: number | null
           id?: string
           match_id: string
@@ -273,6 +330,7 @@ export type Database = {
         Update: {
           created_at?: string
           eliminated_at?: string | null
+          eliminated_by_player_id?: string | null
           final_position?: number | null
           id?: string
           match_id?: string
@@ -291,6 +349,13 @@ export type Database = {
           {
             foreignKeyName: "participations_player_id_fkey"
             columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participations_eliminated_by_player_id_fkey"
+            columns: ["eliminated_by_player_id"]
             isOneToOne: false
             referencedRelation: "players"
             referencedColumns: ["id"]
@@ -340,6 +405,7 @@ export type Database = {
           nickname: string | null
           phone: string | null
           player_token: string
+          profile_id: string | null
           rebuys_used: number
           state: string
           updated_at: string
@@ -354,6 +420,7 @@ export type Database = {
           nickname?: string | null
           phone?: string | null
           player_token: string
+          profile_id?: string | null
           rebuys_used?: number
           state?: string
           updated_at?: string
@@ -368,6 +435,7 @@ export type Database = {
           nickname?: string | null
           phone?: string | null
           player_token?: string
+          profile_id?: string | null
           rebuys_used?: number
           state?: string
           updated_at?: string
@@ -380,7 +448,44 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "players_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          is_admin: boolean
+          name: string
+          nickname: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          is_admin?: boolean
+          name: string
+          nickname?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          name?: string
+          nickname?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

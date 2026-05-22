@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
         <Toaster richColors theme="dark" position="top-right" />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

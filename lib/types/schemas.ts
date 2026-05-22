@@ -72,9 +72,40 @@ export const CreatePlayerSchema = z.object({
   name: requiredString("Nome do jogador é obrigatório").max(100, "Nome muito longo"),
   nickname: z.string().max(50, "Apelido muito longo").optional().nullable(),
   phone: z.string().max(20, "Telefone muito longo").optional().nullable(),
+  // V1.2: opcional — se passado, liga player a profile cadastrado
+  profileId: z.string().uuid({ message: "ID de perfil inválido" }).optional().nullable(),
 });
 
 export type CreatePlayerInput = z.infer<typeof CreatePlayerSchema>;
+
+// V1.2 — Schemas de Profile
+
+export const CreateProfileSchema = z.object({
+  email: z.email({ message: "E-mail inválido" }),
+  password: requiredString("Senha é obrigatória").min(6, "Senha mínima de 6 caracteres"),
+  name: requiredString("Nome é obrigatório").max(100, "Nome muito longo"),
+  nickname: z.string().max(50, "Apelido muito longo").optional().nullable(),
+  isAdmin: z.boolean().default(false),
+});
+
+export type CreateProfileInput = z.infer<typeof CreateProfileSchema>;
+
+export const UpdateProfileSchema = z.object({
+  id: requiredString("ID do perfil é obrigatório"),
+  name: z.string().min(1).max(100).optional(),
+  nickname: z.string().max(50).optional().nullable(),
+  isAdmin: z.boolean().optional(),
+});
+
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
+
+// V1.2 — Self-service: player entra em mesa
+
+export const JoinTableSchema = z.object({
+  physicalTableId: z.uuid({ message: "Mesa inválida" }),
+});
+
+export type JoinTableInput = z.infer<typeof JoinTableSchema>;
 
 export const LoginSchema = z.object({
   email: z.email({ message: "E-mail inválido" }),

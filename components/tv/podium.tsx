@@ -7,7 +7,13 @@ import type { Tables } from "@/lib/types/database.types";
 
 type Player = Tables<"players">;
 
-export function Podium({ players }: { players: Player[] }) {
+export function Podium({
+  players,
+  avatarByProfile = {},
+}: {
+  players: Player[];
+  avatarByProfile?: Record<string, string | null>;
+}) {
   // V1.1: identifica pódio por final_position puro (1=campeão, 2=vice, 3=3º).
   // Fallback pra state (VICE/TERCEIRO) cobre dados pré-V1.1.
   const withFinalPosition = players
@@ -36,26 +42,47 @@ export function Podium({ players }: { players: Player[] }) {
   );
   outros.push(...legacyOutros);
 
-  // Confete + som de campeão quando o pódio aparece
+  // Confete + som de campeão. V1.3: confete inicial DOBRADO + recorrência
+  // discreta a cada 25s pra celebração continuar viva enquanto o Podium fica
+  // exposto na TV (até evento ser apagado).
   useEffect(() => {
     if (!champ) return;
     playSound("match-finish", 0.9);
     const goldColors = ["#C9A961", "#F5F1E8", "#FFFFFF"];
-    const burst = (x: number) =>
+    const burst = (x: number, particles = 80) =>
       confetti({
-        particleCount: 80,
+        particleCount: particles,
         spread: 75,
         startVelocity: 60,
         origin: { x, y: 1 },
         colors: goldColors,
         ticks: 250,
       });
-    burst(0.2);
-    burst(0.8);
-    const t = setTimeout(() => {
-      burst(0.5);
-    }, 900);
-    return () => clearTimeout(t);
+
+    // Sequência de boas-vindas (mais intensa)
+    burst(0.15, 100);
+    burst(0.85, 100);
+    const t1 = setTimeout(() => {
+      burst(0.3);
+      burst(0.7);
+    }, 600);
+    const t2 = setTimeout(() => burst(0.5, 120), 1400);
+    const t3 = setTimeout(() => {
+      burst(0.2);
+      burst(0.8);
+    }, 2400);
+
+    // Loop discreto: a cada 25s, um burst pequeno pra lembrar que tá rolando
+    const loop = setInterval(() => {
+      burst(0.5, 40);
+    }, 25000);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearInterval(loop);
+    };
   }, [champ]);
 
   if (!champ) {
@@ -75,9 +102,27 @@ export function Podium({ players }: { players: Player[] }) {
       </span>
 
       <div className="flex w-full max-w-5xl items-end justify-center gap-4 sm:gap-8">
-        <PodiumStep place={2} player={vice} heightClass="h-44" />
-        <PodiumStep place={1} player={champ} heightClass="h-60" highlighted />
-        <PodiumStep place={3} player={terceiro} heightClass="h-32" />
+        <PodiumStep
+          place={2}
+          player={vice}
+          avatarUrl={vice?.profile_id ? avatarByProfile[vice.profile_id] ?? null : null}
+          heightClass="h-44"
+        />
+        <PodiumStep
+          place={1}
+          player={champ}
+          avatarUrl={champ.profile_id ? avatarByProfile[champ.profile_id] ?? null : null}
+          heightClass="h-60"
+          highlighted
+        />
+        <PodiumStep
+          place={3}
+          player={terceiro}
+          avatarUrl={
+            terceiro?.profile_id ? avatarByProfile[terceiro.profile_id] ?? null : null
+          }
+          heightClass="h-32"
+        />
       </div>
 
       {outros.length > 0 && (
@@ -95,6 +140,22 @@ export function Podium({ players }: { players: Player[] }) {
           ))}
         </ol>
       )}
+
+      <style>{`
+        @keyframes champion-pulse {
+          0%, 100% {
+            box-shadow: 0 0 60px rgba(212, 175, 55, 0.4),
+                        0 0 0 0 rgba(212, 175, 55, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 80px rgba(212, 175, 55, 0.6),
+                        0 0 0 12px rgba(212, 175, 55, 0);
+          }
+        }
+        .animate-champion-pulse {
+          animation: champion-pulse 3.2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
@@ -102,11 +163,13 @@ export function Podium({ players }: { players: Player[] }) {
 function PodiumStep({
   place,
   player,
+  avatarUrl,
   heightClass,
   highlighted = false,
 }: {
   place: 1 | 2 | 3;
   player: Player | undefined;
+  avatarUrl: string | null;
   heightClass: string;
   highlighted?: boolean;
 }) {
@@ -118,16 +181,37 @@ function PodiumStep({
         ? "border-paper/40 text-paper"
         : "border-gray-soft text-gray-soft";
 
+  const avatarSize = highlighted ? "size-32 text-6xl" : "size-20 text-3xl";
+  const ringClass = highlighted
+    ? "ring-4 ring-gold shadow-[0_0_60px_rgba(212,175,55,0.4)] animate-champion-pulse"
+    : place === 2
+      ? "ring-2 ring-paper/30"
+      : "ring-2 ring-gray-soft/30";
+
   return (
     <div className="flex flex-1 flex-col items-center">
-      <div className="mb-3 text-center">
+      <div className="mb-3 flex flex-col items-center text-center">
+        {/* Avatar circular */}
+        <div className={`mb-2 overflow-hidden rounded-full ${avatarSize} ${ringClass}`}>
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt={player?.name ?? ""}
+              className="size-full object-cover"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center bg-ink-2 font-display font-light text-gold">
+              {(player?.name ?? "?").charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+
         <div className="font-display text-xs uppercase tracking-[0.3em] text-gray-soft">
           {place}º lugar
         </div>
         <div
-          className={`mt-1 font-display font-light leading-tight ${
-            highlighted ? "text-paper" : "text-paper"
-          }`}
+          className="mt-1 font-display font-light leading-tight text-paper"
           style={{ fontSize: highlighted ? "clamp(36px,5vw,72px)" : "clamp(20px,3vw,36px)" }}
         >
           {player?.name ?? "—"}

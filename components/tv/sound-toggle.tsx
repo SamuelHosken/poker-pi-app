@@ -1,7 +1,8 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { isSoundEnabled, setSoundEnabled } from "@/lib/audio/play-sound";
+import { playSynth } from "@/lib/audio/synth";
 
 function subscribe(cb: () => void): () => void {
   if (typeof window === "undefined") return () => {};
@@ -23,19 +24,32 @@ function getServerSnapshot(): boolean {
 
 export function SoundToggle() {
   const enabled = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  // Esconde o botão até hidratar pra não mostrar "Ativar som" brevemente
+  // quando o user já tinha ativado antes (estado vem do localStorage).
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated(true);
+  }, []);
 
   function toggle() {
     const next = !enabled;
     setSoundEnabled(next);
-    // "Primer" silencioso pra desbloquear autoplay no Safari/iOS
+    // "Primer" do AudioContext + audio.play() pra desbloquear autoplay no
+    // Safari/iOS. Toca uma reação inaudível dentro do gesto de toque pra
+    // criar/resumir o AudioContext sintetizado.
     if (next) {
       try {
         const a = new Audio();
         a.volume = 0;
         a.play().catch(() => {});
       } catch {}
+      // Toca um som real (baixo) pra confirmar que ativou — feedback tátil
+      playSynth("reaction", 0.6);
     }
   }
+
+  if (!hydrated) return null;
 
   return (
     <button

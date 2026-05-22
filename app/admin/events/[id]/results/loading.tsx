@@ -1,0 +1,21 @@
+export default function ResultsLoading() {
+  return (
+    <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
+      <span className="block h-3 w-16 animate-pulse rounded bg-ink-2" />
+
+      <header className="space-y-2">
+        <span className="block h-3 w-32 animate-pulse rounded bg-ink-2" />
+        <span className="block h-9 w-2/3 animate-pulse rounded bg-ink-2" />
+        <span className="block h-3 w-48 animate-pulse rounded bg-ink-2" />
+      </header>
+
+      <ul className="space-y-2 sm:hidden">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <li key={i} className="h-20 animate-pulse rounded-md bg-ink-2" />
+        ))}
+      </ul>
+
+      <div className="hidden h-96 animate-pulse rounded-lg bg-ink-2 sm:block" />
+    </main>
+  );
+}

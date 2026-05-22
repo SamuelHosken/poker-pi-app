@@ -1,19 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  startMatchOnTable,
   pauseMatch,
   resumeMatch,
   advanceLevel,
@@ -22,27 +12,24 @@ import type { Tables } from "@/lib/types/database.types";
 
 type PhysicalTable = Tables<"physical_tables">;
 type Match = Tables<"matches">;
-type Player = Tables<"players">;
 
 /**
- * V1.1: mesas não renovam mais.
- * - LIVRE → mostra "Iniciar partida"
- * - JOGANDO → mostra Pausar + Avançar nível
- * - PAUSADA → mostra Retomar
- * - FINALIZADA → mostra apenas badge "Mesa finalizada (histórico)" — não permite ação
+ * V1.2: mesas funcionam como canais do Discord — pessoas entram/saem pelo /me.
+ * Admin não inicia partida manualmente; a partida nasce automaticamente quando
+ * o primeiro jogador entra numa mesa LIVRE (ver joinTableAsPlayer).
  *
- * Botão "Iniciar Mesa Final" e "Renovar mesa" foram removidos.
+ * Admin ainda controla o cronômetro/nível:
+ * - LIVRE → mensagem "Aguardando jogadores entrarem"
+ * - JOGANDO → Pausar + Avançar nível
+ * - PAUSADA → Retomar
+ * - FINALIZADA → badge "Mesa finalizada (histórico)"
  */
 export function MatchControls({
   table,
   match,
-  presentes,
-  tableSize,
 }: {
   table: PhysicalTable;
   match: Match | undefined;
-  presentes: Player[];
-  tableSize: number;
 }) {
   if (table.state === "JOGANDO" && match) {
     return <PauseAndAdvanceControls matchId={match.id} />;
@@ -60,119 +47,11 @@ export function MatchControls({
     );
   }
 
-  // table.state === "LIVRE"
+  // table.state === "LIVRE" — mesa aberta, esperando alguém entrar via /me
   return (
-    <StartMatchControl
-      physicalTableId={table.id}
-      presentes={presentes}
-      tableSize={tableSize}
-    />
-  );
-}
-
-function StartMatchControl({
-  physicalTableId,
-  presentes,
-  tableSize,
-}: {
-  physicalTableId: string;
-  presentes: Player[];
-  tableSize: number;
-}) {
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(presentes.slice(0, tableSize).map((p) => p.id)),
-  );
-  const [pending, startTransition] = useTransition();
-
-  function toggle(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function handleStart() {
-    if (selected.size < 2) {
-      toast.error("Selecione pelo menos 2 jogadores");
-      return;
-    }
-    startTransition(async () => {
-      try {
-        await startMatchOnTable({
-          physicalTableId,
-          playerIds: Array.from(selected),
-          randomizeSeats: true,
-        });
-        toast.success("Partida iniciada");
-        setOpen(false);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Erro desconhecido");
-      }
-    });
-  }
-
-  if (presentes.length < 2) {
-    return (
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-        Aguardando jogadores PRESENTE
-      </p>
-    );
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        className="inline-flex h-11 items-center rounded-md bg-gold px-4 text-sm font-medium text-ink hover:bg-gold/90"
-      >
-        Iniciar partida
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Selecionar jogadores</DialogTitle>
-          <DialogDescription>
-            Sugestão: primeiros {tableSize} jogadores PRESENTE. Marque/desmarque conforme necessário.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="max-h-72 space-y-1 overflow-y-auto">
-          {presentes.map((p, idx) => (
-            <label
-              key={p.id}
-              className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-smoke cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selected.has(p.id)}
-                onChange={() => toggle(p.id)}
-                className="h-4 w-4 accent-gold"
-              />
-              <span className="text-paper">{p.name}</span>
-              {p.nickname && (
-                <span className="font-display text-sm italic text-gold">{p.nickname}</span>
-              )}
-              <span className="ml-auto font-mono text-[10px] text-gray-mid">#{idx + 1}</span>
-            </label>
-          ))}
-        </div>
-
-        <DialogFooter>
-          <span className="mr-auto font-mono text-xs text-gray-soft">
-            {selected.size} selecionados
-          </span>
-          <Button
-            type="button"
-            onClick={handleStart}
-            disabled={pending}
-            className="h-11 bg-gold text-ink hover:bg-gold/90 disabled:opacity-50"
-          >
-            {pending ? "Iniciando…" : "Iniciar partida"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+      Aguardando jogadores entrarem
+    </p>
   );
 }
 
