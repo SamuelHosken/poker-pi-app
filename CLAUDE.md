@@ -253,4 +253,94 @@ Para detalhes, ver `docs/01-decisoes-fechadas.md`.
 
 ---
 
+## 14. Constantes que o usuário pode pedir pra mudar
+
+Quando o user pedir mudança de **valores** ou **design** dessas coisas, vai direto nesses arquivos. Não invente fonte da verdade nova — só mexe no que tá listado aqui, sem refactor.
+
+### 14.1 Estrutura de blinds (valores SB/BB/ante/duração)
+
+**Arquivo:** `lib/tournament/blind-templates.ts`
+
+Três templates: `turbo`, `padrao` (= "Casa", 20 níveis com rebuy), `lento`. Cada um é um array `levels: BlindLevelTemplate[]` com `{ level, smallBlind, bigBlind, ante, durationMinutes }`.
+
+**Pra mudar valor de um nível:** edita direto o objeto no array. Ex.: nível 6 do `padrao` é `{ level: 6, smallBlind: 700, bigBlind: 1400, ante: 0, durationMinutes: 20 }`.
+
+**Pra adicionar/remover nível:** ajusta o array. Não esquece de manter `level` sequencial (1, 2, 3, …).
+
+**Atenção crítica — eventos JÁ CRIADOS NÃO se atualizam.** O template é copiado pra `blind_levels` no banco só na hora do `createEvent`. Mudou no arquivo, só vale pra eventos novos.
+
+**Aplicar em evento existente:** o admin clica "Resetar blinds pro template Casa" em `/admin/events/[id]/tv` — chama `resetBlindsFromTemplate({eventId, templateKey})`. Apaga `blind_levels` e recria com o template atual do código.
+
+**Tipos:** `BlindTemplateKey` em `lib/types/domain.ts` (turbo | padrao | lento). Se for adicionar novo template, atualiza o tipo + o select em `app/admin/events/new/new-event-form.tsx:144`.
+
+### 14.2 Fichas da tela "Mostrar dinheiro" (denominações + cores)
+
+**Arquivo:** `app/(public)/me/mesa/[tableId]/dinheiro/chip-calculator.tsx`
+
+Array `CHIPS: ChipMeta[]` no topo (linha ~19). Cada ficha tem `{ value, ring, inner, text }`:
+- `value` (Denomination): valor inteiro (1, 5, 10, 25, 50, 100). Se mudar/adicionar valor, atualiza o tipo `Denomination` no mesmo arquivo (linha ~9) — é union de literais.
+- `ring`: bg color da ficha (classes Tailwind do anel externo)
+- `inner`: cor da borda tracejada interna
+- `text`: cor do número central
+
+**Pra mudar valor existente:** edita value + Denomination type juntos.
+
+**Pra adicionar nova ficha (ex.: 500):**
+1. Adiciona `| 500` no tipo `Denomination`
+2. Adiciona objeto em `CHIPS` com value: 500 + cores
+3. Adiciona entrada em `counts` state inicial `{ ..., 500: 0 }` (linha ~30)
+4. `clearAll` também (linha ~65)
+
+**Animação/visual da ficha** (overlay do TV): `components/tv/chip-display-overlay.tsx`, `CHIP_DEFS` (linha ~263). É o conjunto que CAI na chuva de fichas. Espelhar valores/cores aqui também se quiser consistência visual.
+
+### 14.3 Hot streak (tiers de fogo no avatar)
+
+**Arquivo:** `components/tv/poker-table.tsx`
+
+- **Tier de chamas no canto** (`CornerFlames`): `count - 1` flames até 3 max. Tier começa em count=2.
+- **Aura no avatar** (`fireGlowStyle`): 3 tiers em box-shadow inline:
+  - count >= 5: laranja
+  - count >= 7: laranja-vermelho
+  - count >= 10: vermelho intenso
+- **Chama subindo** (>=7) + **badge "ON FIRE"** (>=7, dourado em >=10).
+- **Tier-crossing sound**: array `TIERS = [2, 3, 4, 5, 6, 7, 10]` em `event-tv.tsx` — toca synth quando o count cruza um desses valores.
+
+Pra mudar limiares: ajusta os números nas comparações + array `TIERS`.
+
+### 14.4 Som / volume
+
+**Arquivo:** `lib/audio/synth.ts`
+
+Cada efeito tem volume entre 0.4 e 0.8. Master gain em 1.0. Pra subir/baixar global, mexe no master. Pra um efeito específico, no `volume` do `playSynth(key, volume)` no caller — vários estão hardcoded (`playSynth("level-up", 0.55)`, etc.).
+
+### 14.5 LiveRefresh — intervalos de polling
+
+**Arquivo:** `components/live-refresh.tsx` (componente). Os intervalos ficam nas páginas que usam:
+- `/me` 5s, `/admin/events/[id]` 5s, `/admin/events/[id]/tv` 5s
+- `/admin/events/[id]/results` 10s, `/admin/events` 10s
+- `/admin/profiles` 15s
+- `/admin/galeria` 30s, `/admin/events/lixeira` 30s
+
+**Pra mudar:** edita o `intervalMs` na chamada `<LiveRefresh intervalMs={X} />` da página específica.
+
+### 14.6 Outros valores comumente ajustados
+
+| O que | Onde |
+|---|---|
+| Tempo do chip overlay (15s) | `components/tv/chip-display-overlay.tsx` → `DISPLAY_MS` |
+| TTL de reação (5s) | `lib/realtime/use-reactions.ts` → `REACTION_TTL_MS` |
+| Duração de animações (entrada, eliminação, ghost) | `components/tv/poker-table.tsx` keyframes no `<style>` |
+| Tamanho do avatar (md/lg) | `components/ui/avatar-image.tsx` + `avatarBox` em poker-table |
+| Cor gold/ink/paper | `app/globals.css` (Tailwind tokens) |
+| Tier do "On Fire" badge dourado | poker-table.tsx → função `OnFireBadge` (>=10) |
+
+### Princípios ao mexer nesses valores
+
+1. **Não refactor.** Só mexe no objeto/array. Sem reorganizar arquivos.
+2. **Mantém os tipos atualizados** se o valor faz parte de um union (`Denomination`, `BlindTemplateKey`).
+3. **Lembrar do banco:** valores que viram registros (blinds em `blind_levels`) **não retroagem** em eventos existentes.
+4. **Build + lint** depois de qualquer mudança: `npx tsc --noEmit -p .` e `npx next build`.
+
+---
+
 *Fim do CLAUDE.md.*
