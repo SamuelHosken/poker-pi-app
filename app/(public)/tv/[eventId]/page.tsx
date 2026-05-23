@@ -70,6 +70,7 @@ export default async function TVPage({
           .select("*")
           .in("match_id", activeMatchIds)
           .is("eliminated_at", null)
+          .order("created_at", { ascending: true })
       : Promise.resolve({ data: [] as Tables<"participations">[] }),
     profileIds.length && adminClient
       ? adminClient.from("profiles").select("id, avatar_url").in("id", profileIds)

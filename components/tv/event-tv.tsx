@@ -15,7 +15,6 @@ import {
   type CelebrationData,
 } from "./match-finish-celebration";
 import { Podium } from "./podium";
-import { AnimatedNewMatch, type NewMatchData } from "./new-match-overlay";
 import { SoundToggle } from "./sound-toggle";
 import { ChipDisplayOverlay } from "./chip-display-overlay";
 import { TvPausedOverlay } from "./tv-paused-overlay";
@@ -72,7 +71,6 @@ export function EventTV({
 
   const [toasts, setToasts] = useState<EliminationToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
-  const [newMatch, setNewMatch] = useState<NewMatchData | null>(null);
   // V1.3: IDs de seats em transição (entrada / saída) pra disparar animações
   const [enteringSeatIds, setEnteringSeatIds] = useState<Set<string>>(new Set());
   const [ghostSeats, setGhostSeats] = useState<
@@ -187,17 +185,11 @@ export function EventTV({
           });
           if (payload.eventType === "DELETE") return;
 
-          // Nova partida → sorteio animado (uma vez por match)
-          if (payload.eventType === "INSERT" && !seenNewMatches.current.has(next.id)) {
+          // V1.3: sorteio animado REMOVIDO. Jogadores aparecem em volta da
+          // mesa sem cadeira sorteada. Mantemos seenNewMatches só pra evitar
+          // efeitos antigos sobre matches já existentes.
+          if (payload.eventType === "INSERT") {
             seenNewMatches.current.add(next.id);
-            const ptable = tablesRef.current.find((tt) => tt.id === next.physical_table_id);
-            if (ptable) {
-              setNewMatch({
-                matchId: next.id,
-                tableNumber: ptable.table_number,
-                isFinalTable: next.is_final_table,
-              });
-            }
           }
 
           if (
@@ -377,9 +369,14 @@ export function EventTV({
 
   // V1.3: seats por match — inclui seats ativos + ghosts (eliminating) + flags
   // de entrada (entering) pras animações na TV.
+  // Pré-ordena participações por created_at pra que os seats fiquem na ordem
+  // de chegada (sem sorteio de cadeira).
   const seatsByMatch = useMemo(() => {
     const map: Record<string, PokerSeat[]> = {};
-    for (const p of participations) {
+    const sortedParts = [...participations].sort((a, b) =>
+      a.created_at.localeCompare(b.created_at),
+    );
+    for (const p of sortedParts) {
       if (p.eliminated_at) continue;
       const player = playersById.get(p.player_id);
       if (!player) continue;
@@ -411,9 +408,9 @@ export function EventTV({
         isEliminating: true,
       });
     }
-    for (const arr of Object.values(map)) {
-      arr.sort((a, b) => (a.seatNumber ?? 99) - (b.seatNumber ?? 99));
-    }
+    // Seats já foram populados na ordem de chegada (sortedParts). Ghosts
+    // vão no fim — eles saem da animação rápido, então a posição visual
+    // exata não importa.
     return map;
   }, [participations, playersById, enteringSeatIds, ghostSeats, eliminationCounts]);
 
@@ -527,13 +524,6 @@ export function EventTV({
           onDone={() => setCelebration(null)}
         />
       )}
-
-      {/* Sorteio animado quando uma nova partida começa */}
-      <AnimatedNewMatch
-        data={newMatch}
-        playersById={playersById}
-        onDone={() => setNewMatch(null)}
-      />
 
       {/* Botão flutuante pra ativar som (autoplay policy) */}
       <SoundToggle />

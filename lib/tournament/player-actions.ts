@@ -198,27 +198,18 @@ export async function joinTableAsPlayer(physicalTableId: string): Promise<{ matc
 
   if (!match) throw new Error("Erro: match não resolvido.");
 
-  // 5) Calcula próxima cadeira. Filtra por eliminated_at IS NULL — cadeira
-  // de player eliminado/que saiu pode ser reaproveitada.
-  const { data: occupiedSeats } = await admin
-    .from("participations")
-    .select("seat_number")
-    .eq("match_id", match.id)
-    .is("eliminated_at", null);
-  const taken = new Set(
-    (occupiedSeats ?? []).map((p) => p.seat_number).filter((n): n is number => n != null),
-  );
-  let seat = 1;
-  while (taken.has(seat)) seat++;
+  // V1.3: sorteio de cadeira REMOVIDO. Jogador entra e fica em volta da mesa,
+  // sem seat_number fixo. Posição visual na TV/mesa segue a ordem de chegada
+  // (participations.created_at). seat_number fica null.
 
-  // 6) UPSERT participation: se já existe (player jogou nessa mesa antes e
+  // UPSERT participation: se já existe (player jogou nessa mesa antes e
   // foi eliminado), revive a row limpando eliminated_at / eliminated_by /
   // final_position. Evita o duplicate key constraint.
   const { error: partErr } = await admin.from("participations").upsert(
     {
       match_id: match.id,
       player_id: player.id,
-      seat_number: seat,
+      seat_number: null,
       eliminated_at: null,
       eliminated_by_player_id: null,
       final_position: null,
@@ -454,11 +445,11 @@ export async function getTableForPlayer(physicalTableId: string): Promise<TableV
     match
       ? admin
           .from("participations")
-          .select("id, player_id, seat_number, eliminated_at")
+          .select("id, player_id, seat_number, eliminated_at, created_at")
           .eq("match_id", match.id)
           .is("eliminated_at", null)
-          .order("seat_number", { ascending: true })
-      : Promise.resolve({ data: [] as { id: string; player_id: string; seat_number: number | null; eliminated_at: string | null }[] }),
+          .order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] as { id: string; player_id: string; seat_number: number | null; eliminated_at: string | null; created_at: string }[] }),
     otherIds.length > 0
       ? admin
           .from("matches")
