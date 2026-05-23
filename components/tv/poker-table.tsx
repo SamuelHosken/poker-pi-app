@@ -11,6 +11,9 @@ export type PokerSeat = {
   // V1.3: animações transitórias na TV
   isEntering?: boolean; // entrou agora — pop-in
   isEliminating?: boolean; // saiu agora — flash vermelho + skull + fade out
+  // V1.3: número de eliminações que o player fez no evento. Drives o "fogo":
+  // 2-4 = chamas no canto; 5+ = aura pulsando; cor/intensidade escalam.
+  eliminationCount?: number;
 };
 
 export type SeatReaction = {
@@ -127,6 +130,20 @@ export function PokerTable({
                     animationDelay: `${i * -0.85}s`,
                   }}
                 >
+                  {/* V1.3: HOT STREAK — aura quando jogador tem 5+ kills,
+                      cresce/intensifica conforme `eliminationCount`. */}
+                  {!s.isEliminating &&
+                    (s.eliminationCount ?? 0) >= 5 && (
+                      <FireAura count={s.eliminationCount ?? 0} />
+                    )}
+
+                  {/* V1.3: HOT STREAK — chamas no canto a partir de 2 kills.
+                      1 chama em 2 kills, 2 em 3 kills, 3 em 4+ kills. */}
+                  {!s.isEliminating &&
+                    (s.eliminationCount ?? 0) >= 2 && (
+                      <CornerFlames count={s.eliminationCount ?? 0} />
+                    )}
+
                   {/* Reações flutuantes — saem do topo do avatar */}
                   {seatReactions.map((r) => (
                     <span
@@ -192,6 +209,10 @@ export function PokerTable({
                   >
                     {s.isEliminating ? "ELIMINADO" : displayLabel}
                   </span>
+                  {/* V1.3: badge "ON FIRE" pra streak alto (7+ kills) */}
+                  {!s.isEliminating && (s.eliminationCount ?? 0) >= 7 && (
+                    <OnFireBadge count={s.eliminationCount ?? 0} />
+                  )}
                 </div>
               </div>
             );
@@ -268,7 +289,113 @@ export function PokerTable({
           80% { transform: translate(-50%, -38px) scale(1); opacity: 1; }
           100% { transform: translate(-50%, -56px) scale(0.9); opacity: 0; }
         }
+        /* V1.3: hot streak — chamas tremulando no canto do avatar */
+        @keyframes fire-flicker {
+          0%, 100% { transform: scale(1) rotate(-4deg); opacity: 0.95; }
+          50% { transform: scale(1.18) rotate(4deg); opacity: 1; }
+        }
+        /* Aura pulsando atrás do avatar (5+ kills) */
+        @keyframes fire-aura {
+          0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+        }
+        /* Chama subindo de tempos em tempos (7+ kills) */
+        @keyframes fire-rise {
+          0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+          15% { opacity: 1; }
+          100% { transform: translate(-50%, -52px) scale(1.15); opacity: 0; }
+        }
       `}</style>
     </div>
+  );
+}
+
+/* ============================================================
+ * V1.3 — Hot streak helpers (aura, chamas no canto, badge ON FIRE)
+ * ============================================================ */
+
+function CornerFlames({ count }: { count: number }) {
+  // 2 kills = 1 chama, 3 = 2 chamas, 4+ = 3 chamas
+  const n = Math.min(count - 1, 3);
+  return (
+    <div className="pointer-events-none absolute -top-2 -right-1 z-10 flex">
+      {Array.from({ length: n }).map((_, idx) => (
+        <span
+          key={idx}
+          aria-hidden
+          className="text-sm sm:text-base"
+          style={{
+            marginLeft: idx === 0 ? 0 : "-6px",
+            animation: `fire-flicker ${1.4 + idx * 0.25}s ease-in-out infinite`,
+            animationDelay: `${idx * -0.5}s`,
+            filter: "drop-shadow(0 0 4px rgba(249,115,22,0.85))",
+          }}
+        >
+          🔥
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function FireAura({ count }: { count: number }) {
+  // 5 = aura suave laranja. 7 = cor vira vermelha. 10+ = vermelho/dourado.
+  // Tamanho cresce linearmente até saturar em ~12 kills.
+  const intensity = Math.min((count - 5) / 7, 1); // 0..1
+  const size = 130 + intensity * 70; // 130%..200%
+  const opacity = 0.45 + intensity * 0.35;
+  const color =
+    count >= 10
+      ? "rgba(220,38,38,0.9)" // vermelho mais escuro
+      : count >= 7
+        ? "rgba(239,68,68,0.85)"
+        : "rgba(249,115,22,0.85)";
+  return (
+    <>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          width: `${size}%`,
+          height: `${size}%`,
+          background: `radial-gradient(circle, ${color} 0%, rgba(0,0,0,0) 70%)`,
+          opacity,
+          filter: "blur(10px)",
+          animation: "fire-aura 1.8s ease-in-out infinite",
+        }}
+      />
+      {/* Chama subindo periodicamente em streaks altos */}
+      {count >= 7 && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-0 z-10 text-lg sm:text-xl"
+          style={{
+            animation: `fire-rise ${count >= 10 ? 1.6 : 2.4}s ease-out infinite`,
+            filter: "drop-shadow(0 0 6px rgba(239,68,68,0.9))",
+          }}
+        >
+          🔥
+        </span>
+      )}
+    </>
+  );
+}
+
+function OnFireBadge({ count }: { count: number }) {
+  // 7-9 = vermelho. 10+ = dourado destacado.
+  const isPeak = count >= 10;
+  return (
+    <span
+      className={`absolute -bottom-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.15em] shadow-md sm:text-[9px] ${
+        isPeak
+          ? "bg-gold text-ink"
+          : "bg-red-poker/90 text-paper"
+      }`}
+      style={{
+        animation: "fire-flicker 1.6s ease-in-out infinite",
+      }}
+    >
+      {isPeak ? `🔥 ${count} kills` : "🔥 On Fire"}
+    </span>
   );
 }

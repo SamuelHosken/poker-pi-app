@@ -384,6 +384,7 @@ export type TableSeat = {
   nickname: string | null;
   isYou: boolean;
   avatarUrl: string | null;
+  eliminationCount: number;
 };
 
 export type TableView = {
@@ -518,6 +519,30 @@ export async function getTableForPlayer(physicalTableId: string): Promise<TableV
     });
   }
 
+  // V1.3: contagem de eliminações por player (mesma idéia do que a TV faz).
+  // Restringe ao escopo do event_id desta mesa pra incluir kills feitos em
+  // outra mesa do mesmo evento (caso o player troque de mesa, etc).
+  const elimCounts = await (async (): Promise<Record<string, number>> => {
+    const { data: evMatches } = await admin
+      .from("matches")
+      .select("id")
+      .eq("event_id", table.event_id);
+    const mIds = (evMatches ?? []).map((mm) => mm.id);
+    if (mIds.length === 0) return {};
+    const { data: elims } = await admin
+      .from("participations")
+      .select("eliminated_by_player_id")
+      .in("match_id", mIds)
+      .not("eliminated_by_player_id", "is", null);
+    const acc: Record<string, number> = {};
+    for (const e of elims ?? []) {
+      const id = e.eliminated_by_player_id;
+      if (!id) continue;
+      acc[id] = (acc[id] ?? 0) + 1;
+    }
+    return acc;
+  })();
+
   const seats: TableSeat[] = (parts ?? []).map((p) => {
     const player = playersById.get(p.player_id);
     return {
@@ -528,6 +553,7 @@ export async function getTableForPlayer(physicalTableId: string): Promise<TableV
       nickname: player?.nickname ?? null,
       isYou: p.player_id === myPlayer.id,
       avatarUrl: player?.avatarUrl ?? null,
+      eliminationCount: elimCounts[p.player_id] ?? 0,
     };
   });
 

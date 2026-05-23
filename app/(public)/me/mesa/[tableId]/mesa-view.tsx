@@ -145,6 +145,7 @@ export function MesaView({ initial }: { initial: TableView }) {
             seatNumber: s.seatNumber,
             isHighlighted: s.isYou,
             avatarUrl: s.avatarUrl,
+            eliminationCount: s.eliminationCount,
           }))}
           avatarSize="md"
           reactions={reactions}

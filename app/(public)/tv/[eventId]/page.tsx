@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { EventTV } from "@/components/tv/event-tv";
 import { EmptyTV } from "@/components/tv/empty-tv";
+import { getEliminationCounts } from "@/lib/tournament/eliminations";
 import type { Database, Tables } from "@/lib/types/database.types";
 
 export const metadata = {
@@ -78,6 +79,8 @@ export default async function TVPage({
   const avatarByProfile: Record<string, string | null> = {};
   for (const p of profilesAvatars ?? []) avatarByProfile[p.id] = p.avatar_url;
 
+  const eliminationCounts = await getEliminationCounts(eventId);
+
   return (
     <EventTV
       event={event}
@@ -87,6 +90,7 @@ export default async function TVPage({
       initialPlayers={players ?? []}
       initialParticipations={participations ?? []}
       avatarByProfile={avatarByProfile}
+      initialEliminationCounts={eliminationCounts}
     />
   );
 }

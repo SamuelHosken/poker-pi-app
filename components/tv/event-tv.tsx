@@ -48,6 +48,7 @@ export function EventTV({
   initialPlayers,
   initialParticipations,
   avatarByProfile = {},
+  initialEliminationCounts = {},
 }: {
   event: Event;
   initialTables: PhysicalTable[];
@@ -56,12 +57,18 @@ export function EventTV({
   initialPlayers: Player[];
   initialParticipations: Participation[];
   avatarByProfile?: Record<string, string | null>;
+  initialEliminationCounts?: Record<string, number>;
 }) {
   const [event, setEvent] = useState(initialEvent);
   const [tables, setTables] = useState(initialTables);
   const [matches, setMatches] = useState(initialMatches);
   const [players, setPlayers] = useState(initialPlayers);
   const [participations, setParticipations] = useState(initialParticipations);
+  // Contagem de eliminações por playerId. Incrementa via Realtime quando chega
+  // participation com eliminated_by_player_id setado. Drives o "fogo".
+  const [eliminationCounts, setEliminationCounts] = useState<
+    Record<string, number>
+  >(initialEliminationCounts);
 
   const [toasts, setToasts] = useState<EliminationToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
@@ -101,6 +108,9 @@ export function EventTV({
 
   // Refs de dedup pra eventos que disparam ações visuais (toast/celebração).
   const seenEliminations = useRef<Set<string>>(new Set());
+  // Dedup do incremento de eliminationCounts (separado de seenEliminations
+  // pra não conflitar com a lógica de toast).
+  const countedKillerForPart = useRef<Set<string>>(new Set());
   const seenFinishes = useRef<Set<string>>(new Set());
   const seenNewMatches = useRef<Set<string>>(new Set());
   // Pré-popula com FINALIZADAs já existentes — evita celebração ao montar.
@@ -287,6 +297,20 @@ export function EventTV({
               setTimeout(() => {
                 setGhostSeats((prev) => prev.filter((g) => g.id !== row.id));
               }, 2500);
+
+              // V1.3: incrementa contador de "kills" do eliminador → fogo na TV
+              const killerId = row.eliminated_by_player_id;
+              if (killerId && !countedKillerForPart.current.has(row.id)) {
+                countedKillerForPart.current.add(row.id);
+                setEliminationCounts((prev) => {
+                  const before = prev[killerId] ?? 0;
+                  const after = before + 1;
+                  // Tier-crossing: toca um "level-up" quando entra em tier visível
+                  const TIERS = [2, 3, 4, 5, 6, 7, 10];
+                  if (TIERS.includes(after)) playSynth("level-up", 0.55);
+                  return { ...prev, [killerId]: after };
+                });
+              }
             }
           }
 
@@ -368,6 +392,7 @@ export function EventTV({
         isHighlighted: false,
         avatarUrl: player.avatarUrl,
         isEntering: enteringSeatIds.has(p.id),
+        eliminationCount: eliminationCounts[p.player_id] ?? 0,
       };
       (map[p.match_id] ??= []).push(seat);
     }
@@ -390,7 +415,7 @@ export function EventTV({
       arr.sort((a, b) => (a.seatNumber ?? 99) - (b.seatNumber ?? 99));
     }
     return map;
-  }, [participations, playersById, enteringSeatIds, ghostSeats]);
+  }, [participations, playersById, enteringSeatIds, ghostSeats, eliminationCounts]);
 
   const presentes = players.filter((p) => p.state === "PRESENTE").length;
   const classificados = players.filter(
