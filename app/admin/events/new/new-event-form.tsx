@@ -141,9 +141,9 @@ export function NewEventForm() {
           defaultValue="padrao"
           className="h-12 w-full rounded-md border border-line bg-ink-2 px-3 text-sm text-paper"
         >
-          <option value="turbo">Turbo (~2h)</option>
-          <option value="padrao">Padrão (~3h)</option>
-          <option value="lento">Lento (~4-5h)</option>
+          <option value="turbo">Turbo (~2h, 10 níveis)</option>
+          <option value="padrao">Casa (~5-6h, 20 níveis com rebuy)</option>
+          <option value="lento">Lento (~4-5h, 15 níveis)</option>
         </select>
       </Field>
 

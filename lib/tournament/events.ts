@@ -12,7 +12,7 @@ import { canTransitionEvent, transitionErrorMessage } from "@/lib/tournament/tra
 import { getBlindTemplate } from "@/lib/tournament/blind-templates";
 import { logAction } from "@/lib/tournament/action-log";
 import { requireAdmin } from "@/lib/tournament/auth";
-import type { EventState } from "@/lib/types/domain";
+import type { EventState, BlindTemplateKey } from "@/lib/types/domain";
 import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
 
 type Event = Tables<"events">;
@@ -214,6 +214,90 @@ export async function setAutoAdvanceBlinds(input: {
 
   revalidatePath(`/admin/events/${input.eventId}/tv`);
   revalidatePath(`/admin/events/${input.eventId}`);
+}
+
+/**
+ * V1.3 — Apaga todas as blind_levels do evento e recria do zero com o
+ * template selecionado, replicando pra cada physical_table do evento.
+ *
+ * Usado quando o admin quer "voltar pro padrão Casa" depois de eventos
+ * antigos terem sido criados com template diferente, ou depois de edição
+ * manual que quer descartar.
+ *
+ * ATENÇÃO: invalida qualquer `matches.current_level_id` que apontava pra
+ * uma blind_level deletada. A action reseta esses match.current_level_id
+ * pro primeiro nível novo da mesa correspondente.
+ */
+export async function resetBlindsFromTemplate(input: {
+  eventId: string;
+  templateKey: BlindTemplateKey;
+}): Promise<void> {
+  await requireAdmin();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const template = getBlindTemplate(input.templateKey);
+
+  // 1) Mesas do evento (precisamos dos IDs pra recriar blinds × mesa)
+  const { data: tables, error: tblErr } = await supabase
+    .from("physical_tables")
+    .select("id")
+    .eq("event_id", input.eventId);
+  if (tblErr) throw new Error(`Erro ao buscar mesas: ${tblErr.message}`);
+  if (!tables || tables.length === 0) {
+    throw new Error("Evento sem mesas — não dá pra resetar blinds.");
+  }
+
+  // 2) Apaga blinds atuais do evento
+  const { error: delErr } = await supabase
+    .from("blind_levels")
+    .delete()
+    .eq("event_id", input.eventId);
+  if (delErr) throw new Error(`Erro ao apagar blinds antigos: ${delErr.message}`);
+
+  // 3) Recria blinds com o template, replicando pra cada mesa
+  const blindRows: Inserts<"blind_levels">[] = tables.flatMap((t) =>
+    template.levels.map((lvl) => ({
+      event_id: input.eventId,
+      physical_table_id: t.id,
+      level_number: lvl.level,
+      small_blind: lvl.smallBlind,
+      big_blind: lvl.bigBlind,
+      ante: lvl.ante,
+      duration_minutes: lvl.durationMinutes,
+      is_final_table: false,
+    })),
+  );
+  const { data: createdLevels, error: insErr } = await supabase
+    .from("blind_levels")
+    .insert(blindRows)
+    .select("id, physical_table_id, level_number");
+  if (insErr) throw new Error(`Erro ao recriar blinds: ${insErr.message}`);
+
+  // 4) Re-aponta matches.current_level_id pro nível 1 da mesa correspondente
+  //    (porque deletamos os antigos — FK fica órfã).
+  const firstByTable = new Map<string, string>();
+  for (const l of createdLevels ?? []) {
+    if (l.level_number === 1) firstByTable.set(l.physical_table_id, l.id);
+  }
+  const { data: matches } = await supabase
+    .from("matches")
+    .select("id, physical_table_id, state")
+    .eq("event_id", input.eventId)
+    .neq("state", "FINALIZADA");
+  for (const m of matches ?? []) {
+    const lvlId = firstByTable.get(m.physical_table_id);
+    if (lvlId) {
+      await supabase
+        .from("matches")
+        .update({ current_level_id: lvlId })
+        .eq("id", m.id);
+    }
+  }
+
+  revalidatePath(`/admin/events/${input.eventId}`);
+  revalidatePath(`/admin/events/${input.eventId}/tv`);
+  revalidatePath(`/tv/${input.eventId}`);
 }
 
 /**

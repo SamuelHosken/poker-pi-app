@@ -10,6 +10,7 @@ import { BlindsEditor } from "./blinds-editor";
 import { AllTablesControls } from "./all-tables-controls";
 import { TvPauseControl } from "./tv-pause-control";
 import { AutoAdvanceToggle } from "./auto-advance-toggle";
+import { ResetBlindsButton } from "./reset-blinds-button";
 import { LiveRefresh } from "@/components/live-refresh";
 
 const STATE_LABEL: Record<string, string> = {
@@ -133,6 +134,8 @@ export default async function TvConfigPage({
           eventId={event.id}
           enabled={event.auto_advance_blinds ?? false}
         />
+
+        <ResetBlindsButton eventId={event.id} />
 
         <ul className="space-y-4">
           {physicalTables.map((t) => {
