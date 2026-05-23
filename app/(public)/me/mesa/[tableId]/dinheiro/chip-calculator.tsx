@@ -1,44 +1,77 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Eraser, Eye, Minus } from "lucide-react";
 import { requestChipDisplay } from "@/lib/tournament/player-actions";
+import { CHIP_VERSION } from "@/lib/chip-version";
 
-type Denomination = 1 | 5 | 10 | 25 | 50 | 100;
+// V1.3 — Fichas da casa (atualizado). Bump CHIP_VERSION em lib/chip-version.ts
+// SEMPRE que mexer aqui pra forçar reload nos clientes com a página aberta.
+type Denomination = 100 | 500 | 1000 | 5000 | 25000;
 
 type ChipMeta = {
   value: Denomination;
-  // Cores no padrão de fichas de torneio
-  ring: string; // anel externo
+  ring: string; // anel externo (bg)
   inner: string; // contorno interno tracejado
   text: string; // cor do número
 };
 
+// Cores escolhidas pra ficarem distintas em torneio:
+// 100 = preto com borda gold (premium)
+// 500 = roxo / violeta
+// 1000 = amarelo / âmbar
+// 5000 = rosa-vermelho / magenta
+// 25000 = azul céu
 const CHIPS: ChipMeta[] = [
-  { value: 1, ring: "bg-stone-200", inner: "border-stone-500/40", text: "text-ink" },
-  { value: 5, ring: "bg-red-700", inner: "border-white/50", text: "text-white" },
-  { value: 10, ring: "bg-blue-700", inner: "border-white/50", text: "text-white" },
-  { value: 25, ring: "bg-emerald-700", inner: "border-white/50", text: "text-white" },
-  { value: 50, ring: "bg-orange-600", inner: "border-white/50", text: "text-white" },
   { value: 100, ring: "bg-black border-2 border-gold", inner: "border-gold/40", text: "text-gold" },
+  { value: 500, ring: "bg-violet-700", inner: "border-white/50", text: "text-white" },
+  { value: 1000, ring: "bg-amber-500", inner: "border-ink/40", text: "text-ink" },
+  { value: 5000, ring: "bg-rose-700", inner: "border-white/50", text: "text-white" },
+  { value: 25000, ring: "bg-sky-600", inner: "border-white/50", text: "text-white" },
 ];
+
+const ZERO_COUNTS: Record<Denomination, number> = {
+  100: 0,
+  500: 0,
+  1000: 0,
+  5000: 0,
+  25000: 0,
+};
 
 export function ChipCalculator({ tableId }: { tableId: string }) {
   const router = useRouter();
-  const [counts, setCounts] = useState<Record<Denomination, number>>({
-    1: 0,
-    5: 0,
-    10: 0,
-    25: 0,
-    50: 0,
-    100: 0,
-  });
+  const [counts, setCounts] = useState<Record<Denomination, number>>(ZERO_COUNTS);
   const [pulse, setPulse] = useState<Denomination | null>(null);
   const [pending, startTransition] = useTransition();
   // Dedup de incremento entre onClick + onPointerUp (ambos disparam no touch)
   const lastAddAt = useRef<{ val: Denomination; ts: number } | null>(null);
+
+  // Auto-reload se o servidor reportar uma versão de ficha diferente da
+  // que esse bundle conhece. Funciona pra todo cliente com a página aberta
+  // — em até 15s eles refrescam sozinhos depois de deploy.
+  useEffect(() => {
+    let mounted = true;
+    async function check() {
+      try {
+        const res = await fetch("/api/chip-version", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { version?: string };
+        if (mounted && data.version && data.version !== CHIP_VERSION) {
+          window.location.reload();
+        }
+      } catch {
+        /* offline / falha: tenta de novo no próximo intervalo */
+      }
+    }
+    check();
+    const id = setInterval(check, 15_000);
+    return () => {
+      mounted = false;
+      clearInterval(id);
+    };
+  }, []);
 
   const total = (Object.entries(counts) as [string, number][]).reduce(
     (acc, [val, n]) => acc + Number(val) * n,
@@ -62,7 +95,7 @@ export function ChipCalculator({ tableId }: { tableId: string }) {
   }
 
   function clearAll() {
-    setCounts({ 1: 0, 5: 0, 10: 0, 25: 0, 50: 0, 100: 0 });
+    setCounts(ZERO_COUNTS);
   }
 
   function show() {
@@ -219,7 +252,13 @@ function ChipVisual({
         className={`absolute inset-[12%] rounded-full border-2 border-dashed ${chip.inner}`}
         aria-hidden
       />
-      <span className={`relative ${chip.text}`}>{chip.value}</span>
+      <span className={`relative ${chip.text}`}>{formatChip(chip.value)}</span>
     </span>
   );
+}
+
+/** Encurta valores ≥ 1000 pra "1K", "5K", "25K" — caber dentro da ficha. */
+function formatChip(v: number): string {
+  if (v >= 1000) return `${v / 1000}K`;
+  return String(v);
 }

@@ -268,13 +268,14 @@ export function ChipDisplayOverlay({
 
 type ChipDef = { v: number; bg: string; inner: string; text: string };
 
+// V1.3: alinhado com chip-calculator (100/500/1000/5000/25000).
+// Cores espelham o componente do player pra consistência visual.
 const CHIP_DEFS: ChipDef[] = [
-  { v: 1, bg: "#e7e5e4", inner: "rgba(0,0,0,0.25)", text: "#1c1917" },
-  { v: 5, bg: "#b91c1c", inner: "rgba(255,255,255,0.5)", text: "#fff" },
-  { v: 10, bg: "#1d4ed8", inner: "rgba(255,255,255,0.5)", text: "#fff" },
-  { v: 25, bg: "#047857", inner: "rgba(255,255,255,0.5)", text: "#fff" },
-  { v: 50, bg: "#ea580c", inner: "rgba(255,255,255,0.5)", text: "#fff" },
   { v: 100, bg: "#0a0a0a", inner: "rgba(212,175,55,0.6)", text: "#d4af37" },
+  { v: 500, bg: "#6d28d9", inner: "rgba(255,255,255,0.5)", text: "#fff" },
+  { v: 1000, bg: "#f59e0b", inner: "rgba(28,25,23,0.4)", text: "#1c1917" },
+  { v: 5000, bg: "#be123c", inner: "rgba(255,255,255,0.5)", text: "#fff" },
+  { v: 25000, bg: "#0284c7", inner: "rgba(255,255,255,0.5)", text: "#fff" },
 ];
 
 /** Hash determinístico de string pra seed numérico estável por display. */
@@ -320,7 +321,7 @@ function Chip({ def, size }: { def: ChipDef; size: number }) {
         }}
       />
       <span className="relative" style={{ color: def.text }}>
-        {def.v}
+        {def.v >= 1000 ? `${def.v / 1000}K` : def.v}
       </span>
     </span>
   );
