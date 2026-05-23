@@ -21,6 +21,7 @@ import {
 } from "@/lib/tournament/player-actions";
 import { PokerTable } from "@/components/tv/poker-table";
 import { useReactions } from "@/lib/realtime/use-reactions";
+import { useAvatarRefresh } from "@/lib/realtime/avatar-broadcast";
 import { ReactionBar } from "./reaction-bar";
 
 type Participation = {
@@ -113,6 +114,8 @@ export function MesaView({ initial }: { initial: TableView }) {
 
   // Reações em tempo real (broadcast por evento)
   const { reactions, sendReaction } = useReactions(initial.eventId);
+  // Re-fetch quando outra pessoa troca a foto de perfil
+  useAvatarRefresh();
   const mySeat = seats.find((s) => s.isYou);
   function handleReact(emoji: string) {
     if (!mySeat) return;

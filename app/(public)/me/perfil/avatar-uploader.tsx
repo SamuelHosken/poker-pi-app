@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Camera, Trash2 } from "lucide-react";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { removeAvatar, uploadAvatar } from "@/lib/tournament/profiles";
+import { broadcastAvatarUpdate } from "@/lib/realtime/avatar-broadcast";
 
 const TARGET_SIZE = 256;
 const JPEG_QUALITY = 0.85;
@@ -88,6 +89,8 @@ export function AvatarUploader({
         toast.success("Foto atualizada");
         setPreview(null);
         router.refresh();
+        // Avisa TVs e mesas abertas — elas dão router.refresh e puxam a URL nova
+        broadcastAvatarUpdate().catch(() => {});
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro ao enviar");
         setPreview(null);
@@ -104,6 +107,7 @@ export function AvatarUploader({
         toast.success("Foto removida");
         setPreview(null);
         router.refresh();
+        broadcastAvatarUpdate().catch(() => {});
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro");
       }

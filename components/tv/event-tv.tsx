@@ -21,6 +21,7 @@ import { ChipDisplayOverlay } from "./chip-display-overlay";
 import { TvPausedOverlay } from "./tv-paused-overlay";
 import { RealtimeStatus } from "./realtime-status";
 import { useReactions } from "@/lib/realtime/use-reactions";
+import { useAvatarRefresh } from "@/lib/realtime/avatar-broadcast";
 import { EmptyTV } from "./empty-tv";
 import type { PokerSeat } from "./poker-table";
 
@@ -336,6 +337,8 @@ export function EventTV({
 
   // Reações em tempo real (broadcast por evento)
   const { reactions } = useReactions(event.id);
+  // Recebe broadcast quando alguém troca a foto e re-busca avatarByProfile via SSR
+  useAvatarRefresh();
 
   const activeMatchByTable = useMemo(() => {
     const map: Record<string, Match | undefined> = {};
