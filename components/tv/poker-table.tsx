@@ -308,20 +308,6 @@ export function PokerTable({
           0%, 100% { transform: scale(1) rotate(-4deg); opacity: 0.95; }
           50% { transform: scale(1.18) rotate(4deg); opacity: 1; }
         }
-        /* Hot streak — halo pulsando direto no box-shadow do avatar.
-           Usa CSS var --fire-c (rgb sem alpha) setada por tier no fireGlowStyle. */
-        @keyframes fire-glow {
-          0%, 100% {
-            box-shadow:
-              0 0 14px 4px rgba(var(--fire-c, 249, 115, 22), 0.6),
-              0 0 28px 10px rgba(var(--fire-c, 249, 115, 22), 0.35);
-          }
-          50% {
-            box-shadow:
-              0 0 20px 8px rgba(var(--fire-c, 249, 115, 22), 0.85),
-              0 0 42px 16px rgba(var(--fire-c, 249, 115, 22), 0.5);
-          }
-        }
         /* Chama subindo de tempos em tempos (7+ kills) */
         @keyframes fire-rise {
           0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
@@ -362,31 +348,35 @@ function CornerFlames({ count }: { count: number }) {
 }
 
 /**
- * V1.3 — Aura do hot streak via box-shadow no próprio avatar. Sem elemento
- * separado, sem dor de posicionamento. Halo gruda na foto e pulsa via
- * keyframe `fire-glow` que interpola o shadow.
+ * V1.3 — Glow do hot streak via box-shadow inline no avatar. Estático
+ * (sem CSS var, sem keyframe) pra garantir que sempre aparece. Combina
+ * 2 layers: inner sólido + outer difuso. Cor escala por tier.
  */
 function fireGlowStyle(s: PokerSeat): CSSProperties {
   const count = s.eliminationCount ?? 0;
   if (s.isEliminating) return {};
-  // Mantém o glow ouro padrão (highlighted / não-highlighted) quando sem streak
-  if (count < 5) {
-    if (s.isHighlighted) {
-      return { boxShadow: "0 0 14px -3px rgba(212,175,55,0.55)" };
-    }
-    return { boxShadow: "0 0 10px -3px rgba(212,175,55,0.45)" };
+  if (count >= 10) {
+    return {
+      boxShadow:
+        "0 0 22px 8px rgba(220,38,38,0.75), 0 0 52px 18px rgba(220,38,38,0.4)",
+    };
   }
-  // Streak 5+: troca pro halo de fogo pulsando. Cor escala: laranja→vermelho→sangue.
-  const colorName = count >= 10 ? "fire-red" : count >= 7 ? "fire-orange-red" : "fire-orange";
-  return {
-    animation: "fire-glow 1.4s ease-in-out infinite",
-    // CSS vars consumidas pelos keyframes — assim cada tier reusa a mesma animação
-    ...(colorName === "fire-red"
-      ? ({ "--fire-c": "220,38,38" } as Record<string, string>)
-      : colorName === "fire-orange-red"
-        ? ({ "--fire-c": "239,68,68" } as Record<string, string>)
-        : ({ "--fire-c": "249,115,22" } as Record<string, string>)),
-  } as CSSProperties;
+  if (count >= 7) {
+    return {
+      boxShadow:
+        "0 0 18px 6px rgba(239,68,68,0.7), 0 0 42px 14px rgba(239,68,68,0.35)",
+    };
+  }
+  if (count >= 5) {
+    return {
+      boxShadow:
+        "0 0 14px 4px rgba(249,115,22,0.65), 0 0 32px 10px rgba(249,115,22,0.3)",
+    };
+  }
+  if (s.isHighlighted) {
+    return { boxShadow: "0 0 14px -3px rgba(212,175,55,0.55)" };
+  }
+  return { boxShadow: "0 0 10px -3px rgba(212,175,55,0.45)" };
 }
 
 function OnFireBadge({ count }: { count: number }) {
