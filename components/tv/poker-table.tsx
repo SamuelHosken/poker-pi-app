@@ -130,26 +130,12 @@ export function PokerTable({
                     animationDelay: `${i * -0.85}s`,
                   }}
                 >
-                  {/* V1.3: HOT STREAK — aura quando jogador tem 5+ kills,
-                      cresce/intensifica conforme `eliminationCount`. */}
-                  {!s.isEliminating &&
-                    (s.eliminationCount ?? 0) >= 5 && (
-                      <FireAura count={s.eliminationCount ?? 0} />
-                    )}
-
-                  {/* V1.3: HOT STREAK — chamas no canto a partir de 2 kills.
-                      1 chama em 2 kills, 2 em 3 kills, 3 em 4+ kills. */}
-                  {!s.isEliminating &&
-                    (s.eliminationCount ?? 0) >= 2 && (
-                      <CornerFlames count={s.eliminationCount ?? 0} />
-                    )}
-
                   {/* Reações flutuantes — saem do topo do avatar */}
                   {seatReactions.map((r) => (
                     <span
                       key={r.id}
                       aria-hidden
-                      className="pointer-events-none absolute left-1/2 -top-2 text-3xl sm:text-4xl"
+                      className="pointer-events-none absolute left-1/2 -top-2 z-20 text-3xl sm:text-4xl"
                       style={{
                         animation: "reaction-float 5s cubic-bezier(0.2, 0.7, 0.3, 1) forwards",
                       }}
@@ -162,42 +148,58 @@ export function PokerTable({
                   {s.isEliminating && (
                     <span
                       aria-hidden
-                      className="pointer-events-none absolute left-1/2 -top-2 text-4xl sm:text-5xl"
+                      className="pointer-events-none absolute left-1/2 -top-2 z-20 text-4xl sm:text-5xl"
                       style={{ animation: "seat-skull-float 2.5s ease-out forwards" }}
                     >
                       💀
                     </span>
                   )}
 
-                  {s.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={s.avatarUrl}
-                      alt={s.name}
-                      loading="lazy"
-                      decoding="async"
-                      className={`overflow-hidden rounded-full object-cover ${avatarBox} ${
-                        s.isEliminating
-                          ? "grayscale ring-2 ring-red-poker/80 shadow-lg"
-                          : s.isHighlighted
-                            ? "ring-2 ring-gold/80 ring-offset-2 ring-offset-ink shadow-[0_0_14px_-3px_rgba(212,175,55,0.55)]"
-                            : "ring-1 ring-gold/40 shadow-[0_0_10px_-3px_rgba(212,175,55,0.45)]"
-                      }`}
-                    />
-                  ) : (
-                    <div
-                      className={`flex items-center justify-center rounded-full font-display font-light ${avatarBox} ${
-                        s.isEliminating
-                          ? "bg-ink-2 text-red-poker ring-2 ring-red-poker/80 shadow-lg"
-                          : s.isHighlighted
-                            ? "bg-gold text-ink ring-2 ring-gold/60 ring-offset-2 ring-offset-ink shadow-[0_0_16px_-3px_rgba(212,175,55,0.6)]"
-                            : "border border-gold/40 bg-ink-2 text-gold shadow-[0_0_10px_-3px_rgba(212,175,55,0.45)]"
-                      }`}
-                      aria-label={s.name}
-                    >
-                      {s.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  {/* V1.3: wrapper do avatar pra ancorar aura + chamas no canto
+                      EXATAMENTE em volta da foto (não em volta da coluna). */}
+                  <div className="relative">
+                    {/* Aura (5+ kills) — atrás da foto */}
+                    {!s.isEliminating &&
+                      (s.eliminationCount ?? 0) >= 5 && (
+                        <FireAura count={s.eliminationCount ?? 0} />
+                      )}
+
+                    {s.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={s.avatarUrl}
+                        alt={s.name}
+                        loading="lazy"
+                        decoding="async"
+                        className={`relative overflow-hidden rounded-full object-cover ${avatarBox} ${
+                          s.isEliminating
+                            ? "grayscale ring-2 ring-red-poker/80 shadow-lg"
+                            : s.isHighlighted
+                              ? "ring-2 ring-gold/80 ring-offset-2 ring-offset-ink shadow-[0_0_14px_-3px_rgba(212,175,55,0.55)]"
+                              : "ring-1 ring-gold/40 shadow-[0_0_10px_-3px_rgba(212,175,55,0.45)]"
+                        }`}
+                      />
+                    ) : (
+                      <div
+                        className={`relative flex items-center justify-center rounded-full font-display font-light ${avatarBox} ${
+                          s.isEliminating
+                            ? "bg-ink-2 text-red-poker ring-2 ring-red-poker/80 shadow-lg"
+                            : s.isHighlighted
+                              ? "bg-gold text-ink ring-2 ring-gold/60 ring-offset-2 ring-offset-ink shadow-[0_0_16px_-3px_rgba(212,175,55,0.6)]"
+                              : "border border-gold/40 bg-ink-2 text-gold shadow-[0_0_10px_-3px_rgba(212,175,55,0.45)]"
+                        }`}
+                        aria-label={s.name}
+                      >
+                        {s.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+
+                    {/* Chamas no canto (2+ kills) — ancoradas no canto do avatar */}
+                    {!s.isEliminating &&
+                      (s.eliminationCount ?? 0) >= 2 && (
+                        <CornerFlames count={s.eliminationCount ?? 0} />
+                      )}
+                  </div>
                   <span
                     className={`${labelClass} truncate text-center font-medium ${
                       s.isEliminating
@@ -340,10 +342,11 @@ function CornerFlames({ count }: { count: number }) {
 
 function FireAura({ count }: { count: number }) {
   // 5 = aura suave laranja. 7 = cor vira vermelha. 10+ = vermelho/dourado.
-  // Tamanho cresce linearmente até saturar em ~12 kills.
+  // Tamanho relativo ao AVATAR (parent é o wrapper do avatar). Aura estende
+  // bem além do avatar pra criar halo visível.
   const intensity = Math.min((count - 5) / 7, 1); // 0..1
-  const size = 130 + intensity * 70; // 130%..200%
-  const opacity = 0.45 + intensity * 0.35;
+  const size = 200 + intensity * 150; // 200%..350% do avatar
+  const opacity = 0.5 + intensity * 0.35;
   const color =
     count >= 10
       ? "rgba(220,38,38,0.9)" // vermelho mais escuro
