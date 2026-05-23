@@ -65,16 +65,23 @@ export function ChipDisplayOverlay({
   useEffect(() => {
     const supabase = createClient();
 
-    const cutoff = new Date(Date.now() - FRESH_AGE_MS).toISOString();
-    supabase
-      .from("chip_displays")
-      .select("id, player_id, amount, created_at")
-      .eq("event_id", eventId)
-      .gte("created_at", cutoff)
-      .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        for (const row of data ?? []) enqueueIfFresh(row);
-      });
+    async function fetchRecent() {
+      const cutoff = new Date(Date.now() - FRESH_AGE_MS).toISOString();
+      const { data } = await supabase
+        .from("chip_displays")
+        .select("id, player_id, amount, created_at")
+        .eq("event_id", eventId)
+        .gte("created_at", cutoff)
+        .order("created_at", { ascending: true });
+      for (const row of data ?? []) enqueueIfFresh(row);
+    }
+
+    // Primeiro fetch imediato (caso TV abriu depois do clique)
+    fetchRecent();
+
+    // Fallback: poll a cada 3s. Realtime é primário; o poll garante que o
+    // overlay aparece mesmo se a conexão WebSocket caiu. seenIds dedup.
+    const pollId = setInterval(fetchRecent, 3000);
 
     const channel = supabase
       .channel(`chip-display-${eventId}`)
@@ -91,6 +98,7 @@ export function ChipDisplayOverlay({
       .subscribe();
 
     return () => {
+      clearInterval(pollId);
       supabase.removeChannel(channel);
     };
   }, [eventId]);

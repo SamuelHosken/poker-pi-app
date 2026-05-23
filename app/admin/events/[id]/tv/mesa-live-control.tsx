@@ -145,6 +145,9 @@ export function MesaLiveControl({
   const remainingMs = calculateTimeRemainingMs(match, currentLevel);
   const isExpired = remainingMs < 0;
   const isPaused = match.state === "PAUSADA";
+  // "Iniciar" na primeira vez (mesa nasceu PAUSADA, nunca ticou); depois,
+  // pause/resume normal usa "Retomar".
+  const neverStarted = isPaused && (match.total_paused_ms ?? 0) === 0;
 
   function handleAdjust(delta: number) {
     if (!match) return;
@@ -162,11 +165,12 @@ export function MesaLiveControl({
 
   function handlePauseResume() {
     if (!match) return;
+    const wasNeverStarted = neverStarted;
     startPauseResume(async () => {
       try {
         if (isPaused) {
           await resumeMatch(match.id);
-          toast.success("Mesa retomada");
+          toast.success(wasNeverStarted ? "Mesa iniciada" : "Mesa retomada");
         } else {
           await pauseMatch(match.id);
           toast.success("Mesa pausada");
@@ -235,7 +239,7 @@ export function MesaLiveControl({
           </div>
           {isPaused && (
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker">
-              Pausada
+              {neverStarted ? "Aguardando início" : "Pausada"}
             </span>
           )}
         </div>
@@ -317,7 +321,13 @@ export function MesaLiveControl({
           {isPaused ? (
             <>
               <Play className="size-4" aria-hidden />
-              {pendingPauseResume ? "Retomando…" : "Retomar"}
+              {pendingPauseResume
+                ? neverStarted
+                  ? "Iniciando…"
+                  : "Retomando…"
+                : neverStarted
+                  ? "Iniciar mesa"
+                  : "Retomar"}
             </>
           ) : (
             <>

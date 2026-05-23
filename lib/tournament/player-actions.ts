@@ -132,21 +132,31 @@ export async function joinTableAsPlayer(physicalTableId: string): Promise<{ matc
     }
   }
 
-  // 4) Encontra ou cria match na mesa
+  // 4) Encontra ou cria match na mesa.
+  //
+  // Mesa nova começa PAUSADA, NÃO JOGANDO. O admin tem que clicar "Retomar"
+  // na config de TV pra iniciar o cronômetro. Mantém paused_at=now pra que
+  // o math de resume (pauseElapsed) compute corretamente o total_paused_ms
+  // — o cronômetro arranca cheio quando o admin solta.
   let match: Match | null;
   if (existing) {
     match = existing;
-    // Se LIVRE, transitiona pra JOGANDO ao primeiro entrar (writes em paralelo)
     if (existing.state === "LIVRE") {
       const now = new Date().toISOString();
       const [{ error: updErr }] = await Promise.all([
         admin
           .from("matches")
-          .update({ state: "JOGANDO", level_started_at: now, started_at: now })
+          .update({
+            state: "PAUSADA",
+            level_started_at: now,
+            started_at: now,
+            paused_at: now,
+            total_paused_ms: 0,
+          })
           .eq("id", existing.id),
         admin
           .from("physical_tables")
-          .update({ state: "JOGANDO" })
+          .update({ state: "PAUSADA" })
           .eq("id", physicalTableId),
       ]);
       if (updErr) throw new Error(`Erro ao iniciar mesa: ${updErr.message}`);
@@ -165,10 +175,11 @@ export async function joinTableAsPlayer(physicalTableId: string): Promise<{ matc
       physical_table_id: physicalTableId,
       match_number: matchNumber,
       is_final_table: false,
-      state: "JOGANDO",
+      state: "PAUSADA",
       current_level_id: firstLevel.id,
       level_started_at: now,
       started_at: now,
+      paused_at: now,
       total_paused_ms: 0,
     };
     const { data: created, error: cErr } = await admin
@@ -181,7 +192,7 @@ export async function joinTableAsPlayer(physicalTableId: string): Promise<{ matc
 
     await admin
       .from("physical_tables")
-      .update({ state: "JOGANDO" })
+      .update({ state: "PAUSADA" })
       .eq("id", physicalTableId);
   }
 

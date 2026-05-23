@@ -70,13 +70,13 @@ export function ChipCalculator({ tableId }: { tableId: string }) {
       toast.error("Adicione fichas antes de mostrar.");
       return;
     }
-    // Optimistic: navega de volta pra mesa já + dispara o display.
-    // Toast aparece depois; erro reverte (mostra apenas o toast, fica em /me/mesa).
-    router.push(`/me/mesa/${tableId}`);
+    // IMPORTANTE: insere ANTES de navegar. Se navegarmos primeiro o browser
+    // pode cancelar a Server Action em vôo (e o display não chega na TV).
     startTransition(async () => {
       try {
         await requestChipDisplay({ amount: total });
         toast.success("Mostrando na TV por 15s");
+        router.push(`/me/mesa/${tableId}`);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro");
       }
