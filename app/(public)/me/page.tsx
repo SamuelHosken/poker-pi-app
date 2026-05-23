@@ -5,6 +5,7 @@ import { getMyEvents } from "@/lib/tournament/player-actions";
 import { formatDateBR } from "@/lib/format";
 import { LogoutMeButton } from "./logout-me-button";
 import { TableActions } from "./table-actions";
+import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata = {
   title: "Sua sessão · Poker Pi",
@@ -55,6 +56,8 @@ export default async function MePage() {
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+      {/* Pega "admin me adicionou em evento" sem precisar de refresh manual. */}
+      <LiveRefresh intervalMs={5000} />
       {profile.is_admin && (
         <Link
           href="/admin/events"

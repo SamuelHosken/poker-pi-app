@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listChampions } from "@/lib/tournament/galeria";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import { formatDateBR } from "@/lib/format";
+import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata = { title: "Galeria de campeões · Poker Pi" };
 
@@ -35,6 +36,7 @@ export default async function GaleriaPage() {
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-6 space-y-8 sm:px-6 sm:py-10">
+      <LiveRefresh intervalMs={30000} />
       <Link
         href="/admin/events"
         className="inline-block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"

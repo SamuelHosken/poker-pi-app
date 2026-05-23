@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getEvent } from "@/lib/tournament/events";
 import { listPlayersForEvent } from "@/lib/tournament/players";
 import { formatBRL, formatDateBR } from "@/lib/format";
+import { LiveRefresh } from "@/components/live-refresh";
 
 const PLAYER_STATE_LABEL: Record<string, string> = {
   INSCRITO: "Inscrito",
@@ -53,6 +54,7 @@ export default async function ResultsPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
+      <LiveRefresh intervalMs={10000} />
       <Link
         href={`/admin/events/${id}`}
         className="inline-block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"

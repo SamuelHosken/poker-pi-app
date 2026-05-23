@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listEvents } from "@/lib/tournament/events";
 import { formatBRL, formatDateBR } from "@/lib/format";
 import { buttonVariants } from "@/components/ui/button";
+import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata = {
   title: "Eventos · Poker Pi",
@@ -20,6 +21,7 @@ export default async function EventsListPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
+      <LiveRefresh intervalMs={10000} />
       <header className="space-y-4 sm:flex sm:items-end sm:justify-between sm:space-y-0">
         <div>
           <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">

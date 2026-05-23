@@ -10,6 +10,7 @@ import { BlindsEditor } from "./blinds-editor";
 import { AllTablesControls } from "./all-tables-controls";
 import { TvPauseControl } from "./tv-pause-control";
 import { AutoAdvanceToggle } from "./auto-advance-toggle";
+import { LiveRefresh } from "@/components/live-refresh";
 
 const STATE_LABEL: Record<string, string> = {
   SETUP: "Setup",
@@ -61,6 +62,7 @@ export default async function TvConfigPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
+      <LiveRefresh intervalMs={5000} />
       <div className="flex items-center justify-between gap-2">
         <Link
           href={`/admin/events/${event.id}`}

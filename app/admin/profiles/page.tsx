@@ -3,6 +3,7 @@ import { listProfiles } from "@/lib/tournament/profiles";
 import { buttonVariants } from "@/components/ui/button";
 import { ProfileRowActions } from "./profile-row-actions";
 import { formatDateBR } from "@/lib/format";
+import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata = {
   title: "Perfis · Poker Pi",
@@ -13,6 +14,7 @@ export default async function ProfilesListPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
+      <LiveRefresh intervalMs={15000} />
       <header className="space-y-4 sm:flex sm:items-end sm:justify-between sm:space-y-0">
         <div>
           <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">

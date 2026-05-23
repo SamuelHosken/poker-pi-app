@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listDeletedEvents } from "@/lib/tournament/events";
 import { formatBRL, formatDateBR } from "@/lib/format";
 import { TrashedEventRow } from "./trashed-event-row";
+import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata = { title: "Lixeira · Poker Pi" };
 
@@ -18,6 +19,7 @@ export default async function LixeiraPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
+      <LiveRefresh intervalMs={30000} />
       <Link
         href="/admin/events"
         className="inline-block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"
