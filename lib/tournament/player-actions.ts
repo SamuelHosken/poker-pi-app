@@ -684,39 +684,55 @@ export async function switchToTable(
  * V1.3 — Player solicita "mostrar fichas" na TV.
  * Insere chip_displays; TV subscreve a inserts e renderiza overlay por 15s.
  * Rate-limit: 1 display por player por 8 segundos pra evitar spam.
+ *
+ * IMPORTANTE: recebe `tableId` (physical_table_id). Se o user tem players
+ * JOGANDO em múltiplos eventos (admin testando), filtrar só por profile_id
+ * + state="JOGANDO" pega aleatoriamente um → display ia pro evento errado e
+ * a TV nunca via. Filtrando por event_id desse table resolve.
  */
-export async function requestChipDisplay(input: { amount: number }): Promise<void> {
+export async function requestChipDisplay(input: {
+  amount: number;
+  tableId: string;
+}): Promise<void> {
   if (!Number.isFinite(input.amount) || input.amount <= 0 || !Number.isInteger(input.amount)) {
     throw new Error("Valor de fichas inválido.");
   }
   if (input.amount > 10_000_000) {
     throw new Error("Valor exagerado.");
   }
+  if (!input.tableId) throw new Error("Mesa não informada.");
 
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Você precisa estar logado.");
-  // Rate-limit in-memory: 1 a cada 8s + 5/min (sliding window)
   checkRateLimit(`chip-display-fast:${userId}`, 1, 8_000);
   checkRateLimit(`chip-display-slow:${userId}`, 5, 60_000);
 
   const admin = privilegedClient();
 
-  // Pega o player do user (precisa estar JOGANDO pra mostrar fichas)
+  const { data: tableRow } = await admin
+    .from("physical_tables")
+    .select("event_id")
+    .eq("id", input.tableId)
+    .maybeSingle();
+  if (!tableRow) throw new Error("Mesa não encontrada.");
+
   const { data: player } = await admin
     .from("players")
-    .select("id, event_id, state")
+    .select("id, state")
     .eq("profile_id", userId)
+    .eq("event_id", tableRow.event_id)
     .eq("state", "JOGANDO")
-    .limit(1)
     .maybeSingle();
-  if (!player) throw new Error("Você precisa estar em uma mesa pra mostrar fichas.");
+  if (!player) {
+    throw new Error("Você precisa estar jogando nessa mesa pra mostrar fichas.");
+  }
 
   const { error } = await admin.from("chip_displays").insert({
-    event_id: player.event_id,
+    event_id: tableRow.event_id,
     player_id: player.id,
     amount: input.amount,
   });
   if (error) throw new Error(`Erro ao mostrar fichas: ${error.message}`);
 
-  revalidatePath(`/tv/${player.event_id}`);
+  revalidatePath(`/tv/${tableRow.event_id}`);
 }

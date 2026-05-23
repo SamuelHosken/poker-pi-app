@@ -74,7 +74,7 @@ export function ChipCalculator({ tableId }: { tableId: string }) {
     // pode cancelar a Server Action em vôo (e o display não chega na TV).
     startTransition(async () => {
       try {
-        await requestChipDisplay({ amount: total });
+        await requestChipDisplay({ amount: total, tableId });
         toast.success("Mostrando na TV por 15s");
         router.push(`/me/mesa/${tableId}`);
       } catch (err) {
