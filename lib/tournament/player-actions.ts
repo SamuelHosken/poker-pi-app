@@ -592,8 +592,11 @@ export async function eliminateSelf(
 ): Promise<{ finalPosition: number }> {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Você precisa estar logado.");
-  // 1 eliminação por minuto — ação rara, valor baixo previne tap acidental duplo
-  checkRateLimit(`eliminate-self:${userId}`, 1, 60_000);
+  // Tap acidental duplo já é coberto pela confirmação de 2 passos no UI
+  // (mesa-view.tsx). Rate limit aqui mais atrapalha que ajuda — bloqueava
+  // rebuy seguido de re-eliminação dentro da janela de 60s.
+  // Dedup mínimo de 3s previne double-submit de fato.
+  checkRateLimit(`eliminate-self:${userId}`, 1, 3_000);
 
   const admin = privilegedClient();
 
