@@ -155,15 +155,10 @@ export function PokerTable({
                     </span>
                   )}
 
-                  {/* V1.3: wrapper do avatar pra ancorar aura + chamas no canto
-                      EXATAMENTE em volta da foto (não em volta da coluna). */}
+                  {/* V1.3: wrapper do avatar — ancora chamas no canto + chama
+                      subindo. Aura agora é box-shadow no próprio avatar (sem
+                      elemento separado, sem dor de posicionamento). */}
                   <div className="relative">
-                    {/* Aura (5+ kills) — atrás da foto */}
-                    {!s.isEliminating &&
-                      (s.eliminationCount ?? 0) >= 5 && (
-                        <FireAura count={s.eliminationCount ?? 0} />
-                      )}
-
                     {s.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -175,9 +170,10 @@ export function PokerTable({
                           s.isEliminating
                             ? "grayscale ring-2 ring-red-poker/80 shadow-lg"
                             : s.isHighlighted
-                              ? "ring-2 ring-gold/80 ring-offset-2 ring-offset-ink shadow-[0_0_14px_-3px_rgba(212,175,55,0.55)]"
-                              : "ring-1 ring-gold/40 shadow-[0_0_10px_-3px_rgba(212,175,55,0.45)]"
+                              ? "ring-2 ring-gold/80 ring-offset-2 ring-offset-ink"
+                              : "ring-1 ring-gold/40"
                         }`}
+                        style={fireGlowStyle(s)}
                       />
                     ) : (
                       <div
@@ -185,9 +181,10 @@ export function PokerTable({
                           s.isEliminating
                             ? "bg-ink-2 text-red-poker ring-2 ring-red-poker/80 shadow-lg"
                             : s.isHighlighted
-                              ? "bg-gold text-ink ring-2 ring-gold/60 ring-offset-2 ring-offset-ink shadow-[0_0_16px_-3px_rgba(212,175,55,0.6)]"
-                              : "border border-gold/40 bg-ink-2 text-gold shadow-[0_0_10px_-3px_rgba(212,175,55,0.45)]"
+                              ? "bg-gold text-ink ring-2 ring-gold/60 ring-offset-2 ring-offset-ink"
+                              : "border border-gold/40 bg-ink-2 text-gold"
                         }`}
+                        style={fireGlowStyle(s)}
                         aria-label={s.name}
                       >
                         {s.name.charAt(0).toUpperCase()}
@@ -198,6 +195,21 @@ export function PokerTable({
                     {!s.isEliminating &&
                       (s.eliminationCount ?? 0) >= 2 && (
                         <CornerFlames count={s.eliminationCount ?? 0} />
+                      )}
+
+                    {/* Chama subindo do topo do avatar (7+ kills) */}
+                    {!s.isEliminating &&
+                      (s.eliminationCount ?? 0) >= 7 && (
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute left-1/2 -top-2 -translate-x-1/2 z-10 text-lg sm:text-xl"
+                          style={{
+                            animation: `fire-rise ${(s.eliminationCount ?? 0) >= 10 ? 1.6 : 2.4}s ease-out infinite`,
+                            filter: "drop-shadow(0 0 6px rgba(239,68,68,0.9))",
+                          }}
+                        >
+                          🔥
+                        </span>
                       )}
                   </div>
                   <span
@@ -296,10 +308,19 @@ export function PokerTable({
           0%, 100% { transform: scale(1) rotate(-4deg); opacity: 0.95; }
           50% { transform: scale(1.18) rotate(4deg); opacity: 1; }
         }
-        /* Aura pulsando atrás do avatar (5+ kills) */
-        @keyframes fire-aura {
-          0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+        /* Hot streak — halo pulsando direto no box-shadow do avatar.
+           Usa CSS var --fire-c (rgb sem alpha) setada por tier no fireGlowStyle. */
+        @keyframes fire-glow {
+          0%, 100% {
+            box-shadow:
+              0 0 14px 4px rgba(var(--fire-c, 249, 115, 22), 0.6),
+              0 0 28px 10px rgba(var(--fire-c, 249, 115, 22), 0.35);
+          }
+          50% {
+            box-shadow:
+              0 0 20px 8px rgba(var(--fire-c, 249, 115, 22), 0.85),
+              0 0 42px 16px rgba(var(--fire-c, 249, 115, 22), 0.5);
+          }
         }
         /* Chama subindo de tempos em tempos (7+ kills) */
         @keyframes fire-rise {
@@ -340,50 +361,32 @@ function CornerFlames({ count }: { count: number }) {
   );
 }
 
-function FireAura({ count }: { count: number }) {
-  // 5 = aura suave laranja. 7 = cor vira vermelha. 10+ = vermelho/dourado.
-  // Tamanho RELATIVO ao avatar — halo APERTADO em volta da foto pra NÃO
-  // invadir a área do nome. 130–180% só estende ~10–20px em volta.
-  const intensity = Math.min((count - 5) / 7, 1); // 0..1
-  const size = 135 + intensity * 45; // 135%..180% do avatar
-  const opacity = 0.6 + intensity * 0.35;
-  const color =
-    count >= 10
-      ? "rgba(220,38,38,0.95)"
-      : count >= 7
-        ? "rgba(239,68,68,0.9)"
-        : "rgba(249,115,22,0.9)";
-  return (
-    <>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          width: `${size}%`,
-          height: `${size}%`,
-          // Gradient mais concentrado no centro (40% sólido) e cortando
-          // mais cedo (até 80%) — halo nítido, sem fumaça difusa.
-          background: `radial-gradient(circle, ${color} 0%, ${color.replace(/[\d.]+\)$/, "0.5)")} 40%, rgba(0,0,0,0) 80%)`,
-          opacity,
-          filter: "blur(6px)",
-          animation: "fire-aura 1.8s ease-in-out infinite",
-        }}
-      />
-      {/* Chama subindo periodicamente em streaks altos — sai DE CIMA do avatar */}
-      {count >= 7 && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 -top-1 -translate-x-1/2 z-10 text-lg sm:text-xl"
-          style={{
-            animation: `fire-rise ${count >= 10 ? 1.6 : 2.4}s ease-out infinite`,
-            filter: "drop-shadow(0 0 6px rgba(239,68,68,0.9))",
-          }}
-        >
-          🔥
-        </span>
-      )}
-    </>
-  );
+/**
+ * V1.3 — Aura do hot streak via box-shadow no próprio avatar. Sem elemento
+ * separado, sem dor de posicionamento. Halo gruda na foto e pulsa via
+ * keyframe `fire-glow` que interpola o shadow.
+ */
+function fireGlowStyle(s: PokerSeat): CSSProperties {
+  const count = s.eliminationCount ?? 0;
+  if (s.isEliminating) return {};
+  // Mantém o glow ouro padrão (highlighted / não-highlighted) quando sem streak
+  if (count < 5) {
+    if (s.isHighlighted) {
+      return { boxShadow: "0 0 14px -3px rgba(212,175,55,0.55)" };
+    }
+    return { boxShadow: "0 0 10px -3px rgba(212,175,55,0.45)" };
+  }
+  // Streak 5+: troca pro halo de fogo pulsando. Cor escala: laranja→vermelho→sangue.
+  const colorName = count >= 10 ? "fire-red" : count >= 7 ? "fire-orange-red" : "fire-orange";
+  return {
+    animation: "fire-glow 1.4s ease-in-out infinite",
+    // CSS vars consumidas pelos keyframes — assim cada tier reusa a mesma animação
+    ...(colorName === "fire-red"
+      ? ({ "--fire-c": "220,38,38" } as Record<string, string>)
+      : colorName === "fire-orange-red"
+        ? ({ "--fire-c": "239,68,68" } as Record<string, string>)
+        : ({ "--fire-c": "249,115,22" } as Record<string, string>)),
+  } as CSSProperties;
 }
 
 function OnFireBadge({ count }: { count: number }) {
