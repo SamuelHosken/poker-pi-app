@@ -797,6 +797,7 @@ export async function eliminatePlayer(input: {
     playerId,
     participationId: participation.id,
     isFinalTable: match.is_final_table,
+    eliminatedByPlayerId: resolvedKillerId,
     previousState: {
       playerState: player.state as PlayerState,
       playerFinalPosition: player.final_position,

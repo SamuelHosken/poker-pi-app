@@ -109,6 +109,9 @@ export function EventTV({
   // Dedup do incremento de eliminationCounts (separado de seenEliminations
   // pra não conflitar com a lógica de toast).
   const countedKillerForPart = useRef<Set<string>>(new Set());
+  // Mount time — Realtime UPDATEs com eliminated_at ANTES desse instante já
+  // foram contadas pelo SSR (via action_log). Não devemos somar de novo.
+  const mountTimeRef = useRef<number>(Date.now());
   const seenFinishes = useRef<Set<string>>(new Set());
   const seenNewMatches = useRef<Set<string>>(new Set());
   // Pré-popula com FINALIZADAs já existentes — evita celebração ao montar.
@@ -302,9 +305,16 @@ export function EventTV({
                 setGhostSeats((prev) => prev.filter((g) => g.id !== row.id));
               }, 2500);
 
-              // V1.3: incrementa contador de "kills" do eliminador → fogo na TV
+              // V1.3: incrementa contador de "kills" do eliminador → fogo na TV.
+              // Só conta eliminações que aconteceram APÓS o mount; antes disso o
+              // SSR (action_log) já contou — Realtime estaria duplicando.
+              const elimTime = new Date(row.eliminated_at).getTime();
               const killerId = row.eliminated_by_player_id;
-              if (killerId && !countedKillerForPart.current.has(elimKey)) {
+              if (
+                killerId &&
+                !countedKillerForPart.current.has(elimKey) &&
+                elimTime >= mountTimeRef.current
+              ) {
                 countedKillerForPart.current.add(elimKey);
                 setEliminationCounts((prev) => {
                   const before = prev[killerId] ?? 0;

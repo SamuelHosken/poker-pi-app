@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { getCurrentUserId } from "@/lib/tournament/auth";
 import { checkRateLimit } from "@/lib/rate-limit/in-memory";
+import { logAction } from "@/lib/tournament/action-log";
 import type { Database, Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
+import type { PlayerState } from "@/lib/types/domain";
 
 type Player = Tables<"players">;
 type Match = Tables<"matches">;
@@ -510,26 +512,22 @@ export async function getTableForPlayer(physicalTableId: string): Promise<TableV
     });
   }
 
-  // V1.3: contagem de eliminações por player (mesma idéia do que a TV faz).
-  // Restringe ao escopo do event_id desta mesa pra incluir kills feitos em
-  // outra mesa do mesmo evento (caso o player troque de mesa, etc).
+  // V1.3: contagem de eliminações por player via action_log (histórico
+  // append-only). Antes contava via participations.eliminated_by_player_id,
+  // mas essa coluna é resetada no rebuy+join → re-eliminações desapareciam.
   const elimCounts = await (async (): Promise<Record<string, number>> => {
-    const { data: evMatches } = await admin
-      .from("matches")
-      .select("id")
-      .eq("event_id", table.event_id);
-    const mIds = (evMatches ?? []).map((mm) => mm.id);
-    if (mIds.length === 0) return {};
-    const { data: elims } = await admin
-      .from("participations")
-      .select("eliminated_by_player_id")
-      .in("match_id", mIds)
-      .not("eliminated_by_player_id", "is", null);
+    const { data: rows } = await admin
+      .from("action_log")
+      .select("payload, reverted_at")
+      .eq("event_id", table.event_id)
+      .eq("action_type", "ELIMINATE_PLAYER")
+      .is("reverted_at", null);
     const acc: Record<string, number> = {};
-    for (const e of elims ?? []) {
-      const id = e.eliminated_by_player_id;
-      if (!id) continue;
-      acc[id] = (acc[id] ?? 0) + 1;
+    for (const r of rows ?? []) {
+      const p = r.payload as { eliminatedByPlayerId?: string | null };
+      const killer = p?.eliminatedByPlayerId;
+      if (!killer) continue;
+      acc[killer] = (acc[killer] ?? 0) + 1;
     }
     return acc;
   })();
@@ -681,6 +679,22 @@ export async function eliminateSelf(
     })
     .eq("id", player.id);
   if (plErr) throw new Error(`Erro ao atualizar player: ${plErr.message}`);
+
+  // V1.3: log no action_log pra contar hot-streak via histórico (não via
+  // participations.eliminated_by_player_id que é resetado em rebuy+join).
+  await logAction(admin, match.event_id, {
+    type: "ELIMINATE_PLAYER",
+    matchId: match.id,
+    playerId: player.id,
+    participationId: participation.id,
+    isFinalTable: false,
+    eliminatedByPlayerId: eliminatedById,
+    previousState: {
+      playerState: player.state as PlayerState,
+      playerFinalPosition: player.final_position,
+      playerHasPaidBuyin: player.has_paid_buyin ?? false,
+    },
+  });
 
   // V1.3: SEM coroação automática. Admin define o campeão manualmente
   // via crownChampion() na página do evento.

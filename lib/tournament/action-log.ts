@@ -22,6 +22,9 @@ export type ActionPayload =
       playerId: string;
       participationId: string;
       isFinalTable: boolean;
+      // V1.3: quem matou (pra contar hot-streak via action_log; participations
+      // perde isso quando o player faz rebuy+join e o killer aparente é "0").
+      eliminatedByPlayerId?: string | null;
       previousState: {
         playerState: PlayerState;
         playerFinalPosition: number | null;
