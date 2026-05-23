@@ -179,6 +179,7 @@ export default async function TvConfigPage({
                   </summary>
                   <BlindsEditor
                     physicalTableId={t.id}
+                    matchId={match?.id ?? null}
                     levels={tableLevels}
                     currentLevelId={match?.current_level_id ?? null}
                   />

@@ -361,6 +361,52 @@ export async function advanceLevel(matchId: string): Promise<{ advanced: boolean
 }
 
 /**
+ * V1.3 — Admin pula a mesa pra um nível específico (qualquer level_number
+ * que exista nas blinds_levels desta mesa). Reseta o cronômetro pro full
+ * do nível alvo. Usa quando o auto-advance ou clique acidental fez a mesa
+ * pular vários níveis e precisa voltar.
+ */
+export async function setCurrentLevel(input: {
+  matchId: string;
+  levelNumber: number;
+}): Promise<void> {
+  await requireAdmin();
+  const match = await loadMatch(input.matchId);
+  if (match.state === "FINALIZADA") {
+    throw new Error("Partida finalizada — não dá pra mudar nível.");
+  }
+
+  const supabase = adminServiceClient();
+
+  const { data: targetLevel } = await supabase
+    .from("blind_levels")
+    .select("id, level_number")
+    .eq("physical_table_id", match.physical_table_id)
+    .eq("is_final_table", match.is_final_table)
+    .eq("level_number", input.levelNumber)
+    .maybeSingle();
+  if (!targetLevel) {
+    throw new Error(`Nível ${input.levelNumber} não existe nessa mesa.`);
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("matches")
+    .update({
+      current_level_id: targetLevel.id,
+      level_started_at: now,
+      total_paused_ms: 0,
+      paused_at: null,
+      state: "JOGANDO",
+    })
+    .eq("id", input.matchId);
+  if (error) throw new Error(`Erro ao mudar nível: ${error.message}`);
+
+  revalidatePath(`/admin/events/${match.event_id}`);
+  revalidatePath(`/tv/${match.event_id}`);
+}
+
+/**
  * V1.3 — Admin move player de uma mesa pra outra (sem virar eliminação).
  * Funciona mesmo que o player esteja eliminado/saiu (admin pode reativar).
  *

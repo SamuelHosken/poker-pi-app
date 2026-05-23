@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2, FastForward } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,16 +29,19 @@ import {
   updateBlindLevel,
   deleteBlindLevel,
 } from "@/lib/tournament/blinds";
+import { setCurrentLevel } from "@/lib/tournament/matches";
 import type { Tables } from "@/lib/types/database.types";
 
 type BlindLevel = Tables<"blind_levels">;
 
 export function BlindsEditor({
   physicalTableId,
+  matchId,
   levels,
   currentLevelId,
 }: {
   physicalTableId: string;
+  matchId: string | null;
   levels: BlindLevel[];
   currentLevelId: string | null;
 }) {
@@ -68,6 +71,9 @@ export function BlindsEditor({
                 <span className="ml-1 text-gray-mid">· {lvl.duration_minutes}min</span>
               </span>
               <div className="flex items-center gap-1">
+                {matchId && !isCurrent && (
+                  <JumpToLevelButton matchId={matchId} level={lvl} />
+                )}
                 <EditBlindButton level={lvl} />
                 <DeleteBlindButton level={lvl} isCurrent={isCurrent} />
               </div>
@@ -78,6 +84,63 @@ export function BlindsEditor({
 
       <AddBlindButton physicalTableId={physicalTableId} lastLevel={levels[levels.length - 1]} />
     </div>
+  );
+}
+
+function JumpToLevelButton({
+  matchId,
+  level,
+}: {
+  matchId: string;
+  level: BlindLevel;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
+
+  function handleConfirm() {
+    startTransition(async () => {
+      try {
+        await setCurrentLevel({ matchId, levelNumber: level.level_number });
+        toast.success(`Pulou pro nível ${level.level_number}`);
+        setOpen(false);
+        router.refresh();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Erro");
+      }
+    });
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger
+        aria-label={`Pular pro nível ${level.level_number}`}
+        className="flex size-8 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-gold/40 hover:text-gold"
+      >
+        <FastForward className="size-3.5" aria-hidden />
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Pular pro nível {level.level_number}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            SB {level.small_blind.toLocaleString("pt-BR")} / BB{" "}
+            {level.big_blind.toLocaleString("pt-BR")} · {level.duration_minutes}
+            min. Cronômetro vai recomeçar do zero ({level.duration_minutes}min cheios).
+            A mesa volta pra JOGANDO se tava pausada. Sem undo.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirm}
+            disabled={pending}
+            className="bg-gold text-ink hover:bg-gold/90"
+          >
+            {pending ? "Pulando…" : "Pular"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
