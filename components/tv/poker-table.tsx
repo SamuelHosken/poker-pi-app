@@ -342,17 +342,17 @@ function CornerFlames({ count }: { count: number }) {
 
 function FireAura({ count }: { count: number }) {
   // 5 = aura suave laranja. 7 = cor vira vermelha. 10+ = vermelho/dourado.
-  // Tamanho relativo ao AVATAR (parent é o wrapper do avatar). Aura estende
-  // bem além do avatar pra criar halo visível.
+  // Tamanho RELATIVO ao avatar — halo APERTADO em volta da foto pra NÃO
+  // invadir a área do nome. 130–180% só estende ~10–20px em volta.
   const intensity = Math.min((count - 5) / 7, 1); // 0..1
-  const size = 200 + intensity * 150; // 200%..350% do avatar
-  const opacity = 0.5 + intensity * 0.35;
+  const size = 135 + intensity * 45; // 135%..180% do avatar
+  const opacity = 0.6 + intensity * 0.35;
   const color =
     count >= 10
-      ? "rgba(220,38,38,0.9)" // vermelho mais escuro
+      ? "rgba(220,38,38,0.95)"
       : count >= 7
-        ? "rgba(239,68,68,0.85)"
-        : "rgba(249,115,22,0.85)";
+        ? "rgba(239,68,68,0.9)"
+        : "rgba(249,115,22,0.9)";
   return (
     <>
       <span
@@ -361,17 +361,19 @@ function FireAura({ count }: { count: number }) {
         style={{
           width: `${size}%`,
           height: `${size}%`,
-          background: `radial-gradient(circle, ${color} 0%, rgba(0,0,0,0) 70%)`,
+          // Gradient mais concentrado no centro (40% sólido) e cortando
+          // mais cedo (até 80%) — halo nítido, sem fumaça difusa.
+          background: `radial-gradient(circle, ${color} 0%, ${color.replace(/[\d.]+\)$/, "0.5)")} 40%, rgba(0,0,0,0) 80%)`,
           opacity,
-          filter: "blur(10px)",
+          filter: "blur(6px)",
           animation: "fire-aura 1.8s ease-in-out infinite",
         }}
       />
-      {/* Chama subindo periodicamente em streaks altos */}
+      {/* Chama subindo periodicamente em streaks altos — sai DE CIMA do avatar */}
       {count >= 7 && (
         <span
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-0 z-10 text-lg sm:text-xl"
+          className="pointer-events-none absolute left-1/2 -top-1 -translate-x-1/2 z-10 text-lg sm:text-xl"
           style={{
             animation: `fire-rise ${count >= 10 ? 1.6 : 2.4}s ease-out infinite`,
             filter: "drop-shadow(0 0 6px rgba(239,68,68,0.9))",
