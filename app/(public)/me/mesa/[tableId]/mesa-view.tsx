@@ -43,6 +43,12 @@ export function MesaView({ initial }: { initial: TableView }) {
   const [pendingSwitch, startSwitch] = useTransition();
   const [switchOpen, setSwitchOpen] = useState(false);
   const [eliminateOpen, setEliminateOpen] = useState(false);
+  // V1.3: passo 2 do diálogo — depois de escolher quem te eliminou (ou "não
+  // dizer"), mostra confirmação antes de chamar a action. Tap acidental
+  // não te tira da mesa.
+  const [pendingKiller, setPendingKiller] = useState<
+    { id: string | null; name: string | null } | null
+  >(null);
   const [seats] = useState(initial.seats);
   const matchId = initial.match?.id;
 
@@ -78,6 +84,7 @@ export function MesaView({ initial }: { initial: TableView }) {
 
   function handleEliminate(killerId: string | null) {
     setEliminateOpen(false);
+    setPendingKiller(null);
     // Optimistic: navega pra /me imediatamente. Toast aparece depois (sonner
     // persiste entre rotas). Em caso de erro, volta pra mesa.
     router.push("/me");
@@ -274,7 +281,14 @@ export function MesaView({ initial }: { initial: TableView }) {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={eliminateOpen} onOpenChange={setEliminateOpen}>
+        <Dialog
+          open={eliminateOpen}
+          onOpenChange={(o) => {
+            setEliminateOpen(o);
+            // Reseta passo de confirmação quando o diálogo fecha
+            if (!o) setPendingKiller(null);
+          }}
+        >
           <DialogTrigger
             disabled={pendingEliminate}
             className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-red-poker/40 bg-red-poker/5 text-sm text-red-poker transition-colors hover:bg-red-poker/10 disabled:opacity-40"
@@ -283,53 +297,93 @@ export function MesaView({ initial }: { initial: TableView }) {
             {pendingEliminate ? "Saindo…" : "Estou eliminado"}
           </DialogTrigger>
           <DialogContent className="max-w-md gap-0 overflow-hidden p-0">
-            <DialogHeader className="border-b border-line p-4">
-              <DialogTitle>Quem te eliminou?</DialogTitle>
-              <DialogDescription>
-                Opcional — rastreia rivais no seu perfil. Você fica em{" "}
-                <span className="text-paper">ELIMINADO</span> ao confirmar.
-              </DialogDescription>
-            </DialogHeader>
+            {pendingKiller === null ? (
+              <>
+                <DialogHeader className="border-b border-line p-4">
+                  <DialogTitle>Quem te eliminou?</DialogTitle>
+                  <DialogDescription>
+                    Opcional — rastreia rivais no seu perfil. Você confirma na
+                    próxima tela.
+                  </DialogDescription>
+                </DialogHeader>
 
-            <ul className="max-h-[50svh] overflow-y-auto p-2">
-              {seats
-                .filter((s) => !s.isYou)
-                .map((s) => (
-                  <li key={s.participationId}>
-                    <button
-                      type="button"
-                      onClick={() => handleEliminate(s.playerId)}
-                      disabled={pendingEliminate}
-                      style={{ touchAction: "manipulation" }}
-                      className="flex w-full items-center gap-3 rounded-md p-3 text-left text-paper transition-colors hover:bg-smoke active:bg-smoke disabled:opacity-50"
-                    >
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-ink-2 font-display text-base font-light text-gold">
-                        {s.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm">{s.name}</div>
-                        {s.nickname && (
-                          <div className="truncate font-display text-xs italic text-gold">
-                            {s.nickname}
+                <ul className="max-h-[50svh] overflow-y-auto p-2">
+                  {seats
+                    .filter((s) => !s.isYou)
+                    .map((s) => (
+                      <li key={s.participationId}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPendingKiller({ id: s.playerId, name: s.name })
+                          }
+                          disabled={pendingEliminate}
+                          style={{ touchAction: "manipulation" }}
+                          className="flex w-full items-center gap-3 rounded-md p-3 text-left text-paper transition-colors hover:bg-smoke active:bg-smoke disabled:opacity-50"
+                        >
+                          <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-ink-2 font-display text-base font-light text-gold">
+                            {s.name.charAt(0).toUpperCase()}
                           </div>
-                        )}
-                      </div>
-                    </button>
-                  </li>
-                ))}
-            </ul>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm">{s.name}</div>
+                            {s.nickname && (
+                              <div className="truncate font-display text-xs italic text-gold">
+                                {s.nickname}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                </ul>
 
-            <div className="border-t border-line p-3">
-              <button
-                type="button"
-                onClick={() => handleEliminate(null)}
-                disabled={pendingEliminate}
-                style={{ touchAction: "manipulation" }}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-red-poker/40 bg-red-poker/5 text-sm text-red-poker transition-colors hover:bg-red-poker/10 disabled:opacity-40"
-              >
-                {pendingEliminate ? "Confirmando…" : "Não dizer · só me eliminar"}
-              </button>
-            </div>
+                <div className="border-t border-line p-3">
+                  <button
+                    type="button"
+                    onClick={() => setPendingKiller({ id: null, name: null })}
+                    disabled={pendingEliminate}
+                    style={{ touchAction: "manipulation" }}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-line bg-ink-2 text-sm text-gray-soft transition-colors hover:border-red-poker/40 hover:text-red-poker disabled:opacity-40"
+                  >
+                    Não dizer · pular
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <DialogHeader className="border-b border-line p-4">
+                  <DialogTitle>Confirmar eliminação?</DialogTitle>
+                  <DialogDescription>
+                    Você sai dessa mesa AGORA e fica em{" "}
+                    <span className="text-paper">ELIMINADO</span>. Não dá pra
+                    voltar sem rebuy. {pendingKiller.name
+                      ? `Tirado por ${pendingKiller.name}.`
+                      : "Sem registrar quem te tirou."}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid grid-cols-2 gap-2 p-3">
+                  <button
+                    type="button"
+                    onClick={() => setPendingKiller(null)}
+                    disabled={pendingEliminate}
+                    style={{ touchAction: "manipulation" }}
+                    className="flex h-12 items-center justify-center rounded-md border border-line bg-ink-2 text-sm text-paper transition-colors hover:border-gold/40 disabled:opacity-40"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEliminate(pendingKiller.id)}
+                    disabled={pendingEliminate}
+                    style={{ touchAction: "manipulation" }}
+                    className="flex h-12 items-center justify-center rounded-md bg-red-poker text-sm font-medium text-white transition-colors hover:bg-red-poker/90 disabled:opacity-40"
+                  >
+                    {pendingEliminate ? "Eliminando…" : "Sim, eliminar"}
+                  </button>
+                </div>
+              </>
+            )}
           </DialogContent>
         </Dialog>
       </div>

@@ -23,7 +23,7 @@ export function TableActions({
   playerState: string;
 }) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
 
   // Pre-warm o RSC payload do destino — só vale se vai conseguir entrar
   useEffect(() => {
@@ -33,14 +33,15 @@ export function TableActions({
   }, [router, physicalTableId, isFinalized, isBusyElsewhere, hasPaid, youAreHere]);
 
   function handleJoin() {
-    // Optimistic: navega ANTES do action terminar.
-    router.push(`/me/mesa/${physicalTableId}`);
+    // V1.3: NÃO navega antes do server confirmar. Em rede de festa instável,
+    // a navegação otimista deixava o player confuso quando o action falhava
+    // (toast aparecia mas a tela já era outra). Agora espera o sucesso.
     startTransition(async () => {
       try {
         await joinTableAsPlayer(physicalTableId);
+        router.push(`/me/mesa/${physicalTableId}`);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro ao entrar");
-        router.push("/me");
       }
     });
   }
@@ -97,10 +98,11 @@ export function TableActions({
     <button
       type="button"
       onClick={handleJoin}
+      disabled={pending}
       style={{ touchAction: "manipulation" }}
-      className="flex h-11 w-full items-center justify-center rounded-md bg-gold px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink hover:bg-gold/90 active:scale-[0.98]"
+      className="flex h-11 w-full items-center justify-center rounded-md bg-gold px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink hover:bg-gold/90 active:scale-[0.98] disabled:opacity-50"
     >
-      Entrar
+      {pending ? "Entrando…" : "Entrar"}
     </button>
   );
 }

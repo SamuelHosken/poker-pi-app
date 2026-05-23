@@ -25,6 +25,8 @@ export type ActionPayload =
       previousState: {
         playerState: PlayerState;
         playerFinalPosition: number | null;
+        // V1.3: eliminação zera has_paid_buyin (precisa rebuy). Undo restaura.
+        playerHasPaidBuyin: boolean;
       };
     }
   | {

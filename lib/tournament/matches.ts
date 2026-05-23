@@ -727,7 +727,7 @@ export async function eliminatePlayer(input: {
   // Carrega estado anterior do player pra log
   const { data: player, error: plErr } = await supabase
     .from("players")
-    .select("state, final_position")
+    .select("state, final_position, has_paid_buyin")
     .eq("id", playerId)
     .maybeSingle();
   if (plErr) throw new Error(`Erro ao ler jogador: ${plErr.message}`);
@@ -794,6 +794,7 @@ export async function eliminatePlayer(input: {
     previousState: {
       playerState: player.state as PlayerState,
       playerFinalPosition: player.final_position,
+      playerHasPaidBuyin: player.has_paid_buyin ?? false,
     },
   });
 
@@ -965,13 +966,17 @@ export async function undoLastAction(eventId: string): Promise<{ undone: ActionP
     case "ELIMINATE_PLAYER": {
       await supabase
         .from("participations")
-        .update({ eliminated_at: null, final_position: null })
+        .update({ eliminated_at: null, final_position: null, eliminated_by_player_id: null })
         .eq("id", payload.participationId);
       await supabase
         .from("players")
         .update({
           state: payload.previousState.playerState,
           final_position: payload.previousState.playerFinalPosition,
+          // Fallback `true` cobre action_log antigo (pré V1.3) sem o campo —
+          // se errarmos, admin desmarca manualmente; é melhor do que travar
+          // player sem rebuy.
+          has_paid_buyin: payload.previousState.playerHasPaidBuyin ?? true,
         })
         .eq("id", payload.playerId);
       break;

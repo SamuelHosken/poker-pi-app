@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { createPlayer, removePlayerFromEvent, markPlayerPaid } from "@/lib/tournament/players";
 import { adminMovePlayer } from "@/lib/tournament/matches";
+import { broadcastPlayerUpdate } from "@/lib/realtime/avatar-broadcast";
 import type { Tables } from "@/lib/types/database.types";
 
 type Player = Tables<"players">;
@@ -86,6 +87,8 @@ export function PlayersSection({
         });
         toast.success(`${profile.name} adicionado`);
         setSelectedProfileId("");
+        // /me do jogador atualiza sem esperar LiveRefresh
+        broadcastPlayerUpdate().catch(() => {});
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro desconhecido");
       }
@@ -342,6 +345,8 @@ function PaidToggle({
             ? `${playerName} marcado como pago`
             : `${playerName} desmarcado`,
         );
+        // Avisa /me do jogador na hora — sem esperar o LiveRefresh de 5s
+        broadcastPlayerUpdate().catch(() => {});
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro");
       }
