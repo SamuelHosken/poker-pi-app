@@ -267,9 +267,19 @@ Três templates: `turbo`, `padrao` (= "Casa", 20 níveis com rebuy), `lento`. Ca
 
 **Pra adicionar/remover nível:** ajusta o array. Não esquece de manter `level` sequencial (1, 2, 3, …).
 
-**Atenção crítica — eventos JÁ CRIADOS NÃO se atualizam.** O template é copiado pra `blind_levels` no banco só na hora do `createEvent`. Mudou no arquivo, só vale pra eventos novos.
+**Atenção crítica — eventos JÁ CRIADOS NÃO se atualizam automaticamente.** O template é copiado pra `blind_levels` no banco só na hora do `createEvent`. Mudou no arquivo, só vale pra eventos novos.
 
-**Aplicar em evento existente:** o admin clica "Resetar blinds pro template Casa" em `/admin/events/[id]/tv` — chama `resetBlindsFromTemplate({eventId, templateKey})`. Apaga `blind_levels` e recria com o template atual do código.
+**Pra mudar blinds de evento ATIVO (3 caminhos):**
+
+1. **Editar um nível específico** (UI): `/admin/events/[id]/tv` → `<details>` "Estrutura de blinds" de cada mesa → ícone de lápis em qualquer nível. Abre dialog com SB / BB / ante / duração. Salva direto na linha do `blind_levels` via `updateBlindLevel`. **Vale imediato** — se o nível for o atual, o cronômetro passa a usar a duração nova.
+
+2. **Adicionar / remover nível** (UI, mesmo lugar): botão "Adicionar nível" no fim, ou trash em cada linha (exceto o atual). Chamam `createBlindLevel` / `deleteBlindLevel`.
+
+3. **Resetar TUDO pro template Casa** (UI ou via código): botão "Resetar blinds pro template Casa" no topo da config TV. Apaga toda `blind_levels` do evento e recria do template atual de `blind-templates.ts`. **As mesas em andamento voltam pro nível 1.** Usa quando: edição manual virou bagunça, ou você mudou `blind-templates.ts` e quer aplicar no evento ativo.
+
+**Server actions correspondentes:** `lib/tournament/blinds.ts` (`createBlindLevel`, `updateBlindLevel`, `deleteBlindLevel`) e `lib/tournament/events.ts` (`resetBlindsFromTemplate`).
+
+**Granularidade por mesa:** cada `physical_table` tem sua própria cópia dos blinds. Editar a Mesa 1 não muda a Mesa 2 — o `BlindsEditor` opera por mesa.
 
 **Tipos:** `BlindTemplateKey` em `lib/types/domain.ts` (turbo | padrao | lento). Se for adicionar novo template, atualiza o tipo + o select em `app/admin/events/new/new-event-form.tsx:144`.
 
