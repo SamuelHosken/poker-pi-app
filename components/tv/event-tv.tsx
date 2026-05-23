@@ -380,6 +380,37 @@ export function EventTV({
   // Recebe broadcast quando alguém troca a foto e re-busca avatarByProfile via SSR
   useAvatarRefresh();
 
+  // V1.3: tick de auto-advance server-side. Funciona mesmo se a config TV
+  // admin tá fechada — basta a TV pública estar aberta. Pausa quando aba
+  // some pra não desperdiçar request. Server faz idempotência (só avança
+  // se level realmente expirou).
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+    function tick() {
+      // fire-and-forget; erros não importam (vai retentar no próximo intervalo)
+      fetch("/api/auto-advance", { method: "POST", cache: "no-store" }).catch(() => {});
+    }
+    function start() {
+      if (timer) return;
+      tick();
+      timer = setInterval(tick, 5000);
+    }
+    function stop() {
+      if (timer) clearInterval(timer);
+      timer = null;
+    }
+    function onVis() {
+      if (document.hidden) stop();
+      else start();
+    }
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
   const activeMatchByTable = useMemo(() => {
     const map: Record<string, Match | undefined> = {};
     for (const t of tables) {
