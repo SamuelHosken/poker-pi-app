@@ -136,17 +136,19 @@ export async function getEvent(id: string): Promise<EventDetail | null> {
   };
 }
 
+/**
+ * V1.3 — Qualquer admin (profiles.is_admin = true) lista todos os eventos
+ * do sistema. Antes filtrava só pelos criados pelo user logado; agora todos
+ * os admins compartilham a visão. RLS de SELECT é pública (TV precisa).
+ */
 export async function listEvents(options?: {
   includeDeleted?: boolean;
 }): Promise<Event[]> {
-  const { userId } = await requireAdmin();
+  await requireAdmin();
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  let query = supabase
-    .from("events")
-    .select("*")
-    .eq("admin_user_id", userId);
+  let query = supabase.from("events").select("*");
   if (!options?.includeDeleted) {
     query = query.is("deleted_at", null);
   }
@@ -157,17 +159,16 @@ export async function listEvents(options?: {
 }
 
 /**
- * V1.3 — Lista eventos apagados (lixeira). Só usado pela UI de restauração.
+ * V1.3 — Lista eventos apagados (lixeira) de todos os admins.
  */
 export async function listDeletedEvents(): Promise<Event[]> {
-  const { userId } = await requireAdmin();
+  await requireAdmin();
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
   const { data, error } = await supabase
     .from("events")
     .select("*")
-    .eq("admin_user_id", userId)
     .not("deleted_at", "is", null)
     .order("deleted_at", { ascending: false });
 

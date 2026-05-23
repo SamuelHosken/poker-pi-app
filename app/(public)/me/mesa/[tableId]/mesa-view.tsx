@@ -49,7 +49,10 @@ export function MesaView({ initial }: { initial: TableView }) {
   const [pendingKiller, setPendingKiller] = useState<
     { id: string | null; name: string | null } | null
   >(null);
-  const [seats] = useState(initial.seats);
+  // ATENÇÃO: usar `initial.seats` direto (prop). Antes era `useState(initial.seats)`,
+  // o que congelava os seats no primeiro mount — entradas/saídas via Realtime
+  // disparavam router.refresh() mas o estado local ignorava a nova prop.
+  const seats = initial.seats;
   const matchId = initial.match?.id;
 
   // Realtime: mudanças em participations → router.refresh debounced (300ms).
