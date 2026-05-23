@@ -48,20 +48,36 @@ export const BLIND_TEMPLATES: Record<BlindTemplateKey, BlindTemplate> = {
   padrao: {
     key: "padrao",
     name: "Padrão",
-    description: "Eventos normais, ~3h",
+    description:
+      "Estrutura da casa — 20 níveis (~5-6h). 1ª etapa com rebuy (25min), depois acelera. Intervalos: após nível 5 (add-on) e após nível 9 (color up).",
     levels: [
-      { level: 1, smallBlind: 25, bigBlind: 50, ante: 0, durationMinutes: 15 },
-      { level: 2, smallBlind: 50, bigBlind: 100, ante: 0, durationMinutes: 15 },
-      { level: 3, smallBlind: 75, bigBlind: 150, ante: 0, durationMinutes: 15 },
-      { level: 4, smallBlind: 100, bigBlind: 200, ante: 0, durationMinutes: 15 },
-      { level: 5, smallBlind: 150, bigBlind: 300, ante: 25, durationMinutes: 15 },
-      { level: 6, smallBlind: 200, bigBlind: 400, ante: 50, durationMinutes: 15 },
-      { level: 7, smallBlind: 300, bigBlind: 600, ante: 75, durationMinutes: 15 },
-      { level: 8, smallBlind: 400, bigBlind: 800, ante: 100, durationMinutes: 15 },
-      { level: 9, smallBlind: 600, bigBlind: 1200, ante: 150, durationMinutes: 15 },
-      { level: 10, smallBlind: 800, bigBlind: 1600, ante: 200, durationMinutes: 15 },
-      { level: 11, smallBlind: 1200, bigBlind: 2400, ante: 300, durationMinutes: 15 },
-      { level: 12, smallBlind: 1600, bigBlind: 3200, ante: 400, durationMinutes: 15 },
+      // 1ª Etapa — período de rebuys (25 min por nível)
+      { level: 1, smallBlind: 100, bigBlind: 100, ante: 0, durationMinutes: 25 },
+      { level: 2, smallBlind: 100, bigBlind: 200, ante: 0, durationMinutes: 25 },
+      { level: 3, smallBlind: 200, bigBlind: 400, ante: 0, durationMinutes: 25 },
+      { level: 4, smallBlind: 400, bigBlind: 800, ante: 0, durationMinutes: 25 },
+      { level: 5, smallBlind: 500, bigBlind: 1000, ante: 0, durationMinutes: 25 },
+      // 1º intervalo (20 min) → Add-on gigante (pausa manualmente)
+      // 2ª etapa — pós add-on (20 min por nível)
+      { level: 6, smallBlind: 700, bigBlind: 1400, ante: 0, durationMinutes: 20 },
+      { level: 7, smallBlind: 800, bigBlind: 1600, ante: 0, durationMinutes: 20 },
+      { level: 8, smallBlind: 1000, bigBlind: 2000, ante: 0, durationMinutes: 20 },
+      { level: 9, smallBlind: 1500, bigBlind: 3000, ante: 0, durationMinutes: 20 },
+      // 2º intervalo (10 min) → Color up ficha 100 (pausa manualmente)
+      // 3ª etapa — pós color up (15 min por nível)
+      { level: 10, smallBlind: 2000, bigBlind: 4000, ante: 0, durationMinutes: 15 },
+      { level: 11, smallBlind: 2500, bigBlind: 5000, ante: 0, durationMinutes: 15 },
+      { level: 12, smallBlind: 3000, bigBlind: 6000, ante: 0, durationMinutes: 15 },
+      { level: 13, smallBlind: 3500, bigBlind: 7000, ante: 0, durationMinutes: 15 },
+      // Color up ficha 500 entre nível 14 e 15
+      { level: 14, smallBlind: 4000, bigBlind: 8000, ante: 0, durationMinutes: 15 },
+      { level: 15, smallBlind: 5000, bigBlind: 10000, ante: 0, durationMinutes: 15 },
+      { level: 16, smallBlind: 6000, bigBlind: 12000, ante: 0, durationMinutes: 15 },
+      { level: 17, smallBlind: 7000, bigBlind: 14000, ante: 0, durationMinutes: 15 },
+      { level: 18, smallBlind: 8000, bigBlind: 16000, ante: 0, durationMinutes: 15 },
+      // Color up ficha 1.000 entre nível 19 e 20
+      { level: 19, smallBlind: 9000, bigBlind: 18000, ante: 0, durationMinutes: 15 },
+      { level: 20, smallBlind: 10000, bigBlind: 20000, ante: 0, durationMinutes: 15 },
     ],
   },
   lento: {

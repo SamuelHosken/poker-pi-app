@@ -43,11 +43,13 @@ export function MesaLiveControl({
   match: initialMatch,
   currentLevel: initialLevel,
   levels,
+  autoAdvance = false,
 }: {
   table: PhysicalTable;
   match: Match | undefined;
   currentLevel: BlindLevel | undefined;
   levels: BlindLevel[];
+  autoAdvance?: boolean;
 }) {
   const router = useRouter();
   // Realtime override: vence o prop quando o ID bate. Caso prop mude (ex.: nova
@@ -65,6 +67,8 @@ export function MesaLiveControl({
   const [pendingReset, startReset] = useTransition();
   const [pendingResetTable, startResetTable] = useTransition();
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Ref pra garantir só 1 auto-advance por nível
+  const autoAdvancedFor = useRef<string | null>(null);
 
   // Tick visual a cada 1s enquanto JOGANDO
   useEffect(() => {
@@ -100,6 +104,32 @@ export function MesaLiveControl({
     match && match.current_level_id
       ? levels.find((l) => l.id === match.current_level_id) ?? initialLevel
       : initialLevel;
+
+  // V1.3: auto-advance quando cronômetro expira (precisa estar antes do early
+  // return pra respeitar hook order). Verifica conditions dentro do effect.
+  // setTick triggera re-renders a cada 1s; quando isExpired vira true, este
+  // effect re-roda e schedula o advance se autoAdvance estiver ligado.
+  const autoCanRun =
+    autoAdvance &&
+    !!match &&
+    !!currentLevel &&
+    match.state === "JOGANDO" &&
+    calculateTimeRemainingMs(match, currentLevel) < 0;
+  const autoLevelId = currentLevel?.id ?? null;
+  useEffect(() => {
+    if (!autoCanRun || !autoLevelId || !match) return;
+    if (autoAdvancedFor.current === autoLevelId) return;
+    autoAdvancedFor.current = autoLevelId;
+    // 2s de carência — admin vê o "expirado" brevemente antes do auto-advance
+    const matchIdLocal = match.id;
+    const t = setTimeout(() => {
+      advanceLevel(matchIdLocal).catch(() => {
+        // Falha silenciosa — Realtime ainda pode sincronizar; admin pode advance manual
+        autoAdvancedFor.current = null;
+      });
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [autoCanRun, autoLevelId, match]);
 
   // Estado LIVRE — nenhum match ainda
   if (!match || !currentLevel) {
@@ -220,7 +250,9 @@ export function MesaLiveControl({
 
         {isExpired && !isPaused && (
           <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker">
-            Acabou o tempo — aperte &ldquo;Próximo nível&rdquo;
+            {autoAdvance
+              ? "Acabou o tempo — avançando automaticamente…"
+              : "Acabou o tempo — aperte “Próximo nível”"}
           </div>
         )}
       </div>

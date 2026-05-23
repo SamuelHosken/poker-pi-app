@@ -1,8 +1,8 @@
-import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { EventTV } from "@/components/tv/event-tv";
+import { EmptyTV } from "@/components/tv/empty-tv";
 import type { Database, Tables } from "@/lib/types/database.types";
 
 export const metadata = {
@@ -38,7 +38,11 @@ export default async function TVPage({
         .eq("event_id", eventId),
     ]);
 
-  if (!event) notFound();
+  // Evento inexistente OU soft-deletado → TV neutra "Sem nenhum evento".
+  // (Não retornamos 404 porque a TV deve ficar acesa pro próximo evento.)
+  if (!event || event.deleted_at) {
+    return <EmptyTV reason={event?.deleted_at ? "deleted" : "missing"} />;
+  }
 
   // V1.3: participações ativas + avatares de profile (via service_role, pois
   // TV é anônima e a policy de profiles exige auth.uid()).

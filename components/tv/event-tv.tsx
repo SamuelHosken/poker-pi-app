@@ -21,6 +21,7 @@ import { ChipDisplayOverlay } from "./chip-display-overlay";
 import { TvPausedOverlay } from "./tv-paused-overlay";
 import { RealtimeStatus } from "./realtime-status";
 import { useReactions } from "@/lib/realtime/use-reactions";
+import { EmptyTV } from "./empty-tv";
 import type { PokerSeat } from "./poker-table";
 
 type Event = Tables<"events">;
@@ -135,6 +136,14 @@ export function EventTV({
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "events", filter: `id=eq.${event.id}` },
         (payload) => setEvent(payload.new as Event),
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "events", filter: `id=eq.${event.id}` },
+        // Hard-delete (raro — admin normalmente soft-deleta). Marca local como
+        // deletado pra cair na tela neutra sem precisar reload.
+        () =>
+          setEvent((prev) => ({ ...prev, deleted_at: new Date().toISOString() })),
       )
       .on(
         "postgres_changes",
@@ -384,6 +393,10 @@ export function EventTV({
   const classificados = players.filter(
     (p) => p.state === "CLASSIFICADO" || p.state === "NA_FINAL",
   );
+
+  // Soft-delete via Realtime: admin apagou o evento enquanto a TV estava aberta.
+  // Trocamos imediatamente pra tela neutra; a TV continua ligada pro próximo.
+  if (event.deleted_at) return <EmptyTV reason="deleted" />;
 
   return (
     <div className="flex min-h-svh flex-col bg-ink text-paper">

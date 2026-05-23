@@ -170,6 +170,7 @@ export type Database = {
       events: {
         Row: {
           admin_user_id: string
+          auto_advance_blinds: boolean
           buy_in_cents: number
           created_at: string
           deleted_at: string | null
@@ -187,6 +188,7 @@ export type Database = {
         }
         Insert: {
           admin_user_id: string
+          auto_advance_blinds?: boolean
           buy_in_cents: number
           created_at?: string
           deleted_at?: string | null
@@ -204,6 +206,7 @@ export type Database = {
         }
         Update: {
           admin_user_id?: string
+          auto_advance_blinds?: boolean
           buy_in_cents?: number
           created_at?: string
           deleted_at?: string | null

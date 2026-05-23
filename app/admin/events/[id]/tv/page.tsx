@@ -9,6 +9,7 @@ import { MesaLiveControl } from "./mesa-live-control";
 import { BlindsEditor } from "./blinds-editor";
 import { AllTablesControls } from "./all-tables-controls";
 import { TvPauseControl } from "./tv-pause-control";
+import { AutoAdvanceToggle } from "./auto-advance-toggle";
 
 const STATE_LABEL: Record<string, string> = {
   SETUP: "Setup",
@@ -126,6 +127,11 @@ export default async function TvConfigPage({
           hasPaused={matches.some((m) => m.state === "PAUSADA")}
         />
 
+        <AutoAdvanceToggle
+          eventId={event.id}
+          enabled={event.auto_advance_blinds ?? false}
+        />
+
         <ul className="space-y-4">
           {physicalTables.map((t) => {
             const match = activeMatchByTable[t.id];
@@ -153,6 +159,7 @@ export default async function TvConfigPage({
                   match={match}
                   currentLevel={currentLevel}
                   levels={tableLevels}
+                  autoAdvance={event.auto_advance_blinds ?? false}
                 />
 
                 <details className="rounded-lg border border-line bg-ink/40 p-3 [&_summary]:cursor-pointer [&[open]_summary]:mb-3">

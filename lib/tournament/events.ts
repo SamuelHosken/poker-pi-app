@@ -193,6 +193,29 @@ export async function restoreEvent(id: string): Promise<void> {
 }
 
 /**
+ * V1.3 — Liga/desliga avanço automático de blinds. Quando on, a página do
+ * admin (TV config) detecta expiração do cronômetro e chama advanceLevel
+ * automaticamente após 2s de carência. Off = admin avança manualmente.
+ */
+export async function setAutoAdvanceBlinds(input: {
+  eventId: string;
+  enabled: boolean;
+}): Promise<void> {
+  await requireAdmin();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { error } = await supabase
+    .from("events")
+    .update({ auto_advance_blinds: input.enabled })
+    .eq("id", input.eventId);
+  if (error) throw new Error(`Erro ao mudar modo: ${error.message}`);
+
+  revalidatePath(`/admin/events/${input.eventId}/tv`);
+  revalidatePath(`/admin/events/${input.eventId}`);
+}
+
+/**
  * V1.3 — Ativa/desativa o modo "pausa geral" da TV. Quando ativo, a TV
  * cobre tudo com um overlay grande mostrando logo do evento + mensagem.
  * `message=null` desativa.

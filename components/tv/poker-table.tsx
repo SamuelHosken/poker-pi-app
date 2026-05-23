@@ -37,9 +37,13 @@ export function PokerTable({
   reactions?: SeatReaction[];
 }) {
   const n = Math.max(seats.length, 1);
-  // Semi-eixos da elipse (% do container quadrado)
+  // Semi-eixos da elipse do tampo (% do container quadrado)
   const RX = 38;
   const RY = 26;
+  // V1.3: raio dos seats — um pouco maior que o do tampo, pra avatares ficarem
+  // sentados POR FORA da mesa em vez de sobre a borda. Glow não conflita.
+  const ARX = 44;
+  const ARY = 32;
 
   const avatarBox =
     avatarSize === "lg"
@@ -60,7 +64,7 @@ export function PokerTable({
 
       {/* Tampo */}
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[50%] border border-gold/25 bg-gradient-to-b from-ink-2 via-ink to-ink shadow-[inset_0_2px_0_rgba(255,255,255,0.04),inset_0_-30px_60px_rgba(0,0,0,0.5)]"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[50%] border border-gold/30 bg-gradient-to-b from-ink-2 via-ink to-ink shadow-[inset_0_2px_0_rgba(255,255,255,0.04),inset_0_-30px_60px_rgba(0,0,0,0.5),0_0_24px_-10px_rgba(212,175,55,0.3)]"
         style={{ width: `${RX * 2}%`, height: `${RY * 2}%` }}
       >
         <div className="absolute inset-[6%] rounded-[50%] border border-gold/15" />
@@ -76,8 +80,8 @@ export function PokerTable({
         ? null
         : seats.map((s, i) => {
             const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-            const cx = 50 + RX * Math.cos(angle);
-            const cy = 50 + RY * Math.sin(angle);
+            const cx = 50 + ARX * Math.cos(angle);
+            const cy = 50 + ARY * Math.sin(angle);
             const displayLabel = s.isHighlighted
               ? "Você"
               : s.nickname || s.name.split(" ")[0];
@@ -114,7 +118,15 @@ export function PokerTable({
                     }}
                   />
                 )}
-                <div className="relative flex flex-col items-center gap-1.5">
+                <div
+                  className={`relative flex flex-col items-center gap-1.5 ${
+                    s.isEntering || s.isEliminating ? "" : "animate-seat-float"
+                  }`}
+                  style={{
+                    // Stagger por seat — cada um começa em fase diferente
+                    animationDelay: `${i * -0.85}s`,
+                  }}
+                >
                   {/* Reações flutuantes — saem do topo do avatar */}
                   {seatReactions.map((r) => (
                     <span
@@ -147,22 +159,22 @@ export function PokerTable({
                       alt={s.name}
                       loading="lazy"
                       decoding="async"
-                      className={`overflow-hidden rounded-full object-cover shadow-lg ${avatarBox} ${
+                      className={`overflow-hidden rounded-full object-cover ${avatarBox} ${
                         s.isEliminating
-                          ? "grayscale ring-2 ring-red-poker/80"
+                          ? "grayscale ring-2 ring-red-poker/80 shadow-lg"
                           : s.isHighlighted
-                            ? "ring-2 ring-gold/80 ring-offset-2 ring-offset-ink"
-                            : "ring-1 ring-gold/30"
+                            ? "ring-2 ring-gold/80 ring-offset-2 ring-offset-ink shadow-[0_0_14px_-3px_rgba(212,175,55,0.55)]"
+                            : "ring-1 ring-gold/40 shadow-[0_0_10px_-3px_rgba(212,175,55,0.45)]"
                       }`}
                     />
                   ) : (
                     <div
-                      className={`flex items-center justify-center rounded-full font-display font-light shadow-lg ${avatarBox} ${
+                      className={`flex items-center justify-center rounded-full font-display font-light ${avatarBox} ${
                         s.isEliminating
-                          ? "bg-ink-2 text-red-poker ring-2 ring-red-poker/80"
+                          ? "bg-ink-2 text-red-poker ring-2 ring-red-poker/80 shadow-lg"
                           : s.isHighlighted
-                            ? "bg-gold text-ink ring-2 ring-gold/60 ring-offset-2 ring-offset-ink"
-                            : "border border-gold/30 bg-ink-2 text-gold"
+                            ? "bg-gold text-ink ring-2 ring-gold/60 ring-offset-2 ring-offset-ink shadow-[0_0_16px_-3px_rgba(212,175,55,0.6)]"
+                            : "border border-gold/40 bg-ink-2 text-gold shadow-[0_0_10px_-3px_rgba(212,175,55,0.45)]"
                       }`}
                       aria-label={s.name}
                     >
@@ -186,6 +198,14 @@ export function PokerTable({
           })}
 
       <style>{`
+        /* V1.3: flutuação suave dos seats — meio respirar */
+        @keyframes seat-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        .animate-seat-float {
+          animation: seat-float 5.5s ease-in-out infinite;
+        }
         /* Seat entering — vem de fora da mesa em direção ao próprio seat,
            com escala + blur (focando), pequena rotação e overshoot. */
         @keyframes seat-enter {
