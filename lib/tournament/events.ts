@@ -292,6 +292,28 @@ export async function resetBlindsFromTemplate(input: {
 }
 
 /**
+ * V1.3 — Modo "vamos começar jajá" da TV. Setta um horário-alvo; TV
+ * mostra overlay com countdown ao vivo + "Começa às HH:MM".
+ * `startsAt=null` desativa o overlay.
+ */
+export async function setTvStartsAt(input: {
+  eventId: string;
+  startsAt: Date | null;
+}): Promise<void> {
+  await requireAdmin();
+  const supabase = adminServiceClient();
+  const value = input.startsAt ? input.startsAt.toISOString() : null;
+  const { error } = await supabase
+    .from("events")
+    .update({ tv_starts_at: value })
+    .eq("id", input.eventId);
+  if (error) throw new Error(`Erro ao salvar horário: ${error.message}`);
+
+  revalidatePath(`/admin/events/${input.eventId}/tv`);
+  revalidatePath(`/tv/${input.eventId}`);
+}
+
+/**
  * V1.3 — Ativa/desativa o modo "pausa geral" da TV. Quando ativo, a TV
  * cobre tudo com um overlay grande mostrando logo do evento + mensagem.
  * `message=null` desativa.

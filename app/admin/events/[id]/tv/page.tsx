@@ -9,6 +9,7 @@ import { MesaLiveControl } from "./mesa-live-control";
 import { BlindsEditor } from "./blinds-editor";
 import { AllTablesControls } from "./all-tables-controls";
 import { TvPauseControl } from "./tv-pause-control";
+import { TvStartControl } from "./tv-start-control";
 import { AutoAdvanceToggle } from "./auto-advance-toggle";
 import { ResetBlindsButton } from "./reset-blinds-button";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -104,6 +105,11 @@ export default async function TvConfigPage({
         </code>
 
         <TvActions tvUrl={tvUrl} />
+
+        <TvStartControl
+          eventId={event.id}
+          currentStartsAt={event.tv_starts_at ?? null}
+        />
 
         <TvPauseControl
           eventId={event.id}

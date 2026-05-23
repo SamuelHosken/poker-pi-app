@@ -184,6 +184,7 @@ export type Database = {
           state: string
           table_size: number
           tv_paused_message: string | null
+          tv_starts_at: string | null
           updated_at: string
         }
         Insert: {
@@ -202,6 +203,7 @@ export type Database = {
           state?: string
           table_size?: number
           tv_paused_message?: string | null
+          tv_starts_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -220,6 +222,7 @@ export type Database = {
           state?: string
           table_size?: number
           tv_paused_message?: string | null
+          tv_starts_at?: string | null
           updated_at?: string
         }
         Relationships: []

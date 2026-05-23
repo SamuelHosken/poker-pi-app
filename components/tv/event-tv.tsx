@@ -18,6 +18,7 @@ import { Podium } from "./podium";
 import { SoundToggle } from "./sound-toggle";
 import { ChipDisplayOverlay } from "./chip-display-overlay";
 import { TvPausedOverlay } from "./tv-paused-overlay";
+import { TvStartingOverlay } from "./tv-starting-overlay";
 import { RealtimeStatus } from "./realtime-status";
 import { useReactions } from "@/lib/realtime/use-reactions";
 import { useAvatarRefresh } from "@/lib/realtime/avatar-broadcast";
@@ -554,10 +555,21 @@ export function EventTV({
       {/* Overlay "mostrar fichas" — escuta chip_displays */}
       <ChipDisplayOverlay eventId={event.id} playersById={playersById} />
 
-      {/* Modo pausa geral — cobre tudo quando ativo */}
-      {event.tv_paused_message && event.tv_paused_message.trim().length > 0 && (
-        <TvPausedOverlay eventName={event.name} message={event.tv_paused_message} />
+      {/* Modo "começa em breve" — cobre tudo, mostra countdown.
+          Tem prioridade sobre pausa: faz sentido começar antes de pausar. */}
+      {event.tv_starts_at && (
+        <TvStartingOverlay
+          eventName={event.name}
+          startsAt={new Date(event.tv_starts_at)}
+        />
       )}
+
+      {/* Modo pausa geral — cobre tudo quando ativo */}
+      {!event.tv_starts_at &&
+        event.tv_paused_message &&
+        event.tv_paused_message.trim().length > 0 && (
+          <TvPausedOverlay eventName={event.name} message={event.tv_paused_message} />
+        )}
 
       {/* Indicador discreto da conexão Realtime */}
       <RealtimeStatus eventId={event.id} />
