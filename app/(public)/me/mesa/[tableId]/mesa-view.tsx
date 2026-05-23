@@ -88,9 +88,9 @@ export function MesaView({ initial }: { initial: TableView }) {
   function handleEliminate(killerId: string | null) {
     setEliminateOpen(false);
     setPendingKiller(null);
-    // Optimistic: navega pra /me imediatamente. Toast aparece depois (sonner
-    // persiste entre rotas). Em caso de erro, volta pra mesa.
-    router.push("/me");
+    // V1.3: espera o server confirmar ANTES de navegar. Antes navegava
+    // otimista pra /me; em rede flaky o browser podia cancelar a Server
+    // Action em vôo e o player nunca era eliminado de fato.
     startEliminate(async () => {
       try {
         const res = await eliminateSelf({
@@ -98,23 +98,23 @@ export function MesaView({ initial }: { initial: TableView }) {
           eliminatedByPlayerId: killerId,
         });
         toast.success(`Você ficou em ${res.finalPosition}º`);
+        router.push("/me");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro");
-        router.push(`/me/mesa/${initial.table.id}`);
       }
     });
   }
 
   function handleSwitch(targetTableId: string) {
     setSwitchOpen(false);
-    // Optimistic: navega pra mesa nova já. Se a troca falhar, volta pra atual.
-    router.push(`/me/mesa/${targetTableId}`);
+    // V1.3: espera o server confirmar antes de navegar (mesmo motivo do
+    // handleEliminate).
     startSwitch(async () => {
       try {
         await switchToTable(targetTableId, initial.eventId);
+        router.push(`/me/mesa/${targetTableId}`);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro ao trocar");
-        router.push(`/me/mesa/${initial.table.id}`);
       }
     });
   }

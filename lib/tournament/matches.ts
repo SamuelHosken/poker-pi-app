@@ -178,11 +178,17 @@ export async function pauseMatch(matchId: string): Promise<void> {
   const supabase = createClient(cookieStore);
   const now = new Date().toISOString();
 
-  const { error } = await supabase
+  // V1.3: UPDATE condicional pra evitar race entre dois admins pausando ao
+  // mesmo tempo. Se a partida já foi pausada (por outro admin), o segundo
+  // UPDATE casa zero linhas — silenciosamente OK (estado final já é PAUSADA).
+  const { data: updated, error } = await supabase
     .from("matches")
     .update({ state: "PAUSADA", paused_at: now })
-    .eq("id", matchId);
+    .eq("id", matchId)
+    .eq("state", "JOGANDO")
+    .select("id");
   if (error) throw new Error(`Erro ao pausar partida: ${error.message}`);
+  if (!updated || updated.length === 0) return; // já pausada — no-op
 
   await supabase
     .from("physical_tables")
@@ -207,15 +213,21 @@ export async function resumeMatch(matchId: string): Promise<void> {
   const pauseElapsedMs = Date.now() - new Date(match.paused_at).getTime();
   const newTotalPaused = Number(match.total_paused_ms ?? 0) + Math.max(0, pauseElapsedMs);
 
-  const { error } = await supabase
+  // V1.3: UPDATE condicional — segundo resume concorrente casa zero linhas
+  // e retorna sem dobrar `total_paused_ms`. Evita o bug do cronômetro pulando
+  // pra trás quando 2 admins clicam "Retomar" no mesmo instante.
+  const { data: updated, error } = await supabase
     .from("matches")
     .update({
       state: "JOGANDO",
       paused_at: null,
       total_paused_ms: newTotalPaused,
     })
-    .eq("id", matchId);
+    .eq("id", matchId)
+    .eq("state", "PAUSADA")
+    .select("id");
   if (error) throw new Error(`Erro ao retomar partida: ${error.message}`);
+  if (!updated || updated.length === 0) return; // já retomado — no-op
 
   await supabase
     .from("physical_tables")
@@ -765,15 +777,23 @@ export async function eliminatePlayer(input: {
     if (killerPart) resolvedKillerId = eliminatedByPlayerId;
   }
 
-  const { error: updPartErr } = await supabase
+  // V1.3: UPDATE condicional pra evitar race entre dois admins eliminando o
+  // mesmo player. `.is("eliminated_at", null)` faz o segundo UPDATE casar
+  // zero linhas; detectamos via .select() e erro claro.
+  const { data: updatedRows, error: updPartErr } = await supabase
     .from("participations")
     .update({
       eliminated_at: now,
       final_position: finalPosition,
       eliminated_by_player_id: resolvedKillerId,
     })
-    .eq("id", participation.id);
+    .eq("id", participation.id)
+    .is("eliminated_at", null)
+    .select("id");
   if (updPartErr) throw new Error(`Erro ao atualizar participação: ${updPartErr.message}`);
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error("Jogador já foi eliminado (concorrência) — recarregue a página.");
+  }
 
   const { error: updPlErr } = await supabase
     .from("players")

@@ -394,20 +394,16 @@ export async function crownChampion(input: {
     throw new Error("Jogador não pertence a este evento.");
   }
 
-  // Se já tem outro CAMPEAO, "destrona" ele primeiro
-  const { data: previousChamp } = await supabase
+  // V1.3: destrona QUALQUER campeão atual do evento ≠ playerId em um único
+  // UPDATE atômico. Se 2 admins coroam playerY e playerZ ao mesmo tempo, o
+  // resultado é determinístico: o último a entrar fica como CAMPEAO único,
+  // os anteriores são rebaixados pra ELIMINADO. Nunca 2 CAMPEAO simultâneos.
+  await supabase
     .from("players")
-    .select("id")
+    .update({ state: "ELIMINADO", final_position: 2 })
     .eq("event_id", input.eventId)
     .eq("state", "CAMPEAO")
-    .neq("id", input.playerId)
-    .maybeSingle();
-  if (previousChamp) {
-    await supabase
-      .from("players")
-      .update({ state: "ELIMINADO", final_position: 2 })
-      .eq("id", previousChamp.id);
-  }
+    .neq("id", input.playerId);
 
   // Coroa o escolhido
   const { error: pErr } = await supabase

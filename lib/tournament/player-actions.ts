@@ -655,15 +655,22 @@ export async function eliminateSelf(
 
   const now = new Date().toISOString();
 
-  const { error: pErr } = await admin
+  // V1.3: UPDATE condicional pra evitar race se admin elimina o mesmo
+  // player ao mesmo tempo que o player auto-elimina.
+  const { data: updatedRows, error: pErr } = await admin
     .from("participations")
     .update({
       eliminated_at: now,
       final_position: tableFinalPosition,
       eliminated_by_player_id: eliminatedById,
     })
-    .eq("id", participation.id);
+    .eq("id", participation.id)
+    .is("eliminated_at", null)
+    .select("id");
   if (pErr) throw new Error(`Erro ao registrar eliminação: ${pErr.message}`);
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error("Você já foi eliminado por outra ação.");
+  }
 
   const { error: plErr } = await admin
     .from("players")
