@@ -1,8 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/utils/supabase/server";
 import {
   CreateEventSchema,
   type CreateEventInput,
@@ -11,7 +9,7 @@ import {
 import { canTransitionEvent, transitionErrorMessage } from "@/lib/tournament/transitions";
 import { getBlindTemplate } from "@/lib/tournament/blind-templates";
 import { logAction } from "@/lib/tournament/action-log";
-import { requireAdmin } from "@/lib/tournament/auth";
+import { requireAdmin, adminServiceClient } from "@/lib/tournament/auth";
 import type { EventState, BlindTemplateKey } from "@/lib/types/domain";
 import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
 
@@ -27,8 +25,7 @@ export async function createEvent(input: CreateEventInput): Promise<{ id: string
   const data = CreateEventSchema.parse(input);
   const { userId } = await requireAdmin();
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const eventInsert: Inserts<"events"> = {
     name: data.name,
@@ -103,8 +100,7 @@ export type EventDetail = {
 };
 
 export async function getEvent(id: string): Promise<EventDetail | null> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: event, error } = await supabase
     .from("events")
@@ -145,8 +141,7 @@ export async function listEvents(options?: {
   includeDeleted?: boolean;
 }): Promise<Event[]> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   let query = supabase.from("events").select("*");
   if (!options?.includeDeleted) {
@@ -163,8 +158,7 @@ export async function listEvents(options?: {
  */
 export async function listDeletedEvents(): Promise<Event[]> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data, error } = await supabase
     .from("events")
@@ -181,8 +175,7 @@ export async function listDeletedEvents(): Promise<Event[]> {
  */
 export async function restoreEvent(id: string): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { error } = await supabase
     .from("events")
@@ -203,8 +196,7 @@ export async function setAutoAdvanceBlinds(input: {
   enabled: boolean;
 }): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { error } = await supabase
     .from("events")
@@ -233,8 +225,7 @@ export async function resetBlindsFromTemplate(input: {
   templateKey: BlindTemplateKey;
 }): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const template = getBlindTemplate(input.templateKey);
 
@@ -310,8 +301,7 @@ export async function setTvPausedMessage(input: {
   message: string | null;
 }): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const trimmed = input.message?.trim();
   const final = trimmed && trimmed.length > 0 ? trimmed : null;
@@ -332,8 +322,7 @@ export async function setTvPausedMessage(input: {
  */
 export async function deleteEvent(id: string): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: event } = await supabase
     .from("events")
@@ -358,8 +347,7 @@ export async function deleteEvent(id: string): Promise<void> {
  */
 export async function deleteEventPermanently(id: string): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: event } = await supabase
     .from("events")
@@ -380,8 +368,7 @@ export async function deleteEventPermanently(id: string): Promise<void> {
 export async function transitionEventState(input: unknown): Promise<void> {
   const { id, newState } = TransitionEventStateSchema.parse(input);
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: event, error: fetchError } = await supabase
     .from("events")
@@ -414,8 +401,7 @@ export async function transitionEventState(input: unknown): Promise<void> {
  */
 export async function endEventManually(eventId: string): Promise<{ crownedChampionId: string | null }> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: event, error: eErr } = await supabase
     .from("events")
@@ -461,8 +447,7 @@ export async function crownChampion(input: {
   playerId: string;
 }): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const [{ data: event }, { data: player }] = await Promise.all([
     supabase.from("events").select("id, state").eq("id", input.eventId).maybeSingle(),

@@ -1,9 +1,7 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/utils/supabase/server";
-import { requireAdmin } from "@/lib/tournament/auth";
+import { requireAdmin, adminServiceClient } from "@/lib/tournament/auth";
 import { logAction } from "@/lib/tournament/action-log";
 import type { Tables } from "@/lib/types/database.types";
 import type { PlayerState } from "@/lib/types/domain";
@@ -31,8 +29,7 @@ export type EliminatedWithStatus = {
 export async function isPlayerEligibleForRebuy(
   playerId: string,
 ): Promise<RebuyEligibility> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: player, error: pErr } = await supabase
     .from("players")
@@ -111,8 +108,7 @@ export async function isPlayerEligibleForRebuy(
 export async function getEliminatedWithRebuyStatus(
   eventId: string,
 ): Promise<EliminatedWithStatus[]> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const [{ data: event, error: eErr }, { data: eliminated, error: plErr }] = await Promise.all([
     supabase
@@ -212,8 +208,7 @@ export async function performRebuy(playerId: string): Promise<void> {
     throw new Error(eligibility.reason);
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: player, error: pErr } = await supabase
     .from("players")

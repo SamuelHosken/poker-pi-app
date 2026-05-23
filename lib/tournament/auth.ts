@@ -36,6 +36,21 @@ function profileLookupClient() {
 }
 
 /**
+ * Cliente service_role pra writes admin. Bypassa RLS — todos os admins
+ * (profile.is_admin = true) podem editar qualquer evento, independente
+ * de quem criou. SEMPRE chame `requireAdmin()` ANTES de usar.
+ *
+ * Padrão pareado com `privilegedClient()` em player-actions.ts.
+ */
+export function adminServiceClient() {
+  return createServiceClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
+
+/**
  * V1.2 — Garante que há um usuário admin autenticado (profile.is_admin = true).
  * Centraliza o gate de auth usado por todas as Server Actions admin.
  *

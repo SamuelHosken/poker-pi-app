@@ -1,9 +1,7 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/utils/supabase/server";
-import { requireAdmin } from "@/lib/tournament/auth";
+import { requireAdmin, adminServiceClient } from "@/lib/tournament/auth";
 import { canTransitionMatch, transitionErrorMessage } from "@/lib/tournament/transitions";
 import {
   logAction,
@@ -48,8 +46,7 @@ export async function startMatchOnTable(input: {
   }
   await requireAdmin();
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: table, error: tableErr } = await supabase
     .from("physical_tables")
@@ -151,8 +148,7 @@ export async function startMatchOnTable(input: {
 }
 
 async function loadMatch(matchId: string): Promise<Match> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
   const { data, error } = await supabase
     .from("matches")
     .select("*")
@@ -174,8 +170,7 @@ export async function pauseMatch(matchId: string): Promise<void> {
   const match = await loadMatch(matchId);
   ensureTransition(match.state as MatchState, "PAUSADA");
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
   const now = new Date().toISOString();
 
   // V1.3: UPDATE condicional pra evitar race entre dois admins pausando ao
@@ -207,8 +202,7 @@ export async function resumeMatch(matchId: string): Promise<void> {
     throw new Error("Partida não tem paused_at registrado — estado inconsistente.");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const pauseElapsedMs = Date.now() - new Date(match.paused_at).getTime();
   const newTotalPaused = Number(match.total_paused_ms ?? 0) + Math.max(0, pauseElapsedMs);
@@ -244,8 +238,7 @@ export async function resumeMatch(matchId: string): Promise<void> {
  */
 export async function pauseAllMatches(eventId: string): Promise<{ paused: number }> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: matches } = await supabase
     .from("matches")
@@ -279,8 +272,7 @@ export async function pauseAllMatches(eventId: string): Promise<{ paused: number
  */
 export async function resumeAllMatches(eventId: string): Promise<{ resumed: number }> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: matches } = await supabase
     .from("matches")
@@ -326,8 +318,7 @@ export async function advanceLevel(matchId: string): Promise<{ advanced: boolean
     throw new Error("Partida sem nível atual configurado.");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: currentLevel, error: curErr } = await supabase
     .from("blind_levels")
@@ -383,8 +374,7 @@ export async function adminMovePlayer(input: {
   targetTableId: string;
 }): Promise<{ matchId: string }> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   // 1) Player + mesa destino + match destino + match origem em paralelo
   const [{ data: player }, { data: targetTable }] = await Promise.all([
@@ -557,8 +547,7 @@ export async function adjustMatchTime(input: {
     throw new Error("Mesa sem cronômetro iniciado.");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const newStarted = new Date(
     new Date(match.level_started_at).getTime() + deltaSeconds * 1000,
@@ -593,8 +582,7 @@ export async function resetMatchTimer(matchId: string): Promise<void> {
     throw new Error("Mesa sem nível atual.");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
   const now = new Date().toISOString();
 
   const { error } = await supabase
@@ -625,8 +613,7 @@ export async function resetMatchTimer(matchId: string): Promise<void> {
  */
 export async function resetTable(physicalTableId: string): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: table, error: tErr } = await supabase
     .from("physical_tables")
@@ -711,8 +698,7 @@ export async function eliminatePlayer(input: {
     throw new Error("Partida já finalizada — não dá pra eliminar mais.");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: participation, error: partErr } = await supabase
     .from("participations")
@@ -845,8 +831,7 @@ export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: st
     throw new Error("Partida já está finalizada.");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: remaining, error: remErr } = await supabase
     .from("participations")
@@ -974,8 +959,7 @@ export async function finishMatch(matchId: string): Promise<{ winnerPlayerId: st
  */
 export async function undoLastAction(eventId: string): Promise<{ undone: ActionPayload["type"] | null }> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const last = await getLastReversibleAction(supabase, eventId);
   if (!last) return { undone: null };
@@ -1113,8 +1097,7 @@ export async function getMatchesForEvent(eventId: string): Promise<{
   matches: Match[];
   levelsById: Record<string, BlindLevel>;
 }> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const [{ data: matches }, { data: levels }] = await Promise.all([
     supabase
@@ -1137,8 +1120,7 @@ export async function getMatchesForEvent(eventId: string): Promise<{
 export async function getParticipationsForMatch(matchId: string): Promise<
   Array<Participation & { player: Pick<Player, "id" | "name" | "nickname" | "state"> }>
 > {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: parts, error } = await supabase
     .from("participations")
@@ -1170,8 +1152,7 @@ export async function getParticipationsForMatch(matchId: string): Promise<
  * Indica se ainda existem ações reversíveis no evento.
  */
 export async function hasReversibleAction(eventId: string): Promise<boolean> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
   const { count } = await supabase
     .from("action_log")
     .select("*", { count: "exact", head: true })

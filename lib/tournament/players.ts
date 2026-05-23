@@ -1,10 +1,8 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
-import { createClient } from "@/utils/supabase/server";
-import { requireAdmin } from "@/lib/tournament/auth";
+import { requireAdmin, adminServiceClient } from "@/lib/tournament/auth";
 import { CreatePlayerSchema } from "@/lib/types/schemas";
 import type { Tables, TablesInsert as Inserts } from "@/lib/types/database.types";
 
@@ -26,8 +24,7 @@ export async function createPlayer(input: unknown): Promise<{ id: string; token:
   const data = CreatePlayerSchema.parse(input);
   await requireAdmin();
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   let resolvedName = data.name;
   let resolvedNickname = data.nickname ?? null;
@@ -89,8 +86,7 @@ export async function listProfilesAvailableForEvent(
   eventId: string,
 ): Promise<Profile[]> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const [{ data: profiles }, { data: players }] = await Promise.all([
     supabase.from("profiles").select("*").order("name", { ascending: true }),
@@ -116,8 +112,7 @@ export async function markPlayerPaid(input: {
   paid: boolean;
 }): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: player } = await supabase
     .from("players")
@@ -145,8 +140,7 @@ export async function markPlayerPaid(input: {
  */
 export async function removePlayerFromEvent(playerId: string): Promise<void> {
   await requireAdmin();
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data: player, error: pErr } = await supabase
     .from("players")
@@ -172,8 +166,7 @@ export async function removePlayerFromEvent(playerId: string): Promise<void> {
  * Lista todos os jogadores de um evento (ordenados por chegada).
  */
 export async function listPlayersForEvent(eventId: string): Promise<Player[]> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = adminServiceClient();
 
   const { data, error } = await supabase
     .from("players")
