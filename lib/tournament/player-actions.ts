@@ -716,16 +716,36 @@ export async function requestChipDisplay(input: {
     .maybeSingle();
   if (!tableRow) throw new Error("Mesa não encontrada.");
 
+  // Acha o player desse profile NESSE evento (não filtra por state — pra perfis
+  // antigos com state legado/dessincronizado, conferimos a presença real via
+  // participation em vez de state="JOGANDO").
   const { data: player } = await admin
     .from("players")
-    .select("id, state")
+    .select("id")
     .eq("profile_id", userId)
     .eq("event_id", tableRow.event_id)
-    .eq("state", "JOGANDO")
     .maybeSingle();
-  if (!player) {
-    throw new Error("Você precisa estar jogando nessa mesa pra mostrar fichas.");
-  }
+  if (!player) throw new Error("Você não está nesse evento.");
+
+  // Confirma que o player está realmente sentado na mesa via participation ativa.
+  const { data: match } = await admin
+    .from("matches")
+    .select("id")
+    .eq("physical_table_id", input.tableId)
+    .in("state", ["JOGANDO", "PAUSADA"])
+    .order("match_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!match) throw new Error("Mesa não tem partida ativa.");
+
+  const { data: part } = await admin
+    .from("participations")
+    .select("id")
+    .eq("match_id", match.id)
+    .eq("player_id", player.id)
+    .is("eliminated_at", null)
+    .maybeSingle();
+  if (!part) throw new Error("Você não está nessa mesa agora.");
 
   const { error } = await admin.from("chip_displays").insert({
     event_id: tableRow.event_id,
