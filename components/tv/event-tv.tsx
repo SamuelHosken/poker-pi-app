@@ -271,8 +271,20 @@ export function EventTV({
             }, 1200);
           }
 
-          // V1.3: animação de eliminação — captura ghost seat antes de remover
-          if (eventType === "UPDATE" && row.eliminated_at && !seenEliminations.current.has(row.id)) {
+          // V1.3: animação de eliminação — captura ghost seat antes de remover.
+          // Dedup key composta com `eliminated_at` pra que mesma participation
+          // (id) revivida via rebuy+join entre em nova eliminação como evento
+          // novo. Caso contrário a 2ª kill do mesmo killer no mesmo jogador
+          // não contava.
+          const elimKey = row.eliminated_at
+            ? `${row.id}-${row.eliminated_at}`
+            : null;
+          if (
+            eventType === "UPDATE" &&
+            row.eliminated_at &&
+            elimKey &&
+            !seenEliminations.current.has(elimKey)
+          ) {
             const ageMs = Date.now() - new Date(row.eliminated_at).getTime();
             if (ageMs < 30_000) {
               playSynth("eliminate", 0.9);
@@ -292,8 +304,8 @@ export function EventTV({
 
               // V1.3: incrementa contador de "kills" do eliminador → fogo na TV
               const killerId = row.eliminated_by_player_id;
-              if (killerId && !countedKillerForPart.current.has(row.id)) {
-                countedKillerForPart.current.add(row.id);
+              if (killerId && !countedKillerForPart.current.has(elimKey)) {
+                countedKillerForPart.current.add(elimKey);
                 setEliminationCounts((prev) => {
                   const before = prev[killerId] ?? 0;
                   const after = before + 1;
@@ -313,15 +325,16 @@ export function EventTV({
             return isActive ? [...without, row] : without;
           });
 
-          // Toast de eliminação (lógica existente)
+          // Toast de eliminação (mesma dedup key composta — re-eliminação
+          // após rebuy gera novo toast).
           if (eventType !== "UPDATE") return;
-          if (!row.eliminated_at) return;
-          if (seenEliminations.current.has(row.id)) return;
+          if (!row.eliminated_at || !elimKey) return;
+          if (seenEliminations.current.has(elimKey)) return;
 
           const ageMs = Date.now() - new Date(row.eliminated_at).getTime();
           if (ageMs > 30_000) return;
 
-          seenEliminations.current.add(row.id);
+          seenEliminations.current.add(elimKey);
 
           const player = playersRef.current.find((pp) => pp.id === row.player_id);
           const ptable = tablesRef.current.find((tt) => tt.id === m.physical_table_id);
