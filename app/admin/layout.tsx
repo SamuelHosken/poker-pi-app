@@ -34,6 +34,9 @@ export default async function AdminLayout({
               <Link href="/admin/galeria" className="hover:text-paper">
                 Galeria
               </Link>
+              <Link href="/admin/feedback" className="hover:text-paper">
+                Avaliações
+              </Link>
               <Link href="/me" prefetch className="text-gold hover:text-paper">
                 Jogar
               </Link>

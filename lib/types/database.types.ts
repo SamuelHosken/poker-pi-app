@@ -167,6 +167,50 @@ export type Database = {
           },
         ]
       }
+      event_feedback: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          rating_bar: number
+          rating_estrutura: number
+          rating_jantar: number
+          rating_organizacao: number
+          rating_torneio: number
+          suggestion: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          rating_bar: number
+          rating_estrutura: number
+          rating_jantar: number
+          rating_organizacao: number
+          rating_torneio: number
+          suggestion?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          rating_bar?: number
+          rating_estrutura?: number
+          rating_jantar?: number
+          rating_organizacao?: number
+          rating_torneio?: number
+          suggestion?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_feedback_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           admin_user_id: string
