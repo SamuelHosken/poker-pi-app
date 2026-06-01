@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/auto-advance",
-      "schedule": "* * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
