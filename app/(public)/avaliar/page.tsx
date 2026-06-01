@@ -3,6 +3,26 @@ import { FeedbackForm } from "./feedback-form";
 export const metadata = {
   title: "Avalie o PokerPi",
   description: "Conta pra gente como foi o último PokerPi.",
+  openGraph: {
+    title: "Avalie o PokerPi",
+    description: "Como foi a sua noite? Leva 1 minuto e sua opinião monta o próximo.",
+    type: "website",
+    url: "/avaliar",
+    images: [
+      {
+        url: "/og-avaliar.png",
+        width: 1557,
+        height: 564,
+        alt: "Poker Pi",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Avalie o PokerPi",
+    description: "Como foi a sua noite? Leva 1 minuto e sua opinião monta o próximo.",
+    images: ["/og-avaliar.png"],
+  },
 };
 
 export default function AvaliarPage() {

@@ -23,6 +23,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://poker-pi-app.vercel.app"),
   title: "Poker Pi — Sistema de gestão de torneio",
   description: "Sistema web para gerenciar torneios presenciais de poker entre amigos.",
 };
