@@ -10,9 +10,10 @@ export const metadata = {
     url: "/avaliar",
     images: [
       {
-        url: "/og-avaliar.png",
-        width: 1557,
-        height: 564,
+        url: "/og-avaliar.jpg",
+        width: 1200,
+        height: 434,
+        type: "image/jpeg",
         alt: "Poker Pi",
       },
     ],
@@ -21,7 +22,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Avalie o PokerPi",
     description: "Como foi a sua noite? Leva 1 minuto e sua opinião monta o próximo.",
-    images: ["/og-avaliar.png"],
+    images: ["/og-avaliar.jpg"],
   },
 };
 
