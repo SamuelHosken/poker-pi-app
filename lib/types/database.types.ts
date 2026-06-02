@@ -172,33 +172,33 @@ export type Database = {
           created_at: string
           event_id: string | null
           id: string
-          rating_bar: number
-          rating_estrutura: number
-          rating_jantar: number
-          rating_organizacao: number
-          rating_torneio: number
+          rating_bar: number | null
+          rating_estrutura: number | null
+          rating_jantar: number | null
+          rating_organizacao: number | null
+          rating_torneio: number | null
           suggestion: string | null
         }
         Insert: {
           created_at?: string
           event_id?: string | null
           id?: string
-          rating_bar: number
-          rating_estrutura: number
-          rating_jantar: number
-          rating_organizacao: number
-          rating_torneio: number
+          rating_bar?: number | null
+          rating_estrutura?: number | null
+          rating_jantar?: number | null
+          rating_organizacao?: number | null
+          rating_torneio?: number | null
           suggestion?: string | null
         }
         Update: {
           created_at?: string
           event_id?: string | null
           id?: string
-          rating_bar?: number
-          rating_estrutura?: number
-          rating_jantar?: number
-          rating_organizacao?: number
-          rating_torneio?: number
+          rating_bar?: number | null
+          rating_estrutura?: number | null
+          rating_jantar?: number | null
+          rating_organizacao?: number | null
+          rating_torneio?: number | null
           suggestion?: string | null
         }
         Relationships: [

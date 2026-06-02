@@ -152,7 +152,7 @@ export default async function FeedbackPage() {
                             r[c.key],
                           )}`}
                         >
-                          {r[c.key]}
+                          {r[c.key] ?? "—"}
                         </span>
                         <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-[0.1em] text-gray-mid">
                           {c.label}

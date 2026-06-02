@@ -20,9 +20,10 @@ export type FeedbackSummary = {
   responses: EventFeedback[];
 };
 
-function avg(nums: number[]): number | null {
-  if (nums.length === 0) return null;
-  return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
+function avg(nums: (number | null)[]): number | null {
+  const valid = nums.filter((n): n is number => n != null);
+  if (valid.length === 0) return null;
+  return Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 10) / 10;
 }
 
 /**
