@@ -2,19 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Play, X } from "lucide-react";
-import { CONVITE_MUX_EMBED_URL } from "./convite";
+import { CONVITE_PUBLIC_ID, cloudinaryPlayerUrl } from "./convite";
 
 /**
  * Botão "Assistir o convite" sobre a moeda do hero. Ao tocar, abre um modal
- * com o vídeo-convite (player do Mux via iframe — ver `convite.ts`).
+ * com o vídeo-convite (player do Cloudinary via iframe — ver `convite.ts`).
  */
 export function InviteVideo() {
   const [open, setOpen] = useState(false);
-  const hasVideo = CONVITE_MUX_EMBED_URL.trim().length > 0;
-  // autoplay: só ligamos o autoplay quando o modal abre (param do player).
-  const src = hasVideo
-    ? `${CONVITE_MUX_EMBED_URL}${CONVITE_MUX_EMBED_URL.includes("?") ? "&" : "?"}autoplay=true`
-    : "";
+  const hasVideo = CONVITE_PUBLIC_ID.trim().length > 0;
+  const src = hasVideo ? cloudinaryPlayerUrl(CONVITE_PUBLIC_ID) : "";
 
   // Bloqueia o scroll do body enquanto o modal está aberto + fecha no Esc.
   useEffect(() => {
@@ -71,7 +68,7 @@ export function InviteVideo() {
                 src={src}
                 title="Vídeo-convite do PokerPi"
                 style={{ width: "100%", border: "none", aspectRatio: "16/9" }}
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                 allowFullScreen
               />
             ) : (
