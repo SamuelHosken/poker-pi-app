@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { Play, X } from "lucide-react";
-import { CONVITE_VIDEO_URL, parseVideoSource } from "./convite";
+import { CONVITE_MUX_EMBED_URL } from "./convite";
 
 /**
  * Botão "Assistir o convite" sobre a moeda do hero. Ao tocar, abre um modal
- * com o vídeo (YouTube / Vimeo / arquivo direto — ver `convite.ts`).
+ * com o vídeo-convite (player do Mux via iframe — ver `convite.ts`).
  */
 export function InviteVideo() {
   const [open, setOpen] = useState(false);
-  const source = parseVideoSource(CONVITE_VIDEO_URL);
+  const hasVideo = CONVITE_MUX_EMBED_URL.trim().length > 0;
+  // autoplay: só ligamos o autoplay quando o modal abre (param do player).
+  const src = hasVideo
+    ? `${CONVITE_MUX_EMBED_URL}${CONVITE_MUX_EMBED_URL.includes("?") ? "&" : "?"}autoplay=true`
+    : "";
 
   // Bloqueia o scroll do body enquanto o modal está aberto + fecha no Esc.
   useEffect(() => {
@@ -59,59 +63,30 @@ export function InviteVideo() {
           </button>
 
           <div
-            className="w-full max-w-sm overflow-hidden rounded-2xl border border-line bg-ink shadow-[0_24px_70px_rgba(0,0,0,0.7)]"
+            className="w-full max-w-lg overflow-hidden rounded-2xl border border-line bg-ink shadow-[0_24px_70px_rgba(0,0,0,0.7)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <VideoBody source={source} />
+            {hasVideo ? (
+              <iframe
+                src={src}
+                title="Vídeo-convite do PokerPi"
+                style={{ width: "100%", border: "none", aspectRatio: "16/9" }}
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                allowFullScreen
+              />
+            ) : (
+              <div className="flex aspect-video flex-col items-center justify-center gap-3 px-8 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gold/40 text-gold">
+                  <Play className="h-6 w-6 translate-x-[1px] fill-current" />
+                </span>
+                <p className="font-display text-xl font-light text-paper">
+                  Vídeo em breve
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
     </>
-  );
-}
-
-function VideoBody({
-  source,
-}: {
-  source: ReturnType<typeof parseVideoSource>;
-}) {
-  if (source.kind === "none") {
-    return (
-      <div className="flex aspect-[9/16] flex-col items-center justify-center gap-3 px-8 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full border border-gold/40 text-gold">
-          <Play className="h-6 w-6 translate-x-[1px] fill-current" />
-        </span>
-        <p className="font-display text-xl font-light text-paper">
-          Vídeo em breve
-        </p>
-        <p className="max-w-[18rem] text-sm leading-relaxed text-gray-soft">
-          O convite em vídeo está sendo preparado. Enquanto isso, desça e
-          garanta sua vaga. ♠
-        </p>
-      </div>
-    );
-  }
-
-  if (source.kind === "file") {
-    return (
-      <video
-        className="aspect-[9/16] w-full bg-black object-cover"
-        src={source.src}
-        controls
-        autoPlay
-        playsInline
-      />
-    );
-  }
-
-  // youtube / vimeo / iframe
-  return (
-    <iframe
-      className="aspect-[9/16] w-full bg-black"
-      src={source.src}
-      title="Vídeo-convite do PokerPi"
-      allow="autoplay; fullscreen; picture-in-picture"
-      allowFullScreen
-    />
   );
 }
