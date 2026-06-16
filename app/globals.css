@@ -191,3 +191,14 @@
 .glow-jogando {
   animation: jogando-glow 3.5s ease-in-out infinite;
 }
+
+/* Pulso de borda do CTA do hero (landing de inscrição) */
+@keyframes label-pulse {
+  0%,
+  100% {
+    border-color: rgba(201, 169, 97, 0.45);
+  }
+  50% {
+    border-color: rgba(201, 169, 97, 1);
+  }
+}

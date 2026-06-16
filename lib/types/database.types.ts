@@ -211,6 +211,36 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          attended_first_edition: boolean
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          phone_country: string | null
+        }
+        Insert: {
+          attended_first_edition: boolean
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone: string
+          phone_country?: string | null
+        }
+        Update: {
+          attended_first_edition?: boolean
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string
+          phone_country?: string | null
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           admin_user_id: string
