@@ -15,7 +15,7 @@
  */
 export const CLOUDINARY_CLOUD_NAME = "dolxad4w1";
 
-export const CONVITE_PUBLIC_ID = "PokerV2Pos_tdze4t";
+export const CONVITE_PUBLIC_ID = "PokerV2Pos-Leve_qhbljr";
 
 // Transformações de entrega: formato auto (webm/mp4 conforme o device),
 // qualidade auto (reduz bitrate sem perda visível) e largura máx. 1280px
