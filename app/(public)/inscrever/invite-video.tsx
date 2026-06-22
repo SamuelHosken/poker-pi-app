@@ -15,14 +15,16 @@ import {
  * Autoplay no celular só é permitido sem som — então iniciamos mudo (começa a
  * rodar na hora) e mostramos um botão pra ativar o som num toque.
  */
-export function InviteVideo() {
+export function InviteVideo({ publicId }: { publicId?: string }) {
   const [open, setOpen] = useState(false);
   const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const hasVideo = CONVITE_PUBLIC_ID.trim().length > 0;
-  const src = hasVideo ? cloudinaryVideoUrl(CONVITE_PUBLIC_ID) : "";
-  const poster = hasVideo ? cloudinaryPosterUrl(CONVITE_PUBLIC_ID) : "";
+  // Vídeo personalizado da pessoa (via /convite/[slug]) ou o genérico.
+  const id = (publicId ?? CONVITE_PUBLIC_ID).trim();
+  const hasVideo = id.length > 0;
+  const src = hasVideo ? cloudinaryVideoUrl(id) : "";
+  const poster = hasVideo ? cloudinaryPosterUrl(id) : "";
 
   // Bloqueia o scroll do body + fecha no Esc enquanto o modal está aberto.
   useEffect(() => {

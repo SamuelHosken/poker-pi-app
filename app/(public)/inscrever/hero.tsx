@@ -8,7 +8,7 @@
  */
 import { InviteVideo } from "./invite-video";
 
-export function Hero() {
+export function Hero({ videoPublicId }: { videoPublicId?: string }) {
   return (
     <section
       aria-labelledby="hero-title"
@@ -73,7 +73,7 @@ export function Hero() {
 
       {/* Assistir o convite (toca na moeda → abre o vídeo) */}
       <div className="relative z-10 mb-7 flex flex-col items-center gap-5">
-        <InviteVideo />
+        <InviteVideo publicId={videoPublicId} />
 
         {/* Seta pra descer ao formulário */}
         <a
