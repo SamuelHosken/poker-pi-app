@@ -1,6 +1,6 @@
 export default function PerfilLoading() {
   return (
-    <div className="flex flex-col px-4 py-6 sm:px-6 sm:py-10">
+    <div className="flex flex-col">
       <span className="h-3 w-16 animate-pulse rounded bg-ink-2" />
       <header className="mt-4 space-y-2">
         <span className="block h-3 w-24 animate-pulse rounded bg-ink-2" />

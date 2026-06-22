@@ -1,6 +1,6 @@
 export default function MeLoading() {
   return (
-    <div className="flex flex-col px-4 py-6 sm:px-6 sm:py-10">
+    <div className="flex flex-col">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-2">
           <span className="block h-3 w-20 animate-pulse rounded bg-ink-2" />
