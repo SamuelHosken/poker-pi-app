@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Camera, Trash2 } from "lucide-react";
 import { AvatarImage } from "@/components/ui/avatar-image";
+import { Button } from "@/components/ui/button";
 import { removeAvatar, uploadAvatar } from "@/lib/tournament/profiles";
 import { broadcastAvatarUpdate } from "@/lib/realtime/avatar-broadcast";
 
@@ -143,31 +144,31 @@ export function AvatarUploader({
       />
 
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={pickFile}
           disabled={pending}
           style={{ touchAction: "manipulation" }}
-          className="inline-flex h-11 items-center gap-2 rounded-md bg-gold px-5 text-sm font-medium text-ink transition-colors hover:bg-gold/90 disabled:opacity-50"
         >
           <Camera className="size-4" aria-hidden />
           {currentUrl ? "Trocar foto" : "Adicionar foto"}
-        </button>
+        </Button>
 
         {currentUrl && !pending && (
-          <button
+          <Button
             type="button"
+            variant="destructive"
             onClick={handleRemove}
             style={{ touchAction: "manipulation" }}
-            className="inline-flex h-11 items-center gap-2 rounded-md border border-line px-4 text-sm text-gray-soft transition-colors hover:border-red-poker/40 hover:text-red-poker"
           >
             <Trash2 className="size-4" aria-hidden />
             Remover
-          </button>
+          </Button>
         )}
       </div>
 
-      <p className="max-w-xs text-center font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
+      <p className="max-w-xs text-center font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         Foto fica em 256×256 quadrada. Limite 512KB.
       </p>
     </div>
