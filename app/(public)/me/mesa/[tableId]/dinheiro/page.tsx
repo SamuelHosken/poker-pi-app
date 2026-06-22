@@ -20,7 +20,7 @@ export default async function MoneyPage({
   if (!view) notFound();
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+    <div className="flex flex-col">
       <div className="flex items-center justify-between gap-2">
         <Link
           href={`/me/mesa/${tableId}`}
@@ -47,6 +47,6 @@ export default async function MoneyPage({
       </header>
 
       <ChipCalculator tableId={tableId} />
-    </main>
+    </div>
   );
 }
