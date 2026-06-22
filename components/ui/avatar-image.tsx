@@ -1,7 +1,13 @@
+"use client";
+
+import { useState } from "react";
+import { avatarInitial } from "@/lib/avatar";
+
 /**
  * V1.3 — Avatar compartilhado. Se tem URL, mostra a foto; senão, mostra
  * a inicial do nome estilizada. Usa `<img>` (não next/image) porque os
  * domínios são dinâmicos do Supabase Storage e queremos cache simples.
+ * Falls back to initial when image fails to load (onError).
  */
 export function AvatarImage({
   name,
@@ -16,6 +22,8 @@ export function AvatarImage({
   variant?: "outline" | "gold" | "inline";
   className?: string;
 }) {
+  const [failed, setFailed] = useState(false);
+
   const sizeClass = {
     sm: "size-9 text-sm",
     md: "size-12 text-lg",
@@ -31,7 +39,7 @@ export function AvatarImage({
 
   const cls = `flex shrink-0 items-center justify-center overflow-hidden rounded-full font-display font-light ${sizeClass} ${variantClass} ${className ?? ""}`;
 
-  if (url) {
+  if (url && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -40,13 +48,14 @@ export function AvatarImage({
         className={`${cls} object-cover`}
         loading="lazy"
         decoding="async"
+        onError={() => setFailed(true)}
       />
     );
   }
 
   return (
     <div className={cls} aria-label={name}>
-      {name.charAt(0).toUpperCase()}
+      {avatarInitial(name)}
     </div>
   );
 }
