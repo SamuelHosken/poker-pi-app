@@ -1,6 +1,6 @@
 export default function DinheiroLoading() {
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+    <div className="flex flex-col px-4 py-6 sm:px-6 sm:py-10">
       <div className="flex items-center justify-between gap-2">
         <span className="h-3 w-20 animate-pulse rounded bg-ink-2" />
         <span className="h-5 w-16 animate-pulse rounded-full bg-ink-2" />
@@ -30,6 +30,6 @@ export default function DinheiroLoading() {
           <div className="h-12 animate-pulse rounded-md bg-ink-2" />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

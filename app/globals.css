@@ -25,7 +25,7 @@
   --color-hair: rgba(255, 255, 255, 0.08);
   --color-muted-2: #6c707a;
 
-  /* shadcn semantic tokens → CSS vars (mapped to Poker Pi palette in :root/.dark) */
+  /* shadcn semantic tokens → CSS vars (mapped to Poker Pi palette in .dark) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

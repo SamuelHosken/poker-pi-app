@@ -1,6 +1,6 @@
 export default function PerfilLoading() {
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+    <div className="flex flex-col px-4 py-6 sm:px-6 sm:py-10">
       <span className="h-3 w-16 animate-pulse rounded bg-ink-2" />
       <header className="mt-4 space-y-2">
         <span className="block h-3 w-24 animate-pulse rounded bg-ink-2" />
@@ -16,6 +16,6 @@ export default function PerfilLoading() {
           <div key={i} className="h-16 animate-pulse rounded-md bg-ink-2" />
         ))}
       </div>
-    </main>
+    </div>
   );
 }
