@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { avatarInitial } from "@/lib/avatar";
 
 /**
@@ -23,6 +23,10 @@ export function AvatarImage({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [url]);
 
   const sizeClass = {
     sm: "size-9 text-sm",
