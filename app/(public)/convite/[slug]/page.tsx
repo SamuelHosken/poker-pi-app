@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Landing } from "../../inscrever/landing";
 import { getConvite } from "../../inscrever/convites";
+import { ConviteOpenTracker } from "./convite-open-tracker";
 
 /**
  * Landing de inscrição PERSONALIZADA. Cada pessoa convidada recebe um link
@@ -44,5 +45,10 @@ export default async function ConvitePage({
 
   if (!convite) notFound();
 
-  return <Landing videoPublicId={convite.publicId} />;
+  return (
+    <>
+      <ConviteOpenTracker slug={slug} />
+      <Landing videoPublicId={convite.publicId} conviteSlug={slug} />
+    </>
+  );
 }

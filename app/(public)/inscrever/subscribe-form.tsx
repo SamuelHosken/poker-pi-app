@@ -20,7 +20,7 @@ type EmailStatus = "idle" | "checking" | "valid" | "invalid";
 
 const EMPTY_PHONE: PhoneValue = { e164: "", iso2: "BR", valid: false };
 
-export function SubscribeForm() {
+export function SubscribeForm({ conviteSlug }: { conviteSlug?: string }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [emailStatus, setEmailStatus] = useState<EmailStatus>("idle");
@@ -99,6 +99,7 @@ export function SubscribeForm() {
       phone: phone.e164,
       phoneCountry: phone.iso2,
       attendedFirstEdition: attended,
+      conviteSlug,
     };
 
     startTransition(async () => {

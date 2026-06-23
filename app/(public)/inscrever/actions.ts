@@ -111,6 +111,8 @@ const SubscriptionSchema = z.object({
     .toUpperCase()
     .optional(),
   attendedFirstEdition: z.boolean(),
+  // De qual link de convite a inscrição veio (slug). Ausente no /inscrever.
+  conviteSlug: z.string().trim().max(40).optional(),
 });
 
 export type SubscriptionInput = z.input<typeof SubscriptionSchema>;
@@ -165,15 +167,29 @@ export async function submitSubscription(
 
   const supabase = createClient(await cookies());
 
-  const row: Inserts<"subscriptions"> = {
+  // convite_slug pode ainda não existir como coluna (migration 0019). Por isso
+  // o insert tenta COM a coluna e, se o schema não a conhece (PGRST204), repete
+  // SEM ela — a inscrição nunca quebra por causa do rastreio.
+  const row = {
     full_name: data.fullName,
     email: data.email,
     phone: data.phone,
     phone_country: data.phoneCountry ?? null,
     attended_first_edition: data.attendedFirstEdition,
+    convite_slug: data.conviteSlug ?? null,
   };
 
-  const { error } = await supabase.from("subscriptions").insert(row);
+  let { error } = await supabase
+    .from("subscriptions")
+    .insert(row as Inserts<"subscriptions">);
+
+  if (error?.code === "PGRST204") {
+    const fallback = { ...row } as Record<string, unknown>;
+    delete fallback.convite_slug;
+    ({ error } = await supabase
+      .from("subscriptions")
+      .insert(fallback as Inserts<"subscriptions">));
+  }
 
   if (error) {
     // 23505 = unique_violation no índice de e-mail.

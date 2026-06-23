@@ -51,6 +51,19 @@ export function adminServiceClient() {
 }
 
 /**
+ * Cliente service_role SEM os tipos gerados (Database) — pra tabelas/colunas
+ * novas que ainda não estão no database.types.ts (ex.: convite_opens,
+ * subscriptions.convite_slug). Bypassa RLS. Use só server-side.
+ */
+export function rawServiceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
+
+/**
  * V1.2 — Garante que há um usuário admin autenticado (profile.is_admin = true).
  * Centraliza o gate de auth usado por todas as Server Actions admin.
  *
