@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   setAdminFlag,
   deleteProfile,
@@ -90,17 +91,20 @@ export function ProfileRowActions({
 
   return (
     <div className="grid grid-cols-3 gap-2">
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         onClick={handleToggleAdmin}
         disabled={pendingAdmin}
-        className="h-10 rounded-md border border-line px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft transition-colors hover:border-gold/50 hover:text-gold disabled:opacity-50"
       >
         {pendingAdmin ? "..." : isAdmin ? "Tirar admin" : "Promover"}
-      </button>
+      </Button>
 
       <Dialog open={passwordOpen} onOpenChange={handlePasswordOpen}>
-        <DialogTrigger className="h-10 rounded-md border border-line px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft transition-colors hover:border-gold/50 hover:text-gold">
+        <DialogTrigger
+          className={buttonVariants({ variant: "secondary", size: "sm" })}
+        >
           Senha
         </DialogTrigger>
         <DialogContent className="max-w-md">
@@ -137,7 +141,9 @@ export function ProfileRowActions({
       </Dialog>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogTrigger className="h-10 rounded-md border border-red-poker/40 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker hover:bg-red-poker/10">
+        <AlertDialogTrigger
+          className={buttonVariants({ variant: "destructive", size: "sm" })}
+        >
           Apagar
         </AlertDialogTrigger>
         <AlertDialogContent>
