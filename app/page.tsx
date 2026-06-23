@@ -25,7 +25,7 @@ export default function Home() {
 
       <div className="mt-8 inline-flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.22em] text-gray-mid">
         <span aria-hidden className="h-px w-8 bg-line" />
-        Etapa 0 · Setup
+        Entre amigos
         <span aria-hidden className="h-px w-8 bg-line" />
       </div>
     </main>
