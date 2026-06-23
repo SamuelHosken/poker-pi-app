@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Download, Share2 } from "lucide-react";
 import type { Subscription } from "@/lib/tournament/subscriptions";
+import { Button } from "@/components/ui/button";
 
 function toCsv(rows: Subscription[]): string {
   const header = [
@@ -93,18 +94,16 @@ export function InscritosToolbar({ rows }: { rows: Subscription[] }) {
         </p>
       </div>
       <div className="flex shrink-0 gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={exportCsv}
           disabled={rows.length === 0}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-line bg-ink px-5 font-mono text-[10px] uppercase tracking-[0.18em] text-paper transition-colors hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Download className="h-4 w-4" /> CSV
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="default"
           onClick={share}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-gold px-5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink transition-opacity hover:opacity-90"
         >
           {copied ? (
             <>
@@ -115,7 +114,7 @@ export function InscritosToolbar({ rows }: { rows: Subscription[] }) {
               <Share2 className="h-4 w-4" /> Compartilhar
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );
