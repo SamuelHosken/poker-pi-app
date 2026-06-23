@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 import { eliminatePlayer } from "@/lib/tournament/matches";
 import type { Tables } from "@/lib/types/database.types";
 
@@ -69,12 +70,12 @@ function PlayerRow({
 
   return (
     <li
-      className={`flex items-center justify-between rounded-md border border-line px-3 py-2 text-sm ${
-        isEliminated ? "opacity-50" : "bg-ink-2"
+      className={`flex items-center justify-between gap-2 rounded-xl border border-hair px-3 py-2 text-sm ${
+        isEliminated ? "opacity-50" : "bg-surface"
       }`}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <span className="font-mono text-[10px] w-6 text-gray-mid">
+        <span className="font-mono text-[10px] w-6 text-muted-foreground">
           {participation.seat_number != null ? `#${participation.seat_number}` : ""}
         </span>
         <span className="truncate text-paper">{participation.player.name}</span>
@@ -125,9 +126,7 @@ function EliminateButton({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        className="rounded-md border border-red-poker/40 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker hover:bg-red-poker/10"
-      >
+      <AlertDialogTrigger className={buttonVariants({ variant: "destructive", size: "sm" })}>
         Eliminar
       </AlertDialogTrigger>
       <AlertDialogContent>
