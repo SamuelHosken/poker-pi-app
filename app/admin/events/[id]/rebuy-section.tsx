@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { performRebuy } from "@/lib/tournament/rebuy";
 import type { EliminatedWithStatus } from "@/lib/tournament/rebuy";
 
@@ -51,8 +52,8 @@ function RebuyRow({
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-md border border-line bg-ink-2 px-3 py-2 text-sm">
-      <span className="flex-1 truncate text-paper">
+    <li className="flex flex-wrap items-center gap-3 rounded-xl border border-hair bg-surface px-3 py-2.5 text-sm">
+      <span className="min-w-0 flex-1 truncate text-paper">
         {player.name}
         {player.nickname && (
           <span className="ml-2 font-display text-xs italic text-gold">
@@ -61,31 +62,30 @@ function RebuyRow({
         )}
       </span>
 
-      <span className="font-mono text-[10px] text-gray-soft">
+      <span className="font-mono text-[10px] text-muted-foreground">
         Rebuys {player.rebuys_used}/{rebuyLimit}
       </span>
 
       {lastLevelNumber != null && (
-        <span className="font-mono text-[10px] text-gray-mid">
+        <span className="font-mono text-[10px] text-muted-foreground">
           Nível {lastLevelNumber}
         </span>
       )}
 
       {eligibility.eligible ? (
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
           onClick={handleRebuy}
           disabled={pending}
-          className="rounded-md border border-gold/40 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-gold hover:bg-gold/10 disabled:opacity-50"
+          className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold"
         >
           {pending ? "Aplicando…" : "Fazer rebuy"}
-        </button>
+        </Button>
       ) : (
-        <span
-          title={eligibility.reason}
-          className="rounded-md border border-line px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid cursor-help"
-        >
-          Inelegível
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+          {eligibility.reason ?? "Inelegível"}
         </span>
       )}
     </li>
