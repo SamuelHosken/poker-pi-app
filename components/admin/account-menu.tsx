@@ -31,7 +31,7 @@ export function AccountMenu({
         className={
           variant === "sidebar"
             ? "flex w-full items-center gap-3 rounded-2xl border border-hair bg-white/[0.03] p-2.5 text-left transition-colors hover:bg-white/[0.06]"
-            : "flex items-center rounded-full"
+            : "flex size-11 items-center justify-center rounded-full"
         }
       >
         <AvatarImage name={name} url={avatarUrl} size="sm" variant="outline" />
