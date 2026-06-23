@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { restoreEvent, deleteEventPermanently } from "@/lib/tournament/events";
 
 export function TrashedEventRow({
@@ -60,18 +61,18 @@ export function TrashedEventRow({
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
-      <button
-        type="button"
+      <Button
+        variant="secondary"
         onClick={handleRestore}
         disabled={pendingRestore || pendingDelete}
-        className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md border border-gold/40 bg-gold/5 px-4 text-sm text-gold transition-colors hover:bg-gold/10 disabled:opacity-50"
+        className="flex-1"
       >
         <RotateCcw className="size-4" aria-hidden />
         {pendingRestore ? "Restaurando…" : "Restaurar"}
-      </button>
+      </Button>
 
       <AlertDialog open={open} onOpenChange={(n) => { if (!n) setConfirmText(""); setOpen(n); }}>
-        <AlertDialogTrigger className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md border border-red-poker/40 px-4 text-sm text-red-poker transition-colors hover:bg-red-poker/10 sm:flex-initial">
+        <AlertDialogTrigger className={buttonVariants({ variant: "destructive" }) + " flex-1 sm:flex-initial"}>
           <Trash2 className="size-4" aria-hidden />
           Apagar definitivamente
         </AlertDialogTrigger>
@@ -84,8 +85,8 @@ export function TrashedEventRow({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
-            <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-              Digite <span className="text-red-poker">apagar definitivamente</span> pra confirmar
+            <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Digite <span className="text-destructive">apagar definitivamente</span> pra confirmar
             </label>
             <input
               type="text"
@@ -93,15 +94,15 @@ export function TrashedEventRow({
               onChange={(e) => setConfirmText(e.target.value)}
               autoComplete="off"
               spellCheck={false}
-              className="h-11 w-full rounded-md border border-line bg-ink px-3 text-sm text-paper focus:border-red-poker focus:outline-none"
+              className="h-11 w-full rounded-md border border-hair bg-surface px-3 text-sm focus:border-destructive focus:outline-none"
             />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               onClick={handlePermanent}
               disabled={!matches || pendingDelete}
-              className="bg-red-poker text-white hover:bg-red-poker/90 disabled:opacity-40"
             >
               {pendingDelete ? "Apagando…" : "Apagar pra sempre"}
             </AlertDialogAction>
