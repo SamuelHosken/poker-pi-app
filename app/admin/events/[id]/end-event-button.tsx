@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 import { endEventManually } from "@/lib/tournament/events";
 
 /**
@@ -43,7 +44,7 @@ export function EndEventButton({ eventId }: { eventId: string }) {
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid hover:text-red-poker">
+      <AlertDialogTrigger className={`${buttonVariants({ variant: "ghost", size: "sm" })} text-muted-foreground hover:text-red-poker`}>
         Encerrar sem campeão
       </AlertDialogTrigger>
       <AlertDialogContent>
