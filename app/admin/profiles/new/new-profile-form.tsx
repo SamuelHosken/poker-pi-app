@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,7 @@ export function NewProfileForm() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     const email = String(formData.get("email") ?? "").trim();
@@ -55,15 +57,29 @@ export function NewProfileForm() {
       </Field>
 
       <Field id="password" label="Senha inicial" hint="Mínimo 6 caracteres">
-        <Input
-          id="password"
-          name="password"
-          type="text"
-          required
-          minLength={6}
-          autoComplete="off"
-          className="h-12 bg-ink-2 text-paper"
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            required
+            minLength={6}
+            autoComplete="off"
+            className="h-12 bg-ink-2 text-paper pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-paper transition-colors"
+            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+          >
+            {showPassword ? (
+              <EyeOff className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )}
+          </button>
+        </div>
       </Field>
 
       <Field id="name" label="Nome">
@@ -103,7 +119,8 @@ export function NewProfileForm() {
       <Button
         type="submit"
         disabled={pending}
-        className="h-12 w-full bg-gold text-ink hover:bg-gold/90 disabled:opacity-50"
+        size="lg"
+        className="w-full"
       >
         {pending ? "Cadastrando…" : "Cadastrar"}
       </Button>

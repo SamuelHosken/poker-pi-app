@@ -23,8 +23,7 @@ export default function NewProfilePage() {
           Novo perfil
         </h1>
         <p className="text-sm text-gray-soft">
-          Cria login (e-mail + senha) e perfil no banco. Pessoa pode entrar em
-          /admin/login depois.
+          Cria login e perfil no banco. A pessoa entra com esse e-mail e senha.
         </p>
       </header>
 
