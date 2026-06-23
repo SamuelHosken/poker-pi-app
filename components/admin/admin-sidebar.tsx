@@ -40,7 +40,7 @@ export function AdminSidebar({
               aria-current={isOn ? "page" : undefined}
               className={
                 isOn
-                  ? "flex items-center gap-3 rounded-xl border border-gold/30 bg-gradient-to-b from-gold/15 to-gold/5 px-3 py-2.5 text-sm text-paper no-underline"
+                  ? "flex items-center gap-3 rounded-xl bg-white/[0.06] px-3 py-2.5 text-sm font-medium text-paper no-underline"
                   : "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground no-underline transition-colors hover:bg-white/5 hover:text-paper"
               }
             >
