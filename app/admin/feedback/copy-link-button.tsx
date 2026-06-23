@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /**
  * Mostra o link público de avaliação (/avaliar) e oferece copiar / compartilhar.
@@ -55,11 +56,11 @@ export function CopyLinkButton() {
           {url}
         </p>
       </div>
-      <button
+      <Button
         type="button"
         onClick={copy}
         style={{ touchAction: "manipulation" }}
-        className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-gold px-5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink transition-opacity hover:opacity-90"
+        className="shrink-0"
       >
         {copied ? (
           <>
@@ -70,7 +71,7 @@ export function CopyLinkButton() {
             <Share2 className="h-4 w-4" /> Compartilhar
           </>
         )}
-      </button>
+      </Button>
     </div>
   );
 }

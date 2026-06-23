@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 import { resetAllFeedback } from "@/lib/tournament/feedback";
 
 export function ResetFeedbackButton({ count }: { count: number }) {
@@ -51,7 +52,7 @@ export function ResetFeedbackButton({ count }: { count: number }) {
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogTrigger className="inline-flex h-11 items-center gap-2 rounded-md border border-red-poker/40 px-5 font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker transition-colors hover:bg-red-poker/10">
+      <AlertDialogTrigger className={`${buttonVariants({ variant: "destructive" })} gap-2`}>
         <Trash2 className="size-4" aria-hidden />
         Resetar avaliações
       </AlertDialogTrigger>
