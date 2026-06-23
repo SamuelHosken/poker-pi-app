@@ -19,21 +19,10 @@ import { EndEventButton } from "./end-event-button";
 import { DeleteEventButton } from "./delete-event-button";
 import { CrownChampionControl } from "./crown-champion-control";
 import { LiveRefresh } from "@/components/live-refresh";
-
-const STATE_LABEL: Record<string, string> = {
-  SETUP: "Setup",
-  CREDENCIAMENTO: "Credenciamento",
-  EM_ANDAMENTO: "Em andamento",
-  MESA_FINAL: "Mesa final",
-  ENCERRADO: "Encerrado",
-};
-
-const TABLE_STATE_LABEL: Record<string, string> = {
-  LIVRE: "Livre",
-  JOGANDO: "Jogando",
-  PAUSADA: "Pausada",
-  FINALIZADA: "Finalizada",
-};
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { eventStateLabel, tableStateLabel } from "@/lib/ui-labels";
+import type { EventState, MatchState } from "@/lib/types/domain";
 
 const MIN_PLAYERS_TO_START = 2;
 
@@ -91,7 +80,7 @@ export default async function EventDetailPage({
   const canStart = presentes.length >= MIN_PLAYERS_TO_START;
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
+    <main className="mx-auto w-full max-w-5xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-8">
       <LiveRefresh intervalMs={5000} />
       <div className="flex items-center justify-between gap-2">
         <Link
@@ -103,65 +92,63 @@ export default async function EventDetailPage({
         <UndoButton eventId={event.id} enabled={canUndo} />
       </div>
 
-      <header className="space-y-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
-          Evento
-        </span>
-        <h1 className="font-display text-3xl font-light leading-tight tracking-tight text-paper sm:text-5xl break-words">
-          {event.name}
-        </h1>
+      <Card>
+        <CardContent className="space-y-4 py-5">
+          <div className="space-y-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
+              Evento
+            </span>
+            <h1 className="font-display text-3xl font-light leading-tight tracking-tight text-paper sm:text-5xl break-words">
+              {event.name}
+            </h1>
+          </div>
 
-        {/* Meta info empilhada em mobile, lado a lado em desktop */}
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 pt-1 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-          <div>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-              Data
-            </dt>
-            <dd className="font-mono text-xs text-paper sm:text-sm">
-              {formatDateBR(event.event_date)}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-              Buy-in
-            </dt>
-            <dd className="font-mono text-xs text-paper sm:text-sm">
-              {formatBRL(event.buy_in_cents)}
-            </dd>
-          </div>
-          {event.rebuy_cents != null && (
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-                Rebuy
+          {/* Meta info empilhada em mobile, lado a lado em desktop */}
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:items-end sm:gap-6">
+            <div className="space-y-1">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Data
               </dt>
-              <dd className="font-mono text-xs text-paper sm:text-sm">
-                {formatBRL(event.rebuy_cents)}
+              <dd className="text-sm text-paper">{formatDateBR(event.event_date)}</dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Buy-in
+              </dt>
+              <dd className="text-sm text-paper">{formatBRL(event.buy_in_cents)}</dd>
+            </div>
+            {event.rebuy_cents != null && (
+              <div className="space-y-1">
+                <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  Rebuy
+                </dt>
+                <dd className="text-sm text-paper">{formatBRL(event.rebuy_cents)}</dd>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Estado
+              </dt>
+              <dd>
+                <Badge variant={event.state === "EM_ANDAMENTO" ? "live" : "neutral"}>
+                  {eventStateLabel(event.state as EventState)}
+                </Badge>
               </dd>
             </div>
-          )}
-          <div>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-              Estado
-            </dt>
-            <dd>
-              <span className="inline-flex rounded-full border border-line px-3 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-                {STATE_LABEL[event.state] ?? event.state}
-              </span>
-            </dd>
-          </div>
-        </dl>
+          </dl>
 
-        <div className="font-mono text-xs text-gray-soft">
-          TV pública:{" "}
-          <Link
-            href={`/tv/${event.id}`}
-            target="_blank"
-            className="text-gold underline-offset-4 hover:underline break-all"
-          >
-            /tv/{event.id.slice(0, 8)}…
-          </Link>
-        </div>
-      </header>
+          <div className="text-xs text-muted-foreground">
+            TV pública:{" "}
+            <Link
+              href={`/tv/${event.id}`}
+              target="_blank"
+              className="text-gold underline-offset-4 hover:underline break-all"
+            >
+              /tv/{event.id.slice(0, 8)}…
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         {event.state === "SETUP" && (
@@ -244,7 +231,7 @@ export default async function EventDetailPage({
                       {match?.is_final_table ? "Mesa Final" : `Mesa ${t.table_number}`}
                     </span>
                     <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                      {TABLE_STATE_LABEL[t.state] ?? t.state}
+                      {tableStateLabel(t.state as MatchState)}
                     </span>
                   </div>
 
