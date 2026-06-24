@@ -59,7 +59,7 @@ export function TvPauseControl({
           </span>
           <Button
             variant="default"
-            size="sm"
+            size="default"
             onClick={handleDeactivate}
             disabled={pending}
             style={{ touchAction: "manipulation" }}
@@ -121,7 +121,7 @@ export function TvPauseControl({
                   <Button
                     key={p}
                     variant="outline"
-                    size="xs"
+                    size="default"
                     onClick={() => setMessage(p)}
                     className="font-mono text-[10px] uppercase tracking-[0.18em]"
                   >

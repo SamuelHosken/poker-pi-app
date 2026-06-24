@@ -98,7 +98,7 @@ export function TvStartControl({
           </span>
           <Button
             variant="default"
-            size="sm"
+            size="default"
             onClick={deactivate}
             disabled={pending}
             style={{ touchAction: "manipulation" }}
