@@ -23,7 +23,9 @@ describe("createAsaasCustomer", () => {
       f,
     );
     expect(res.id).toBe("cus_123");
-    const [url, init] = f.mock.calls[0];
+    const call = f.mock.calls[0]!;
+    const url = call[0];
+    const init = call[1]!;
     expect(url).toBe("https://sandbox.asaas.com/api/v3/customers");
     expect((init.headers as Record<string, string>).access_token).toBe("test_key");
     expect(JSON.parse(init.body as string).cpfCnpj).toBe("52998224725");
@@ -38,7 +40,7 @@ describe("createAsaasPayment", () => {
       f,
     );
     expect(res).toEqual({ id: "pay_9", invoiceUrl: "https://asaas/i/pay_9" });
-    const body = JSON.parse(f.mock.calls[0][1].body as string);
+    const body = JSON.parse(f.mock.calls[0]![1]!.body as string);
     expect(body.value).toBe(150);          // cents -> reais
     expect(body.billingType).toBe("UNDEFINED");
     expect(body.externalReference).toBe("t1");
