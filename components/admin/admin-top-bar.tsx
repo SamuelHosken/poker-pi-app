@@ -1,6 +1,6 @@
 "use client";
 
-import { Spade } from "lucide-react";
+import { PokerPiLogo } from "@/components/ui/poker-pi-logo";
 import { AccountMenu } from "./account-menu";
 
 export function AdminTopBar({
@@ -16,9 +16,7 @@ export function AdminTopBar({
       style={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
     >
       <div className="flex items-center gap-2">
-        <span className="flex size-6 items-center justify-center rounded-md bg-gold text-ink">
-          <Spade className="size-3.5" />
-        </span>
+        <PokerPiLogo className="size-6 text-gold" />
         <span className="text-sm font-semibold">Poker Pi</span>
       </div>
       <AccountMenu name={name} avatarUrl={avatarUrl} variant="compact" />

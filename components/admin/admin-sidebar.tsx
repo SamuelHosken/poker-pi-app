@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Spade } from "lucide-react";
+import { PokerPiLogo } from "@/components/ui/poker-pi-logo";
 import { ALL_NAV, ALL_HREFS } from "./nav-config";
 import { activeHref } from "@/lib/admin-nav";
 import { AccountMenu } from "./account-menu";
@@ -20,9 +20,7 @@ export function AdminSidebar({
   return (
     <aside className="glass sticky top-3 m-3 hidden h-[calc(100svh-1.5rem)] w-60 flex-col rounded-3xl p-3 md:flex">
       <div className="flex items-center gap-2.5 px-2 py-3">
-        <span className="flex size-7 items-center justify-center rounded-lg bg-gold text-ink">
-          <Spade className="size-4" />
-        </span>
+        <PokerPiLogo className="size-7 text-gold" />
         <span className="text-[15px] font-semibold tracking-tight">Poker Pi</span>
       </div>
 
