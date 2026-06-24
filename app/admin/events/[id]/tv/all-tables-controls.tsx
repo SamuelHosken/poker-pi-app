@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Pause, Play } from "lucide-react";
 import { pauseAllMatches, resumeAllMatches } from "@/lib/tournament/matches";
+import { Button } from "@/components/ui/button";
 
 export function AllTablesControls({
   eventId,
@@ -47,28 +48,25 @@ export function AllTablesControls({
   return (
     <div className="flex flex-wrap gap-2">
       {hasPlaying && (
-        <button
-          type="button"
+        <Button
+          variant="destructive"
           onClick={handlePauseAll}
           disabled={pending}
           style={{ touchAction: "manipulation" }}
-          className="inline-flex h-11 items-center gap-2 rounded-md border border-red-poker/40 bg-red-poker/5 px-4 text-sm text-red-poker transition-colors hover:bg-red-poker/10 disabled:opacity-50"
         >
-          <Pause className="size-4" aria-hidden />
+          <Pause aria-hidden />
           Pausar todas
-        </button>
+        </Button>
       )}
       {hasPaused && (
-        <button
-          type="button"
+        <Button
           onClick={handleResumeAll}
           disabled={pending}
           style={{ touchAction: "manipulation" }}
-          className="inline-flex h-11 items-center gap-2 rounded-md bg-gold px-4 text-sm font-medium text-ink transition-colors hover:bg-gold/90 disabled:opacity-50"
         >
-          <Play className="size-4" aria-hidden />
+          <Play aria-hidden />
           Retomar todas
-        </button>
+        </Button>
       )}
     </div>
   );
