@@ -6,7 +6,7 @@ import { HOME } from "./content";
  */
 export function SiteFooter() {
   return (
-    <footer className="border-t border-hair bg-ink px-6 py-14 sm:px-10">
+    <footer className="border-t border-hair bg-ink px-5 py-12 sm:px-10 sm:py-14">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-md">
           <div className="font-display text-2xl font-light tracking-tight text-paper">

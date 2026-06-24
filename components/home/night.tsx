@@ -29,7 +29,7 @@ const STATS = [
 
 export function Night() {
   return (
-    <section className="border-y border-hair bg-ink-2/40 px-6 py-24 sm:px-10 sm:py-32">
+    <section className="border-y border-hair bg-ink-2/40 px-5 py-20 sm:px-10 sm:py-32">
       <div className="mx-auto max-w-6xl">
         <header className="max-w-2xl">
           <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
@@ -41,7 +41,7 @@ export function Night() {
           </h2>
         </header>
 
-        <ol className="mt-14 grid gap-4 md:grid-cols-3">
+        <ol className="mt-10 grid gap-3 sm:mt-14 sm:gap-4 md:grid-cols-3">
           {ACTS.map((a) => (
             <li
               key={a.n}
@@ -59,7 +59,7 @@ export function Night() {
         </ol>
 
         {/* Faixa de números */}
-        <div className="mt-16 grid grid-cols-3 gap-4 border-t border-hair pt-12">
+        <div className="mt-12 grid grid-cols-3 gap-3 border-t border-hair pt-10 sm:mt-16 sm:gap-4 sm:pt-12">
           {STATS.map((s) => (
             <div key={s.label} className="text-center">
               <div className="font-display text-[clamp(40px,8vw,84px)] font-light leading-none tabular-nums text-gold">

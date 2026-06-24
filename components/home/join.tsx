@@ -7,7 +7,7 @@ import { HOME } from "./content";
  */
 export function Join() {
   return (
-    <section className="relative overflow-hidden bg-ink px-6 py-28 sm:px-10 sm:py-36">
+    <section className="relative overflow-hidden bg-ink px-5 py-24 sm:px-10 sm:py-36">
       {/* Brilho dourado */}
       <div
         aria-hidden

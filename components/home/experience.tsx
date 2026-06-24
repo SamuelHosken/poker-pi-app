@@ -28,7 +28,7 @@ const PILLARS = [
 
 export function Experience() {
   return (
-    <section className="bg-ink px-6 py-24 sm:px-10 sm:py-32">
+    <section className="bg-ink px-5 py-20 sm:px-10 sm:py-32">
       <div className="mx-auto max-w-6xl">
         <header className="max-w-2xl">
           <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
@@ -48,7 +48,7 @@ export function Experience() {
           </p>
         </header>
 
-        <div className="mt-14 grid gap-4 sm:grid-cols-2">
+        <div className="mt-10 grid gap-3 sm:mt-14 sm:grid-cols-2 sm:gap-4">
           {PILLARS.map((p) => (
             <article
               key={p.tag}

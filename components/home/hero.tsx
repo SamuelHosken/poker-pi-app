@@ -40,7 +40,7 @@ export function Hero() {
       />
 
       {/* Topo: marca */}
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 pt-7 sm:px-10">
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 pt-7 sm:px-10">
         <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-gold">
           {HOME.brand}
         </span>
@@ -50,7 +50,7 @@ export function Hero() {
       </header>
 
       {/* Centro */}
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-6 py-16 sm:px-10">
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-5 py-14 sm:px-10 sm:py-16">
         <div className="inline-flex items-center gap-2 self-start border-b border-line/70 pb-3 font-mono text-[10px] uppercase tracking-[0.24em] text-gold before:h-px before:w-6 before:bg-gold before:content-['']">
           Torneios de poker · entre os seus
         </div>
@@ -95,7 +95,7 @@ export function Hero() {
       </div>
 
       {/* Rodapé do hero: cue de scroll */}
-      <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-8 sm:px-10">
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-8 sm:px-10">
         <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-gray-mid">
           <span aria-hidden className="text-gold motion-safe:animate-bounce">
             ↓
