@@ -10,7 +10,7 @@ import { mapTicketTypeRow, type TicketType } from "./types";
 import { createAsaasCustomer, createAsaasPayment } from "@/lib/payments/asaas";
 
 export const OrderSchema = z.object({
-  ticketTypeId: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "ID de ingresso inválido."),
+  ticketTypeId: z.string().uuid(),
   name: z.string().trim().min(2, "Digite seu nome completo.").max(120),
   email: z.string().trim().toLowerCase().email("E-mail inválido.").max(254),
   phone: z.string().trim().regex(/^\+[1-9]\d{6,17}$/, "Telefone inválido."),

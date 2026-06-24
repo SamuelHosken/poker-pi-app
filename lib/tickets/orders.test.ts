@@ -4,7 +4,7 @@ import { OrderSchema } from "./orders";
 describe("OrderSchema", () => {
   it("aceita entrada válida", () => {
     const r = OrderSchema.safeParse({
-      ticketTypeId: "11111111-1111-1111-1111-111111111111",
+      ticketTypeId: "550e8400-e29b-41d4-a716-446655440000",
       name: "Ana Silva",
       email: "ana@gmail.com",
       phone: "+5561999998888",
@@ -14,7 +14,7 @@ describe("OrderSchema", () => {
   });
   it("rejeita CPF inválido", () => {
     const r = OrderSchema.safeParse({
-      ticketTypeId: "11111111-1111-1111-1111-111111111111",
+      ticketTypeId: "550e8400-e29b-41d4-a716-446655440000",
       name: "Ana Silva",
       email: "ana@gmail.com",
       phone: "+5561999998888",
