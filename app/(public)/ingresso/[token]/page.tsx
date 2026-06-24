@@ -36,7 +36,7 @@ export default async function IngressoPage({
       </div>
 
       <div className="mt-6 w-full max-w-sm rounded-2xl border border-line bg-ink-2 p-5">
-        <Row label="Nome" value={ticket.buyer_name} />
+        <Row label="Nome" value={ticket.buyer_name ?? "—"} />
         <Row label="Ingresso" value={tt?.name ?? "—"} gold />
         <Row label="Local" value={ev?.location_text ?? "—"} />
         <Row label="Status" value={ticket.checked_in_at ? "Check-in feito ✓" : "Pago ✓"} />
