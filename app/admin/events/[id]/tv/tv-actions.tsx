@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, ExternalLink, RotateCw } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function TvActions({ tvUrl }: { tvUrl: string }) {
   const [copied, setCopied] = useState(false);
@@ -22,36 +23,16 @@ export function TvActions({ tvUrl }: { tvUrl: string }) {
     window.open(tvUrl, "_blank", "noopener,noreferrer");
   }
 
-  function handleRefresh() {
-    toast.info("Recarregue a aba da TV manualmente (F5 ou ⌘R)");
-  }
-
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-      <button
-        type="button"
-        onClick={handleOpen}
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-gold px-5 text-sm font-medium text-ink transition-colors hover:bg-gold/90"
-      >
+      <Button type="button" onClick={handleOpen}>
         <ExternalLink className="size-4" aria-hidden />
         Abrir TV em nova aba
-      </button>
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-line bg-ink-2 px-5 text-sm text-paper transition-colors hover:border-gold/40 hover:text-gold"
-      >
+      </Button>
+      <Button type="button" variant="secondary" onClick={handleCopy}>
         <Copy className="size-4" aria-hidden />
         {copied ? "Copiado!" : "Copiar link"}
-      </button>
-      <button
-        type="button"
-        onClick={handleRefresh}
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-line bg-ink-2 px-5 text-sm text-gray-soft transition-colors hover:border-gold/40 hover:text-gold"
-      >
-        <RotateCw className="size-4" aria-hidden />
-        Recarregar TV
-      </button>
+      </Button>
     </div>
   );
 }
