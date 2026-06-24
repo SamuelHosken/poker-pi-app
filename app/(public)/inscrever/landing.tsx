@@ -10,7 +10,13 @@ import { SubscribeForm } from "./subscribe-form";
  * O que muda entre as duas é só `videoPublicId` — quando ausente, o Hero usa
  * o vídeo genérico (CONVITE_PUBLIC_ID).
  */
-export function Landing({ videoPublicId }: { videoPublicId?: string }) {
+export function Landing({
+  videoPublicId,
+  conviteSlug,
+}: {
+  videoPublicId?: string;
+  conviteSlug?: string;
+}) {
   return (
     <>
       {/* Desktop / tablet: redireciona pro celular */}
@@ -41,7 +47,7 @@ export function Landing({ videoPublicId }: { videoPublicId?: string }) {
           </header>
 
           <div className="mx-auto w-full max-w-md">
-            <SubscribeForm />
+            <SubscribeForm conviteSlug={conviteSlug} />
           </div>
         </section>
 

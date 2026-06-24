@@ -1,4 +1,8 @@
 import { getAllSubscriptions } from "@/lib/tournament/subscriptions";
+import {
+  getConviteStatuses,
+  type ConviteStatus,
+} from "@/lib/tournament/convite-stats";
 import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
 import { InscritosToolbar } from "./inscritos-toolbar";
@@ -10,6 +14,7 @@ export const metadata = {
 export default async function InscritosPage() {
   const { count, attendedCount, firstTimerCount, rows } =
     await getAllSubscriptions();
+  const convites = await getConviteStatuses();
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-10">
@@ -35,6 +40,8 @@ export default async function InscritosPage() {
         <Stat label="Foram à 1ª" value={attendedCount} tone="gold" />
         <Stat label="Primeira vez" value={firstTimerCount} tone="felt" />
       </section>
+
+      <ConvidadosPanel convites={convites} />
 
       <InscritosToolbar rows={rows} />
 
@@ -140,6 +147,92 @@ export default async function InscritosPage() {
         </>
       )}
     </main>
+  );
+}
+
+function ConvidadosPanel({
+  convites,
+}: {
+  convites: Awaited<ReturnType<typeof getConviteStatuses>>;
+}) {
+  const { rows, total, subscribedCount, openedNotSubscribedCount, notOpenedCount } =
+    convites;
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-xl font-light tracking-tight text-paper">
+          Convidados{" "}
+          <span className="font-mono text-xs text-gray-mid">({total} links)</span>
+        </h2>
+        {openedNotSubscribedCount > 0 && (
+          <span className="font-mono text-[11px] text-gold">
+            {openedNotSubscribedCount} abriu{openedNotSubscribedCount === 1 ? "" : "ram"} e não se inscreveu
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <Stat label="Inscritos" value={subscribedCount} tone="felt" />
+        <Stat label="Abriu, não inscr." value={openedNotSubscribedCount} tone="gold" />
+        <Stat label="Não abriu" value={notOpenedCount} tone="paper" />
+      </div>
+
+      <ul className="space-y-2">
+        {rows.map((c) => (
+          <ConvidadoRow key={c.slug} c={c} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function ConvidadoRow({ c }: { c: ConviteStatus }) {
+  const accent =
+    c.status === "opened_not_subscribed"
+      ? "border-gold/50 bg-gold/5"
+      : "border-line bg-ink-2";
+
+  return (
+    <li
+      className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${accent}`}
+    >
+      <div className="min-w-0">
+        <p className="font-medium text-paper">{c.name}</p>
+        <p className="font-mono text-[11px] text-gray-mid">/convite/{c.slug}</p>
+      </div>
+
+      <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+        <ConvidadoBadge status={c.status} />
+        {c.opened && (
+          <span className="font-mono text-[10px] text-gray-mid">
+            {c.openCount}× · {formatDateBR(c.lastOpenedAt!, "dd/MM HH:mm")}
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function ConvidadoBadge({ status }: { status: ConviteStatus["status"] }) {
+  if (status === "subscribed") {
+    return (
+      <span className="inline-flex items-center rounded-full border border-felt bg-felt/15 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-felt">
+        Inscrito
+      </span>
+    );
+  }
+  if (status === "opened_not_subscribed") {
+    return (
+      <span className="inline-flex items-center rounded-full border border-gold/50 bg-gold/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-gold">
+        Abriu · não inscr.
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full border border-line bg-ink px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-soft">
+      Não abriu
+    </span>
   );
 }
 
