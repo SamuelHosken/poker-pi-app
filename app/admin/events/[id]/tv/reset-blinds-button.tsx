@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 import { resetBlindsFromTemplate } from "@/lib/tournament/events";
 
 /**
@@ -42,7 +43,7 @@ export function ResetBlindsButton({ eventId }: { eventId: string }) {
     <AlertDialog>
       <AlertDialogTrigger
         disabled={pending}
-        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-line bg-ink-2 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft transition-colors hover:border-gold/40 hover:text-gold disabled:opacity-40"
+        className={buttonVariants({ variant: "destructive", size: "default" }) + " w-full font-mono text-[10px] uppercase tracking-[0.18em]"}
       >
         <RotateCcw className="size-3.5" aria-hidden />
         {pending ? "Resetando…" : "Resetar blinds pro template Casa"}
@@ -62,7 +63,7 @@ export function ResetBlindsButton({ eventId }: { eventId: string }) {
           <AlertDialogAction
             onClick={handle}
             disabled={pending}
-            className="bg-gold text-ink hover:bg-gold/90"
+            variant="destructive"
           >
             {pending ? "Resetando…" : "Resetar"}
           </AlertDialogAction>

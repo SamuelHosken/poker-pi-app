@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Bot, Hand } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { setAutoAdvanceBlinds } from "@/lib/tournament/events";
 
 /**
@@ -41,39 +42,35 @@ export function AutoAdvanceToggle({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-md border border-line bg-ink-2/60 p-3">
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-gold/80">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-hair bg-surface p-3">
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
         Avanço de blinds
       </span>
-      <div className="ml-auto inline-flex gap-1 rounded-md border border-line bg-ink p-0.5">
-        <button
+      <div className="ml-auto inline-flex gap-1 rounded-lg border border-hair bg-surface p-0.5">
+        <Button
           type="button"
+          variant={!enabled ? "default" : "ghost"}
+          size="sm"
           onClick={() => handle(false)}
           disabled={pending || !enabled}
-          style={{ touchAction: "manipulation" }}
-          className={`inline-flex h-9 items-center gap-1.5 rounded px-3 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors ${
-            !enabled
-              ? "bg-gold text-ink"
-              : "text-gray-soft hover:text-paper disabled:opacity-50"
-          }`}
+          style={{ touchAction: "manipulation", minHeight: "44px" }}
+          className="gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em]"
         >
           <Hand className="size-3.5" aria-hidden />
           Manual
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant={enabled ? "default" : "ghost"}
+          size="sm"
           onClick={() => handle(true)}
           disabled={pending || enabled}
-          style={{ touchAction: "manipulation" }}
-          className={`inline-flex h-9 items-center gap-1.5 rounded px-3 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors ${
-            enabled
-              ? "bg-gold text-ink"
-              : "text-gray-soft hover:text-paper disabled:opacity-50"
-          }`}
+          style={{ touchAction: "manipulation", minHeight: "44px" }}
+          className="gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em]"
         >
           <Bot className="size-3.5" aria-hidden />
           Automático
-        </button>
+        </Button>
       </div>
     </div>
   );
