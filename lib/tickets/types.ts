@@ -7,6 +7,8 @@ export type TicketType = {
   description: string | null;
   priceCents: number;
   sortOrder: number;
+  active: boolean;
+  createdAt: string;
 };
 
 export type Ticket = {
@@ -26,6 +28,7 @@ export type Ticket = {
   qrToken: string | null;
   paidAt: string | null;
   checkedInAt: string | null;
+  checkedInBy: string | null;
   playerId: string | null;
 };
 
@@ -48,6 +51,7 @@ export function mapTicketRow(r: Record<string, unknown>): Ticket {
     qrToken: (r.qr_token as string) ?? null,
     paidAt: (r.paid_at as string) ?? null,
     checkedInAt: (r.checked_in_at as string) ?? null,
+    checkedInBy: (r.checked_in_by as string) ?? null,
     playerId: (r.player_id as string) ?? null,
   };
 }
@@ -60,5 +64,7 @@ export function mapTicketTypeRow(r: Record<string, unknown>): TicketType {
     description: (r.description as string) ?? null,
     priceCents: r.price_cents as number,
     sortOrder: r.sort_order as number,
+    active: r.active as boolean,
+    createdAt: r.created_at as string,
   };
 }
