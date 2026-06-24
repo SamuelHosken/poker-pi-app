@@ -1,0 +1,64 @@
+export type TicketStatus = "pending" | "paid" | "canceled";
+
+export type TicketType = {
+  id: string;
+  eventId: string;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  sortOrder: number;
+};
+
+export type Ticket = {
+  id: string;
+  eventId: string;
+  ticketTypeId: string;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+  buyerCpf: string;
+  amountCents: number;
+  status: TicketStatus;
+  asaasCustomerId: string | null;
+  asaasPaymentId: string | null;
+  asaasInvoiceUrl: string | null;
+  paymentMethod: string | null;
+  qrToken: string | null;
+  paidAt: string | null;
+  checkedInAt: string | null;
+  playerId: string | null;
+};
+
+/** Converte uma linha snake_case do Supabase (untyped) pro tipo camelCase. */
+export function mapTicketRow(r: Record<string, unknown>): Ticket {
+  return {
+    id: r.id as string,
+    eventId: r.event_id as string,
+    ticketTypeId: r.ticket_type_id as string,
+    buyerName: r.buyer_name as string,
+    buyerEmail: r.buyer_email as string,
+    buyerPhone: r.buyer_phone as string,
+    buyerCpf: r.buyer_cpf as string,
+    amountCents: r.amount_cents as number,
+    status: r.status as TicketStatus,
+    asaasCustomerId: (r.asaas_customer_id as string) ?? null,
+    asaasPaymentId: (r.asaas_payment_id as string) ?? null,
+    asaasInvoiceUrl: (r.asaas_invoice_url as string) ?? null,
+    paymentMethod: (r.payment_method as string) ?? null,
+    qrToken: (r.qr_token as string) ?? null,
+    paidAt: (r.paid_at as string) ?? null,
+    checkedInAt: (r.checked_in_at as string) ?? null,
+    playerId: (r.player_id as string) ?? null,
+  };
+}
+
+export function mapTicketTypeRow(r: Record<string, unknown>): TicketType {
+  return {
+    id: r.id as string,
+    eventId: r.event_id as string,
+    name: r.name as string,
+    description: (r.description as string) ?? null,
+    priceCents: r.price_cents as number,
+    sortOrder: r.sort_order as number,
+  };
+}
