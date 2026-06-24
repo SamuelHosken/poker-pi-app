@@ -3,6 +3,7 @@ export type WebhookDeps = {
     id: string;
     status: string;
     buyer_email?: string;
+    buyer_name?: string;
     ticket_name?: string;
     when_text?: string;
     location_text?: string;
@@ -35,7 +36,7 @@ export async function processWebhookEvent(
   if (ticket.buyer_email) {
     await deps.sendEmail({
       to: ticket.buyer_email,
-      buyerName: ticket.buyer_email.split("@")[0] ?? ticket.buyer_email,
+      buyerName: ticket.buyer_name ?? ticket.buyer_email.split("@")[0] ?? ticket.buyer_email,
       ticketName: ticket.ticket_name ?? "Ingresso",
       whenText: ticket.when_text ?? "",
       locationText: ticket.location_text ?? "",

@@ -5,6 +5,7 @@ import {
   Images,
   Star,
   Trash2,
+  ScanLine,
   type LucideIcon,
 } from "lucide-react";
 
@@ -17,6 +18,7 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
+  { href: "/admin/checkin", label: "Check-in", Icon: ScanLine },
   { href: "/admin/galeria", label: "Galeria", Icon: Images },
   { href: "/admin/feedback", label: "Avaliações", Icon: Star },
   { href: "/admin/events/lixeira", label: "Lixeira", Icon: Trash2 },

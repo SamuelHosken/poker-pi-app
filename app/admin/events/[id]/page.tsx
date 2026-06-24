@@ -171,6 +171,12 @@ export default async function EventDetailPage({
           />
         )}
         <Link
+          href={`/admin/events/${event.id}/ingressos`}
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-gold/40 bg-gold/5 px-5 text-sm text-gold transition-colors hover:bg-gold/10 sm:w-auto"
+        >
+          Ingressos
+        </Link>
+        <Link
           href={`/admin/events/${event.id}/tv`}
           className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-gold/40 bg-gold/5 px-5 text-sm text-gold transition-colors hover:bg-gold/10 sm:w-auto"
         >

@@ -51,7 +51,7 @@ export async function checkInTicket(
     playerId = player?.id ?? null;
   }
 
-  await db
+  const { error: checkInError } = await db
     .from("tickets")
     .update({
       checked_in_at: new Date().toISOString(),
@@ -59,6 +59,10 @@ export async function checkInTicket(
       player_id: playerId,
     })
     .eq("id", ticket.id);
+
+  if (checkInError) {
+    return { ok: false, error: "Falha ao registrar o check-in. Tente de novo." };
+  }
 
   return { ok: true, buyerName: ticket.buyer_name, ticketName, already: false };
 }

@@ -13,7 +13,7 @@ export default async function IngressosAdminPage({
   const { data: rows } = await db
     .from("tickets")
     .select(
-      "buyer_name,buyer_email,amount_cents,status,payment_method,checked_in_at,created_at,ticket_type_id",
+      "id,buyer_name,buyer_email,amount_cents,status,payment_method,checked_in_at,created_at,ticket_type_id",
     )
     .eq("event_id", id)
     .order("created_at", { ascending: false });
@@ -49,8 +49,8 @@ export default async function IngressosAdminPage({
             </tr>
           </thead>
           <tbody>
-            {tickets.map((t, i) => (
-              <tr key={i} className="border-t border-line">
+            {tickets.map((t) => (
+              <tr key={t.id as string} className="border-t border-line">
                 <td className="p-3">
                   {t.buyer_name}
                   <div className="text-xs text-gray-soft">{t.buyer_email}</div>
