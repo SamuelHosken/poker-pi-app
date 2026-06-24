@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { OrderSchema } from "./orders";
+import { OrderSchema } from "./types";
 
 describe("OrderSchema", () => {
   it("aceita entrada válida", () => {

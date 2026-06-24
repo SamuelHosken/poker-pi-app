@@ -1,26 +1,12 @@
 "use server";
 
 import { headers } from "next/headers";
-import { z } from "zod";
 import { rawServiceClient } from "@/lib/tournament/auth";
 import { checkRateLimit } from "@/lib/rate-limit/in-memory";
-import { isValidCpf, onlyDigits } from "./cpf";
+import { onlyDigits } from "./cpf";
 import { hasCapacity } from "./capacity";
-import { mapTicketTypeRow, type TicketType } from "./types";
+import { mapTicketTypeRow, type TicketType, OrderSchema, type OrderInput, type OrderResult } from "./types";
 import { createAsaasCustomer, createAsaasPayment } from "@/lib/payments/asaas";
-
-export const OrderSchema = z.object({
-  ticketTypeId: z.string().uuid(),
-  name: z.string().trim().min(2, "Digite seu nome completo.").max(120),
-  email: z.string().trim().toLowerCase().email("E-mail inválido.").max(254),
-  phone: z.string().trim().regex(/^\+[1-9]\d{6,17}$/, "Telefone inválido."),
-  cpf: z.string().trim().refine(isValidCpf, "CPF inválido."),
-});
-
-export type OrderInput = z.input<typeof OrderSchema>;
-export type OrderResult =
-  | { ok: true; invoiceUrl: string }
-  | { ok: false; error: string; field?: keyof OrderInput };
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);

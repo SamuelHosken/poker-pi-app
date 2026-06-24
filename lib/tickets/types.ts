@@ -1,3 +1,19 @@
+import { z } from "zod";
+import { isValidCpf } from "./cpf";
+
+export const OrderSchema = z.object({
+  ticketTypeId: z.string().uuid(),
+  name: z.string().trim().min(2, "Digite seu nome completo.").max(120),
+  email: z.string().trim().toLowerCase().email("E-mail inválido.").max(254),
+  phone: z.string().trim().regex(/^\+[1-9]\d{6,17}$/, "Telefone inválido."),
+  cpf: z.string().trim().refine(isValidCpf, "CPF inválido."),
+});
+
+export type OrderInput = z.input<typeof OrderSchema>;
+export type OrderResult =
+  | { ok: true; invoiceUrl: string }
+  | { ok: false; error: string; field?: keyof OrderInput };
+
 export type TicketStatus = "pending" | "paid" | "canceled";
 
 export type TicketType = {
