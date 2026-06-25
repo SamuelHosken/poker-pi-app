@@ -5,6 +5,7 @@ const ITEMS = [
 ];
 
 import { Reveal } from "./reveal";
+import { BlurWord } from "./blur-word";
 
 /** Dobra clara (creme) no meio da página dark. */
 export function TheNight() {
@@ -13,7 +14,7 @@ export function TheNight() {
       <Reveal className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
         <p className="font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">A noite</p>
         <h2 className="mt-3 max-w-3xl font-condensed text-[clamp(34px,7.5vw,76px)] font-extrabold uppercase leading-[0.96] text-ink-warm">
-          Não é sobre sorte. É sobre quem fica até o fim.
+          Não é sobre sorte. É sobre quem fica até o <BlurWord>fim.</BlurWord>
         </h2>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-3">

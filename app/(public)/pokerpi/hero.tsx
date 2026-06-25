@@ -1,5 +1,4 @@
 import { PokerPiLogo } from "@/components/ui/poker-pi-logo";
-import { Grain } from "./grain";
 import { BlurWord } from "./blur-word";
 import { Reveal } from "./reveal";
 
@@ -29,7 +28,6 @@ export function Hero({
 }) {
   return (
     <section className="relative mx-auto grid w-full max-w-6xl items-center gap-8 px-5 pb-14 pt-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:pb-20 lg:pt-12">
-      <Grain opacity={0.2} />
       {/* Coluna texto */}
       <Reveal className="relative z-[2] flex flex-col">
         <div className="inline-flex items-center gap-2 font-condensed text-base font-bold uppercase tracking-[0.14em] text-red-brand">

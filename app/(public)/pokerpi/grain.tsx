@@ -27,3 +27,22 @@ export function Grain({
     />
   );
 }
+
+/**
+ * Ruído de filme FORTE e animado, fixo sobre a página inteira (z alto).
+ * Pisca como grão de filme real. pointer-events-none, então não atrapalha cliques.
+ */
+export function GrainOverlay({ opacity = 0.3 }: { opacity?: number }) {
+  return (
+    <div
+      aria-hidden
+      className="grain-fixed pointer-events-none fixed inset-[-50%] z-50 h-[200%] w-[200%]"
+      style={{
+        backgroundImage: `url("${NOISE}")`,
+        backgroundSize: "130px 130px",
+        opacity,
+        mixBlendMode: "overlay",
+      }}
+    />
+  );
+}

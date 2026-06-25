@@ -9,6 +9,8 @@ import { GalleryStrip } from "./gallery-strip";
 import { VenueSchedule } from "./venue-schedule";
 import { Faq } from "./faq";
 import { GoldTicketArt } from "./gold-ticket-art";
+import { GrainOverlay } from "./grain";
+import { BlurWord } from "./blur-word";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +54,7 @@ export default async function PokerPiPage() {
 
   return (
     <main className="bg-ink-warm text-cream">
+      <GrainOverlay opacity={0.32} />
       {/* NAV */}
       <nav className="sticky top-0 z-40 border-b border-white/10 bg-ink-warm/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
@@ -89,7 +92,7 @@ export default async function PokerPiPage() {
           <div className="max-w-2xl">
             <p className="font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">Os ingressos</p>
             <h2 className="mt-3 font-condensed text-[clamp(40px,9vw,92px)] font-extrabold uppercase leading-[0.93] text-cream">
-              Garanta seu lugar
+              Garanta seu <BlurWord>lugar</BlurWord>
             </h2>
             <p className="mt-4 max-w-md text-lg text-cream-soft">
               {remaining != null && !soldOut ? `Restam ${remaining} de ${event.capacity} lugares. ` : ""}
@@ -122,7 +125,7 @@ export default async function PokerPiPage() {
         <section className="bg-red-brand">
           <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 py-20 text-center sm:px-8">
             <h2 className="font-condensed text-[clamp(40px,9vw,96px)] font-extrabold uppercase leading-[0.93] text-cream">
-              Te vejo na mesa?
+              Te vejo na <BlurWord>mesa?</BlurWord>
             </h2>
             <a
               href="#ingressos"

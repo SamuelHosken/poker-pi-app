@@ -214,3 +214,20 @@
 @media (prefers-reduced-motion: reduce) {
   .ob-glow, .grain-anim { animation: none !important; }
 }
+
+/* Grão de filme FORTE e animado (camada fixa na página toda) */
+@keyframes grainFlicker {
+  0%   { transform: translate3d(0,0,0); }
+  10%  { transform: translate3d(-6%,-6%,0); }
+  20%  { transform: translate3d(-11%,6%,0); }
+  30%  { transform: translate3d(6%,-11%,0); }
+  40%  { transform: translate3d(-6%,16%,0); }
+  50%  { transform: translate3d(-11%,6%,0); }
+  60%  { transform: translate3d(16%,0,0); }
+  70%  { transform: translate3d(0,11%,0); }
+  80%  { transform: translate3d(-16%,0,0); }
+  90%  { transform: translate3d(11%,6%,0); }
+  100% { transform: translate3d(6%,0,0); }
+}
+.grain-fixed { animation: grainFlicker 0.7s steps(1) infinite; }
+@media (prefers-reduced-motion: reduce) { .grain-fixed { animation: none !important; } }
