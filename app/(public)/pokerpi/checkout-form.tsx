@@ -71,7 +71,7 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
     <form onSubmit={submit} className="space-y-5" noValidate>
       <TicketCards types={types} selectedId={selectedId} onSelect={setSelectedId} />
 
-      <div className="grid gap-4 rounded-3xl border border-cream-3 bg-cream-2/50 p-6">
+      <div className="grid gap-4 rounded-3xl border border-cream-3 bg-cream p-6 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.6)]">
         <Field label="Nome completo" hint={name && !valid.name ? "Digite seu nome completo." : undefined}>
           <input
             type="text"

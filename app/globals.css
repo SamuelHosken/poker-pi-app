@@ -21,10 +21,12 @@
   --color-cream: #f4ede1;
   --color-cream-2: #ece3d3;
   --color-cream-3: #e2d7c3;
-  --color-ink-warm: #1b1714;
-  --color-ink-warm-soft: #5b524a;
-  --color-red-brand: #e2452b;
-  --color-red-deep: #c23a22;
+  --color-cream-soft: #b7aa99;
+  --color-ink-warm: #17120f;
+  --color-ink-warm-2: #221b16;
+  --color-ink-warm-soft: #6a6058;
+  --color-red-brand: #d83a1c;
+  --color-red-deep: #b22f14;
 
   /* Tokens novos do design system */
   --color-gold-soft: #f0dcae;

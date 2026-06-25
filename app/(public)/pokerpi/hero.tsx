@@ -39,17 +39,17 @@ export function Hero({
           uma festa.
         </h1>
 
-        <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-warm sm:text-xl">
-          É a 2ª edição do <strong className="font-bold">Poker Pi</strong>. Um torneio de
+        <p className="mt-6 max-w-md text-lg leading-relaxed text-cream sm:text-xl">
+          É a 2ª edição do <strong className="font-bold text-cream">Poker Pi</strong>. Um torneio de
           verdade, com jantar, bar e 35 cadeiras. Entre quem você quer ter por perto.
         </p>
 
         {/* fatos */}
-        <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 font-condensed text-xl font-bold uppercase tracking-wide text-ink-warm">
+        <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 font-condensed text-xl font-bold uppercase tracking-wide text-cream">
           <span>{dateText}</span>
-          <span className="h-4 w-px bg-cream-3" />
+          <span className="h-4 w-px bg-white/20" />
           <span>{weekdayTimeText}</span>
-          <span className="h-4 w-px bg-cream-3" />
+          <span className="h-4 w-px bg-white/20" />
           <span>{locationShort}</span>
         </div>
 
@@ -62,12 +62,12 @@ export function Hero({
               Garantir meu ingresso
             </a>
           ) : (
-            <span className="inline-flex h-14 items-center rounded-full bg-ink-warm px-9 font-condensed text-lg font-bold uppercase tracking-wide text-cream">
+            <span className="inline-flex h-14 items-center rounded-full bg-white/10 px-9 font-condensed text-lg font-bold uppercase tracking-wide text-cream">
               Esgotado
             </span>
           )}
           {remaining != null && !soldOut && (
-            <span className="font-condensed text-lg font-semibold uppercase tracking-wide text-ink-warm-soft">
+            <span className="font-condensed text-lg font-semibold uppercase tracking-wide text-cream-soft">
               {remaining} de {capacity} lugares
             </span>
           )}
@@ -76,7 +76,7 @@ export function Hero({
 
       {/* Coluna vídeo emoldurado */}
       <div className="relative">
-        <div className="relative overflow-hidden rounded-[28px] border-4 border-ink-warm bg-ink-warm shadow-[0_30px_60px_-24px_rgba(27,23,20,0.5)]">
+        <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-[0_30px_60px_-24px_rgba(0,0,0,0.7)]">
           <video
             className="aspect-[4/5] w-full object-cover sm:aspect-[3/4] lg:aspect-[4/5]"
             src={HERO_VIDEO}

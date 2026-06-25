@@ -21,10 +21,10 @@ export default async function PokerPiPage() {
 
   if (!data) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center bg-cream px-5 text-center text-ink-warm">
+      <main className="flex min-h-dvh flex-col items-center justify-center bg-ink-warm px-5 text-center text-cream">
         <PokerPiLogo className="h-16 w-16 text-red-brand" />
         <p className="mt-6 font-condensed text-3xl font-bold uppercase">Sem evento aberto agora</p>
-        <p className="mt-2 text-sm text-ink-warm-soft">Fique de olho. Em breve.</p>
+        <p className="mt-2 text-sm text-cream-soft">Fique de olho. Em breve.</p>
       </main>
     );
   }
@@ -51,13 +51,13 @@ export default async function PokerPiPage() {
   ];
 
   return (
-    <main className="bg-cream text-ink-warm">
+    <main className="bg-ink-warm text-cream">
       {/* NAV */}
-      <nav className="sticky top-0 z-40 border-b border-cream-3 bg-cream/85 backdrop-blur-md">
+      <nav className="sticky top-0 z-40 border-b border-white/10 bg-ink-warm/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
           <div className="flex items-center gap-2.5">
             <PokerPiLogo className="h-7 w-7 text-red-brand" />
-            <span className="font-condensed text-xl font-bold uppercase tracking-wide text-ink-warm">Poker Pi</span>
+            <span className="font-condensed text-xl font-bold uppercase tracking-wide text-cream">Poker Pi</span>
           </div>
           {!soldOut && (
             <a
@@ -84,14 +84,14 @@ export default async function PokerPiPage() {
       <TheNight />
 
       {/* INGRESSOS */}
-      <section id="ingressos" className="border-y border-cream-3 bg-cream-2/40">
+      <section id="ingressos" className="border-y border-white/10 bg-ink-warm">
         <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
           <div className="max-w-2xl">
             <p className="font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">Os ingressos</p>
-            <h2 className="mt-3 font-condensed text-[clamp(40px,9vw,92px)] font-extrabold uppercase leading-[0.85] text-ink-warm">
+            <h2 className="mt-3 font-condensed text-[clamp(40px,9vw,92px)] font-extrabold uppercase leading-[0.85] text-cream">
               Garanta seu lugar
             </h2>
-            <p className="mt-4 max-w-md text-lg text-ink-warm-soft">
+            <p className="mt-4 max-w-md text-lg text-cream-soft">
               {remaining != null && !soldOut ? `Restam ${remaining} de ${event.capacity} lugares. ` : ""}
               Escolha seu plano e finalize em menos de um minuto.
             </p>
@@ -100,7 +100,7 @@ export default async function PokerPiPage() {
           <div className="mt-12 grid items-start gap-12 lg:grid-cols-[0.8fr_1.2fr]">
             <div className="order-1 mx-auto max-w-[230px] lg:order-none lg:sticky lg:top-24 lg:max-w-[340px]">
               <GoldTicketArt />
-              <p className="mt-5 text-center font-condensed text-base font-bold uppercase tracking-[0.16em] text-ink-warm-soft">
+              <p className="mt-5 text-center font-condensed text-base font-bold uppercase tracking-[0.16em] text-cream-soft">
                 Seu lugar na mesa
               </p>
             </div>

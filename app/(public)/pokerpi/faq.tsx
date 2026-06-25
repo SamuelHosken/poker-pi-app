@@ -9,15 +9,15 @@ export function Faq() {
   return (
     <section className="mx-auto max-w-3xl px-5 py-20 sm:px-8 lg:py-28">
       <p className="text-center font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">Dúvidas</p>
-      <h2 className="mt-3 text-center font-condensed text-[clamp(34px,7vw,64px)] font-extrabold uppercase leading-[0.9] text-ink-warm">
+      <h2 className="mt-3 text-center font-condensed text-[clamp(34px,7vw,64px)] font-extrabold uppercase leading-[0.9] text-cream">
         Perguntas frequentes
       </h2>
 
-      <dl className="mt-10 border-t border-cream-3">
+      <dl className="mt-10 border-t border-white/10">
         {FAQS.map((f) => (
-          <div key={f.q} className="border-b border-cream-3 py-6">
-            <dt className="font-condensed text-2xl font-bold uppercase leading-tight text-ink-warm">{f.q}</dt>
-            <dd className="mt-2 text-base leading-relaxed text-ink-warm-soft">{f.a}</dd>
+          <div key={f.q} className="border-b border-white/10 py-6">
+            <dt className="font-condensed text-2xl font-bold uppercase leading-tight text-cream">{f.q}</dt>
+            <dd className="mt-2 text-base leading-relaxed text-cream-soft">{f.a}</dd>
           </div>
         ))}
       </dl>

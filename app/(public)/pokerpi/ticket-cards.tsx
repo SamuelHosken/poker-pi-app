@@ -36,8 +36,8 @@ export function TicketCards({
             className={[
               "relative flex flex-col rounded-3xl border-2 p-6 text-left transition-all",
               active
-                ? "border-red-brand bg-cream-2 shadow-[0_18px_40px_-20px_rgba(226,69,43,0.55)]"
-                : "border-cream-3 bg-cream-2/40 hover:border-red-brand/50",
+                ? "border-red-brand bg-cream shadow-[0_18px_44px_-18px_rgba(216,58,28,0.7)]"
+                : "border-cream-3 bg-cream-2 hover:border-red-brand/60",
             ].join(" ")}
           >
             {openBar && (
