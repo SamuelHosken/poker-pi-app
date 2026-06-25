@@ -36,9 +36,9 @@ export function Hero({
         </div>
 
         <h1 className="mt-4 font-condensed text-[clamp(56px,13vw,128px)] font-extrabold uppercase leading-[0.9] tracking-[-0.01em] text-red-brand">
-          <BlurWord amount={1.5}>Isso</BlurWord> não é
+          <BlurWord amount={0.8}>Isso</BlurWord> <BlurWord amount={0.5}>não</BlurWord> é
           <br />
-          <BlurWord amount={1}>uma</BlurWord> <BlurWord amount={4}>festa.</BlurWord>
+          <BlurWord amount={0.8}>uma</BlurWord> <BlurWord amount={1.3}>festa.</BlurWord>
         </h1>
 
         <p className="mt-6 max-w-md text-lg leading-relaxed text-cream sm:text-xl">

@@ -1,17 +1,18 @@
 import type { ReactNode } from "react";
 
 const NOISE = "/event/noise.png";
-// máscara radial: opaca no centro, some nas bordas → ruído "em volta" da palavra
-const MASK = "radial-gradient(ellipse 58% 64% at 50% 50%, #000 28%, rgba(0,0,0,0.5) 58%, transparent 80%)";
+// máscara: forte no centro, some nas bordas → ruído "em volta" da palavra
+const MASK = "radial-gradient(ellipse 62% 68% at 50% 50%, #000 32%, rgba(0,0,0,0.6) 62%, transparent 84%)";
 
 /**
- * Palavra estilizada: a palavra com blur "de leve" (níveis via `amount`) e um
- * RUÍDO de filme animado como MÁSCARA em volta do texto (não recortado nas
- * letras) por cima, com blend overlay. Safari-safe (PNG + mask radial).
+ * Palavra estilizada: blur "bem de leve" (níveis via `amount`) + RUÍDO de filme
+ * forte e VERMELHO (na cor do título) como máscara em volta do texto.
+ * O blur fica só na palavra (camada de baixo); o ruído fica nítido por cima e
+ * usa blend "lighten" com a cor → some o branco (só clareia o canal da cor).
  */
 export function BlurWord({
   children,
-  amount = 2.5,
+  amount = 1,
   className = "",
 }: {
   children: ReactNode;
@@ -19,8 +20,10 @@ export function BlurWord({
   className?: string;
 }) {
   return (
-    <span className={`relative inline-block ${className}`} style={{ filter: `blur(${amount}px)` }}>
-      <span className="relative">{children}</span>
+    <span className={`relative inline-block ${className}`}>
+      <span className="relative" style={{ filter: `blur(${amount}px)` }}>
+        {children}
+      </span>
       <span
         aria-hidden
         className="grain-text pointer-events-none absolute -inset-x-[6%] -inset-y-[22%]"
@@ -28,9 +31,9 @@ export function BlurWord({
           backgroundColor: "currentColor",
           backgroundImage: `url("${NOISE}")`,
           backgroundBlendMode: "multiply",
-          backgroundSize: "85px 85px",
-          mixBlendMode: "screen",
-          opacity: 0.75,
+          backgroundSize: "78px 78px",
+          mixBlendMode: "lighten",
+          opacity: 1,
           WebkitMaskImage: MASK,
           maskImage: MASK,
         }}
