@@ -17,6 +17,15 @@
   --color-red-poker: #c8102e;
   --color-felt: #0f3d2e;
 
+  /* Marca dos vídeos: creme + vermelho-tomate + condensada (LP de ingressos) */
+  --color-cream: #f4ede1;
+  --color-cream-2: #ece3d3;
+  --color-cream-3: #e2d7c3;
+  --color-ink-warm: #1b1714;
+  --color-ink-warm-soft: #5b524a;
+  --color-red-brand: #e2452b;
+  --color-red-deep: #c23a22;
+
   /* Tokens novos do design system */
   --color-gold-soft: #f0dcae;
   --color-live: #34d399;
@@ -62,6 +71,7 @@
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-fraunces);
   --font-heading: var(--font-fraunces);
+  --font-condensed: var(--font-big-shoulders);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);

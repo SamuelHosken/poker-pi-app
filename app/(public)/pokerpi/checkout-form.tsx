@@ -3,10 +3,9 @@ import { useMemo, useState } from "react";
 import { createTicketOrder } from "@/lib/tickets/orders";
 import type { TicketType, OrderInput } from "@/lib/tickets/types";
 import { isValidCpf } from "@/lib/tickets/cpf";
-import { PhoneInput } from "@/app/(public)/inscrever/phone-input";
+import { PhoneInputCream } from "./phone-input-cream";
 import { TicketCards } from "./ticket-cards";
 
-/** Formata dígitos de CPF como 000.000.000-00 enquanto digita. */
 function formatCpf(raw: string): string {
   const d = raw.replace(/\D/g, "").slice(0, 11);
   if (d.length > 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
@@ -62,8 +61,8 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
 
   if (soldOut) {
     return (
-      <p className="rounded-xl border border-line bg-ink-2 p-4 text-center text-gold">
-        Ingressos esgotados.
+      <p className="rounded-2xl border-2 border-ink-warm bg-cream-2 p-6 text-center font-condensed text-2xl font-bold uppercase text-ink-warm">
+        Ingressos esgotados
       </p>
     );
   }
@@ -72,61 +71,60 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
     <form onSubmit={submit} className="space-y-5" noValidate>
       <TicketCards types={types} selectedId={selectedId} onSelect={setSelectedId} />
 
-      <Field label="Nome completo" hint={name && !valid.name ? "Digite seu nome completo." : undefined}>
-        <input
-          type="text"
-          autoComplete="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Como está no seu documento"
-          className={inputCls(errorField === "name" || (!!name && !valid.name))}
-        />
-      </Field>
+      <div className="grid gap-4 rounded-3xl border border-cream-3 bg-cream-2/50 p-6">
+        <Field label="Nome completo" hint={name && !valid.name ? "Digite seu nome completo." : undefined}>
+          <input
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Como está no seu documento"
+            className={inputCls(errorField === "name" || (!!name && !valid.name))}
+          />
+        </Field>
 
-      <Field label="E-mail" hint={email && !valid.email ? "E-mail inválido." : "O ingresso vai pra esse e-mail."}>
-        <input
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="voce@email.com"
-          className={inputCls(errorField === "email" || (!!email && !valid.email))}
-        />
-      </Field>
+        <Field label="E-mail" hint={email && !valid.email ? "E-mail inválido." : "O ingresso vai pra esse e-mail."}>
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="voce@email.com"
+            className={inputCls(errorField === "email" || (!!email && !valid.email))}
+          />
+        </Field>
 
-      <Field label="Telefone / WhatsApp">
-        <PhoneInput
-          invalid={errorField === "phone"}
-          onChange={(v) => setPhone({ e164: v.e164, valid: v.valid })}
-        />
-      </Field>
+        <Field label="Telefone / WhatsApp">
+          <PhoneInputCream invalid={errorField === "phone"} onChange={(v) => setPhone({ e164: v.e164, valid: v.valid })} />
+        </Field>
 
-      <Field label="CPF" hint={cpf && !valid.cpf ? "CPF inválido." : undefined}>
-        <input
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          value={cpf}
-          onChange={(e) => setCpf(formatCpf(e.target.value))}
-          placeholder="000.000.000-00"
-          maxLength={14}
-          className={inputCls(errorField === "cpf" || (!!cpf && !valid.cpf))}
-        />
-      </Field>
+        <Field label="CPF" hint={cpf && !valid.cpf ? "CPF inválido." : undefined}>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={cpf}
+            onChange={(e) => setCpf(formatCpf(e.target.value))}
+            placeholder="000.000.000-00"
+            maxLength={14}
+            className={inputCls(errorField === "cpf" || (!!cpf && !valid.cpf))}
+          />
+        </Field>
 
-      {serverError && <p className="text-sm text-red-poker">{serverError}</p>}
+        {serverError && <p className="text-sm font-medium text-red-deep">{serverError}</p>}
 
-      <button
-        type="submit"
-        disabled={loading || !allValid}
-        className="w-full rounded-full bg-gold px-6 py-3.5 font-bold text-ink transition disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {loading ? "Gerando pagamento…" : "Garantir meu ingresso"}
-      </button>
-      <p className="text-center text-xs text-gray-soft">
-        Pagamento via PIX ou cartão (Asaas). Você recebe o ingresso com QR na hora.
-      </p>
+        <button
+          type="submit"
+          disabled={loading || !allValid}
+          className="mt-1 inline-flex h-14 w-full items-center justify-center rounded-full bg-red-brand font-condensed text-xl font-bold uppercase tracking-wide text-cream transition-colors hover:bg-red-deep disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {loading ? "Gerando pagamento…" : "Garantir meu ingresso"}
+        </button>
+        <p className="text-center text-xs text-ink-warm-soft">
+          Pagamento via PIX ou cartão. Você recebe o ingresso com QR Code na hora, e também por e-mail.
+        </p>
+      </div>
     </form>
   );
 }
@@ -134,18 +132,16 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-medium uppercase tracking-wide text-gray-soft">{label}</span>
+      <span className="font-condensed text-sm font-bold uppercase tracking-[0.12em] text-ink-warm">{label}</span>
       {children}
-      {hint && <span className="block text-xs text-gray-mid">{hint}</span>}
+      {hint && <span className="block text-xs text-ink-warm-soft">{hint}</span>}
     </label>
   );
 }
 
 function inputCls(invalid: boolean): string {
   return [
-    "w-full rounded-xl border bg-ink-2/60 px-4 py-3.5 text-base text-paper placeholder:text-gray-mid transition-colors focus:outline-none focus:ring-1",
-    invalid
-      ? "border-red-poker/70 focus:border-red-poker focus:ring-red-poker/40"
-      : "border-line focus:border-gold focus:ring-gold/40",
+    "w-full rounded-xl border-2 bg-cream-2/60 px-4 py-3.5 text-base text-ink-warm placeholder:text-ink-warm-soft/60 transition-colors focus:outline-none",
+    invalid ? "border-red-brand" : "border-cream-3 focus:border-red-brand",
   ].join(" ");
 }

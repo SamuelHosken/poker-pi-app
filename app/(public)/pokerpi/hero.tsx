@@ -1,13 +1,13 @@
 import { PokerPiLogo } from "@/components/ui/poker-pi-logo";
 
 /**
- * Herói da LP de ingressos: vídeo de fundo em loop (slow-mo da 1ª edição),
- * escurecido, com a marca + data + vagas + CTA por cima. Mobile-first.
- *
- * Footage real da 1ª edição (slow-mo), comprimido pra web.
+ * Herói da LP: estética dos vídeos (creme + vermelho-tomate + Big Shoulders).
+ * Layout dividido: título gigante condensado de um lado (sobre creme = legível),
+ * vídeo dos cortes rápidos emoldurado do outro. Não ocupa tela toda.
+ * Footage real (cortes rápidos), comprimido pra web.
  */
-const HERO_VIDEO = "/event/slowmo.mp4";
-const HERO_POSTER = "/event/slowmo-poster.jpg";
+const HERO_VIDEO = "/event/fastcuts.mp4";
+const HERO_POSTER = "/event/fastcuts-poster.jpg";
 
 export function Hero({
   dateText,
@@ -25,86 +25,75 @@ export function Hero({
   soldOut: boolean;
 }) {
   return (
-    <section className="relative isolate flex min-h-[100dvh] flex-col overflow-hidden bg-ink">
-      {/* fallback de gradiente (caso o vídeo não carregue) */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-20"
-        style={{ background: "radial-gradient(ellipse 90% 70% at 50% 18%, #1b150a 0%, #0a0a0c 60%)" }}
-      />
-      {/* vídeo de fundo */}
-      <video
-        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-80 motion-reduce:hidden"
-        src={HERO_VIDEO}
-        poster={HERO_POSTER}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        aria-hidden
-      />
-      {/* gradientes de legibilidade */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(10,10,12,0.78) 0%, rgba(10,10,12,0.32) 28%, rgba(10,10,12,0.40) 58%, rgba(10,10,12,0.88) 84%, #0a0a0c 100%)",
-        }}
-      />
-
-      {/* topo: marca */}
-      <header className="relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between px-5 pt-6 sm:px-8">
-        <div className="flex items-center gap-2.5">
-          <PokerPiLogo className="h-7 w-7 text-gold" />
-          <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-gold">Poker Pi</span>
-        </div>
-        <span className="hidden font-mono text-[10px] uppercase tracking-[0.24em] text-gray-soft sm:inline">
-          {locationShort}
-        </span>
-      </header>
-
-      {/* centro */}
-      <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-5 py-12 text-center">
-        <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.28em] text-gold before:h-px before:w-7 before:bg-gold before:content-[''] after:h-px after:w-7 after:bg-gold after:content-['']">
-          2ª Edição
+    <section className="relative mx-auto grid w-full max-w-6xl items-center gap-8 px-5 pb-14 pt-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:pb-20 lg:pt-12">
+      {/* Coluna texto */}
+      <div className="flex flex-col">
+        <div className="inline-flex items-center gap-2 font-condensed text-base font-bold uppercase tracking-[0.14em] text-red-brand">
+          <span className="h-2.5 w-2.5 rounded-full bg-red-brand" />
+          2ª Edição · Torneio de Poker
         </div>
 
-        <h1
-          className="mt-6 font-display font-light leading-[0.92] tracking-[-0.03em] text-white"
-          style={{ textShadow: "0 2px 40px rgba(0,0,0,0.6)" }}
-        >
-          <span className="block text-[clamp(40px,11vw,84px)]">{dateText}</span>
+        <h1 className="mt-4 font-condensed text-[clamp(56px,13vw,128px)] font-extrabold uppercase leading-[0.82] tracking-[-0.01em] text-red-brand">
+          Isso não é
+          <br />
+          uma festa.
         </h1>
-        <p className="mt-4 font-mono text-sm uppercase tracking-[0.22em] text-gold-soft">{weekdayTimeText}</p>
-        <p className="mt-3 max-w-md text-base leading-relaxed text-gray-soft">
-          Uma noite, trinta lugares, uma mesa até a final. Jantar, bar e um torneio de
-          verdade, entre quem você quer ter por perto.
+
+        <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-warm sm:text-xl">
+          É a 2ª edição do <strong className="font-bold">Poker Pi</strong>. Um torneio de
+          verdade, com jantar, bar e 35 cadeiras. Entre quem você quer ter por perto.
         </p>
 
-        {remaining != null && (
-          <p className="mt-7 font-mono text-[11px] uppercase tracking-[0.22em] text-gold/90">
-            {soldOut ? "● Esgotado" : `● ${remaining} de ${capacity} lugares`}
-          </p>
-        )}
+        {/* fatos */}
+        <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 font-condensed text-xl font-bold uppercase tracking-wide text-ink-warm">
+          <span>{dateText}</span>
+          <span className="h-4 w-px bg-cream-3" />
+          <span>{weekdayTimeText}</span>
+          <span className="h-4 w-px bg-cream-3" />
+          <span>{locationShort}</span>
+        </div>
 
-        {!soldOut && (
-          <a
-            href="#ingressos"
-            className="mt-7 inline-flex h-14 items-center justify-center rounded-full bg-gold px-9 font-mono text-xs uppercase tracking-[0.18em] text-ink shadow-[0_14px_40px_-10px_rgba(217,184,118,0.7)] transition-all hover:opacity-95 active:scale-[0.99]"
-          >
-            Garantir meu ingresso
-          </a>
-        )}
+        <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          {!soldOut ? (
+            <a
+              href="#ingressos"
+              className="inline-flex h-14 items-center justify-center rounded-full bg-red-brand px-9 font-condensed text-lg font-bold uppercase tracking-wide text-cream transition-transform hover:bg-red-deep active:scale-[0.99]"
+            >
+              Garantir meu ingresso
+            </a>
+          ) : (
+            <span className="inline-flex h-14 items-center rounded-full bg-ink-warm px-9 font-condensed text-lg font-bold uppercase tracking-wide text-cream">
+              Esgotado
+            </span>
+          )}
+          {remaining != null && !soldOut && (
+            <span className="font-condensed text-lg font-semibold uppercase tracking-wide text-ink-warm-soft">
+              {remaining} de {capacity} lugares
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* cue de scroll */}
-      <div className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-7 text-center sm:px-8">
-        <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-gray-mid">
-          <span aria-hidden className="text-gold motion-safe:animate-bounce">↓</span>
-          A noite
-        </span>
+      {/* Coluna vídeo emoldurado */}
+      <div className="relative">
+        <div className="relative overflow-hidden rounded-[28px] border-4 border-ink-warm bg-ink-warm shadow-[0_30px_60px_-24px_rgba(27,23,20,0.5)]">
+          <video
+            className="aspect-[4/5] w-full object-cover sm:aspect-[3/4] lg:aspect-[4/5]"
+            src={HERO_VIDEO}
+            poster={HERO_POSTER}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            aria-hidden
+          />
+          {/* selo da marca no canto */}
+          <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-cream/90 px-3 py-1.5 backdrop-blur-sm">
+            <PokerPiLogo className="h-4 w-4 text-red-brand" />
+            <span className="font-condensed text-sm font-bold uppercase tracking-wide text-ink-warm">Poker Pi</span>
+          </div>
+        </div>
       </div>
     </section>
   );

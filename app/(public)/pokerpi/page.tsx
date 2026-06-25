@@ -3,8 +3,11 @@ import { hasCapacity } from "@/lib/tickets/capacity";
 import { PokerPiLogo } from "@/components/ui/poker-pi-logo";
 import { CheckoutForm } from "./checkout-form";
 import { Hero } from "./hero";
-import { FastCutsBand } from "./fast-cuts-band";
-import { VenueSection } from "./venue-section";
+import { StatBand } from "./stat-band";
+import { TheNight } from "./the-night";
+import { GalleryStrip } from "./gallery-strip";
+import { VenueSchedule } from "./venue-schedule";
+import { Faq } from "./faq";
 import { GoldTicketArt } from "./gold-ticket-art";
 
 export const dynamic = "force-dynamic";
@@ -18,10 +21,10 @@ export default async function PokerPiPage() {
 
   if (!data) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center bg-ink px-5 text-center text-paper">
-        <PokerPiLogo className="h-16 w-16 text-gold" />
-        <p className="mt-6 text-lg">Nenhum evento com vendas abertas no momento.</p>
-        <p className="mt-2 text-sm text-gray-soft">Fique de olho, em breve.</p>
+      <main className="flex min-h-dvh flex-col items-center justify-center bg-cream px-5 text-center text-ink-warm">
+        <PokerPiLogo className="h-16 w-16 text-red-brand" />
+        <p className="mt-6 font-condensed text-3xl font-bold uppercase">Sem evento aberto agora</p>
+        <p className="mt-2 text-sm text-ink-warm-soft">Fique de olho. Em breve.</p>
       </main>
     );
   }
@@ -31,14 +34,8 @@ export default async function PokerPiPage() {
   const remaining = event.capacity != null ? Math.max(0, event.capacity - soldCount) : null;
 
   const start = new Date(event.startsAt);
-  const dateText = start.toLocaleDateString("pt-BR", {
-    day: "numeric",
-    month: "long",
-    timeZone: "America/Sao_Paulo",
-  });
-  const weekday = capitalize(
-    start.toLocaleDateString("pt-BR", { weekday: "long", timeZone: "America/Sao_Paulo" }),
-  );
+  const dateText = start.toLocaleDateString("pt-BR", { day: "numeric", month: "long", timeZone: "America/Sao_Paulo" });
+  const weekday = capitalize(start.toLocaleDateString("pt-BR", { weekday: "long", timeZone: "America/Sao_Paulo" }));
   const time = start
     .toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })
     .replace(":00", "h")
@@ -46,8 +43,33 @@ export default async function PokerPiPage() {
   const weekdayTimeText = `${weekday} · ${time}`;
   const locationShort = (event.locationText.split(",").pop() ?? event.locationText).trim();
 
+  const stats = [
+    { n: String(event.capacity ?? 35), l: "Lugares" },
+    { n: "2", l: "Mesas" },
+    { n: "1", l: "Campeão" },
+    { n: time.toUpperCase(), l: "Início" },
+  ];
+
   return (
-    <main className="bg-ink text-paper">
+    <main className="bg-cream text-ink-warm">
+      {/* NAV */}
+      <nav className="sticky top-0 z-40 border-b border-cream-3 bg-cream/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
+          <div className="flex items-center gap-2.5">
+            <PokerPiLogo className="h-7 w-7 text-red-brand" />
+            <span className="font-condensed text-xl font-bold uppercase tracking-wide text-ink-warm">Poker Pi</span>
+          </div>
+          {!soldOut && (
+            <a
+              href="#ingressos"
+              className="inline-flex h-10 items-center rounded-full bg-red-brand px-5 font-condensed text-sm font-bold uppercase tracking-wide text-cream transition-colors hover:bg-red-deep"
+            >
+              Garantir ingresso
+            </a>
+          )}
+        </div>
+      </nav>
+
       <Hero
         dateText={dateText}
         weekdayTimeText={weekdayTimeText}
@@ -57,46 +79,67 @@ export default async function PokerPiPage() {
         soldOut={soldOut}
       />
 
-      <FastCutsBand />
+      <StatBand stats={stats} />
 
-      <VenueSection locationText={event.locationText} />
+      <TheNight />
 
-      {/* INGRESSOS / CHECKOUT */}
-      <section id="ingressos" className="mx-auto w-full max-w-5xl px-5 pb-24 pt-4">
-        <div className="text-center">
-          <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-gold">Garanta seu lugar</p>
-          <h2 className="mt-4 font-display text-[clamp(28px,6vw,44px)] font-light tracking-tight text-paper">
-            Seu ingresso
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm text-gray-soft">
-            Pagamento via PIX ou cartão. Você recebe o ingresso com QR Code na hora, e também por e-mail.
-          </p>
-        </div>
-
-        <div className="mt-10 grid items-start gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14">
-          {/* arte decorativa do ingresso */}
-          <div className="order-1 mx-auto max-w-[220px] lg:order-none lg:sticky lg:top-16 lg:max-w-[320px]">
-            <GoldTicketArt />
-            <p className="mt-5 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-gray-mid">
-              Seu lugar na mesa
+      {/* INGRESSOS */}
+      <section id="ingressos" className="border-y border-cream-3 bg-cream-2/40">
+        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
+          <div className="max-w-2xl">
+            <p className="font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">Os ingressos</p>
+            <h2 className="mt-3 font-condensed text-[clamp(40px,9vw,92px)] font-extrabold uppercase leading-[0.85] text-ink-warm">
+              Garanta seu lugar
+            </h2>
+            <p className="mt-4 max-w-md text-lg text-ink-warm-soft">
+              {remaining != null && !soldOut ? `Restam ${remaining} de ${event.capacity} lugares. ` : ""}
+              Escolha seu plano e finalize em menos de um minuto.
             </p>
           </div>
 
-          {/* checkout */}
-          <div className="order-2 lg:order-none">
-            <CheckoutForm types={ticketTypes} soldOut={soldOut} />
+          <div className="mt-12 grid items-start gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="order-1 mx-auto max-w-[230px] lg:order-none lg:sticky lg:top-24 lg:max-w-[340px]">
+              <GoldTicketArt />
+              <p className="mt-5 text-center font-condensed text-base font-bold uppercase tracking-[0.16em] text-ink-warm-soft">
+                Seu lugar na mesa
+              </p>
+            </div>
+            <div className="order-2 lg:order-none">
+              <CheckoutForm types={ticketTypes} soldOut={soldOut} />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* rodapé */}
-      <footer className="border-t border-line/60 px-5 py-10 text-center">
-        <PokerPiLogo className="mx-auto h-8 w-8 text-gold/80" />
-        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.24em] text-gray-mid">
-          Poker Pi · {locationShort}
-        </p>
-        <p className="mx-auto mt-3 max-w-xs text-xs leading-relaxed text-gray-mid">
-          Lotação limitada a {event.capacity ?? ""} lugares. O ingresso é pessoal e chega por e-mail com QR para check-in.
+      <GalleryStrip />
+
+      <VenueSchedule locationText={event.locationText} />
+
+      <Faq />
+
+      {/* CTA FINAL */}
+      {!soldOut && (
+        <section className="bg-red-brand">
+          <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 py-20 text-center sm:px-8">
+            <h2 className="font-condensed text-[clamp(40px,9vw,96px)] font-extrabold uppercase leading-[0.85] text-cream">
+              Te vejo na mesa?
+            </h2>
+            <a
+              href="#ingressos"
+              className="inline-flex h-14 items-center rounded-full bg-cream px-10 font-condensed text-xl font-bold uppercase tracking-wide text-red-brand transition-transform hover:bg-cream-2 active:scale-[0.99]"
+            >
+              Garantir meu ingresso
+            </a>
+          </div>
+        </section>
+      )}
+
+      {/* RODAPÉ */}
+      <footer className="bg-ink-warm px-5 py-12 text-center">
+        <PokerPiLogo className="mx-auto h-9 w-9 text-cream" />
+        <p className="mt-3 font-condensed text-base font-bold uppercase tracking-[0.2em] text-cream">Poker Pi</p>
+        <p className="mx-auto mt-3 max-w-xs text-xs leading-relaxed text-cream/60">
+          {locationShort}. Lotação limitada a {event.capacity ?? ""} lugares. O ingresso é pessoal e chega por e-mail com QR para check-in.
         </p>
       </footer>
     </main>

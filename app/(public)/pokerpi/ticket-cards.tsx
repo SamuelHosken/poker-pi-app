@@ -3,7 +3,14 @@ import { Check } from "lucide-react";
 import type { TicketType } from "@/lib/tickets/types";
 
 function price(cents: number): string {
-  return `R$ ${(cents / 100).toFixed(2).replace(".", ",")}`;
+  return `${(cents / 100).toFixed(2).replace(".", ",")}`;
+}
+
+function features(name: string): string[] {
+  if (/open\s*bar/i.test(name)) {
+    return ["Entrada no torneio", "Jantar completo", "Open Bar a noite toda", "1 rebuy incluso"];
+  }
+  return ["Entrada no torneio", "Jantar completo", "Bebidas não alcoólicas", "1 rebuy incluso"];
 }
 
 export function TicketCards({
@@ -16,7 +23,7 @@ export function TicketCards({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="grid gap-3.5 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2">
       {types.map((t) => {
         const active = t.id === selectedId;
         const openBar = /open\s*bar/i.test(t.name);
@@ -27,36 +34,44 @@ export function TicketCards({
             onClick={() => onSelect(t.id)}
             aria-pressed={active}
             className={[
-              "relative overflow-hidden rounded-2xl border p-5 text-left transition-all duration-200",
+              "relative flex flex-col rounded-3xl border-2 p-6 text-left transition-all",
               active
-                ? "border-gold bg-gold/[0.07] ring-1 ring-gold/40 shadow-[0_14px_40px_-16px_rgba(217,184,118,0.6)]"
-                : "border-line bg-ink-2/50 hover:border-gold/50",
+                ? "border-red-brand bg-cream-2 shadow-[0_18px_40px_-20px_rgba(226,69,43,0.55)]"
+                : "border-cream-3 bg-cream-2/40 hover:border-red-brand/50",
             ].join(" ")}
           >
             {openBar && (
-              <span className="absolute right-3 top-3 rounded-full bg-gold px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-ink">
+              <span className="absolute right-4 top-4 rounded-full bg-red-brand px-3 py-1 font-condensed text-xs font-bold uppercase tracking-wide text-cream">
                 Completo
               </span>
             )}
 
-            <div className="flex items-center gap-2">
-              <span
-                className={[
-                  "flex h-5 w-5 items-center justify-center rounded-full border transition-colors",
-                  active ? "border-gold bg-gold text-ink" : "border-gray-mid text-transparent",
-                ].join(" ")}
-              >
-                <Check className="h-3 w-3" strokeWidth={3} />
-              </span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-gold">{t.name}</span>
+            <span className="font-condensed text-xl font-bold uppercase tracking-wide text-red-brand">{t.name}</span>
+
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="font-condensed text-2xl font-bold text-ink-warm">R$</span>
+              <span className="font-condensed text-6xl font-extrabold leading-none text-ink-warm">{price(t.priceCents)}</span>
             </div>
 
-            <div className="mt-3 font-display text-3xl font-light tracking-tight text-paper">
-              {price(t.priceCents)}
-            </div>
-            {t.description && (
-              <p className="mt-2 text-sm leading-relaxed text-gray-soft">{t.description}</p>
-            )}
+            <ul className="mt-5 space-y-2.5">
+              {features(t.name).map((f) => (
+                <li key={f} className="flex items-center gap-2.5 text-[15px] text-ink-warm">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-brand text-cream">
+                    <Check className="h-3 w-3" strokeWidth={3.5} />
+                  </span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <span
+              className={[
+                "mt-6 inline-flex h-11 items-center justify-center rounded-full font-condensed text-base font-bold uppercase tracking-wide transition-colors",
+                active ? "bg-red-brand text-cream" : "border-2 border-ink-warm text-ink-warm",
+              ].join(" ")}
+            >
+              {active ? "Selecionado" : "Escolher"}
+            </span>
           </button>
         );
       })}
