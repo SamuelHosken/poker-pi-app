@@ -3,10 +3,20 @@ import { Reveal } from "./reveal";
 import { BlurWord } from "./blur-word";
 
 /**
- * Faixa "1ª edição": frames reais do nosso vídeo (footage da 1ª edição).
- * Quando chegarem fotos profissionais, é só trocar /event/gallery-N.jpg.
+ * Faixa "1ª edição": mosaico editorial das fotos reais do dia.
+ * `span` define o tamanho de cada foto no grid (grandes + pequenas).
+ * Fotos 5 e 6 são paisagem (ficam largas); o resto retrato.
  */
-const PHOTOS = [1, 2, 3, 4];
+const PHOTOS: { n: number; span: string }[] = [
+  { n: 1, span: "col-span-2 row-span-2" },
+  { n: 5, span: "col-span-2" },
+  { n: 2, span: "" },
+  { n: 3, span: "" },
+  { n: 6, span: "col-span-2" },
+  { n: 4, span: "row-span-2" },
+  { n: 7, span: "" },
+  { n: 8, span: "" },
+];
 
 export function GalleryStrip() {
   return (
@@ -17,15 +27,15 @@ export function GalleryStrip() {
           Já rolou uma vez. Agora vem a <BlurWord>melhor.</BlurWord>
         </h2>
 
-        <div className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {PHOTOS.map((n) => (
-            <div key={n} className="relative aspect-[3/4] overflow-hidden rounded-2xl">
+        <div className="mt-12 grid auto-rows-[42vw] grid-cols-2 gap-3 [grid-auto-flow:dense] sm:auto-rows-[200px] sm:grid-cols-4">
+          {PHOTOS.map(({ n, span }) => (
+            <div key={n} className={`relative overflow-hidden rounded-2xl ${span}`}>
               <Image
-                src={`/event/gallery-${n}.jpg`}
+                src={`/event/photo-${n}.jpg`}
                 alt="Poker Pi · 1ª edição"
                 fill
-                sizes="(max-width: 640px) 45vw, 22vw"
-                className="object-cover transition-transform duration-500 hover:scale-105"
+                sizes="(max-width: 640px) 90vw, 50vw"
+                className="object-cover transition-transform duration-700 hover:scale-105"
               />
             </div>
           ))}

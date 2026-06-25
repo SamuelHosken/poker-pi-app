@@ -1,9 +1,8 @@
 /**
- * Camada de ruído (grão de filme) — sobreposição ACIMA do conteúdo pra dar
- * textura cinematográfica, como nos vídeos. O pai precisa ser `relative`.
+ * Ruído de filme via PNG real (Safari-safe — filtro SVG não renderiza bg no
+ * Safari). Camadas pra dar textura cinematográfica, como nos vídeos.
  */
-const NOISE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
+const NOISE = "/event/noise.png";
 
 export function Grain({
   className = "",
@@ -18,31 +17,21 @@ export function Grain({
     <div
       aria-hidden
       className={`grain-anim pointer-events-none absolute inset-0 z-30 ${className}`}
-      style={{
-        backgroundImage: `url("${NOISE}")`,
-        backgroundSize: "140px 140px",
-        opacity,
-        mixBlendMode: blend,
-      }}
+      style={{ backgroundImage: `url("${NOISE}")`, backgroundSize: "180px 180px", opacity, mixBlendMode: blend }}
     />
   );
 }
 
 /**
- * Ruído de filme FORTE e animado, fixo sobre a página inteira (z alto).
- * Pisca como grão de filme real. pointer-events-none, então não atrapalha cliques.
+ * Ruído FORTE e animado, fixo sobre a página inteira. Pisca como grão de
+ * filme real. pointer-events-none (não atrapalha cliques).
  */
-export function GrainOverlay({ opacity = 0.3 }: { opacity?: number }) {
+export function GrainOverlay({ opacity = 0.16 }: { opacity?: number }) {
   return (
     <div
       aria-hidden
-      className="grain-fixed pointer-events-none fixed inset-[-50%] z-50 h-[200%] w-[200%]"
-      style={{
-        backgroundImage: `url("${NOISE}")`,
-        backgroundSize: "130px 130px",
-        opacity,
-        mixBlendMode: "overlay",
-      }}
+      className="grain-fixed pointer-events-none fixed inset-[-50%] z-[70] h-[200%] w-[200%]"
+      style={{ backgroundImage: `url("${NOISE}")`, backgroundSize: "170px 170px", opacity, mixBlendMode: "normal" }}
     />
   );
 }

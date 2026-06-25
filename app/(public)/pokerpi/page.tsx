@@ -9,7 +9,6 @@ import { GalleryStrip } from "./gallery-strip";
 import { VenueSchedule } from "./venue-schedule";
 import { Faq } from "./faq";
 import { GoldTicketArt } from "./gold-ticket-art";
-import { GrainOverlay } from "./grain";
 import { BlurWord } from "./blur-word";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +53,6 @@ export default async function PokerPiPage() {
 
   return (
     <main className="bg-ink-warm text-cream">
-      <GrainOverlay opacity={0.32} />
       {/* NAV */}
       <nav className="sticky top-0 z-40 border-b border-white/10 bg-ink-warm/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
