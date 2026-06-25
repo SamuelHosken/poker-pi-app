@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { Reveal } from "./reveal";
+import { Grain } from "./grain";
 
 /**
  * Faixa "1ª edição": frames reais do nosso vídeo (footage da 1ª edição).
@@ -8,8 +10,9 @@ const PHOTOS = [1, 2, 3, 4];
 
 export function GalleryStrip() {
   return (
-    <section className="bg-ink-warm py-20 lg:py-28">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+    <section className="relative bg-ink-warm py-20 lg:py-28">
+      <Grain opacity={0.06} />
+      <Reveal className="relative z-[2] mx-auto max-w-6xl px-5 sm:px-8">
         <p className="font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">A 1ª edição</p>
         <h2 className="mt-3 max-w-2xl font-condensed text-[clamp(34px,7.5vw,76px)] font-extrabold uppercase leading-[0.88] text-cream">
           Já rolou uma vez. Agora vem a melhor.
@@ -28,7 +31,7 @@ export function GalleryStrip() {
             </div>
           ))}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

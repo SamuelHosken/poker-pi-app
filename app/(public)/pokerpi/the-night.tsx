@@ -4,11 +4,13 @@ const ITEMS = [
   { n: "03", t: "Torneio de verdade", d: "Fichas, blinds que sobem, mesa final e cronômetro. Aqui se joga pra valer." },
 ];
 
+import { Reveal } from "./reveal";
+
 /** Dobra clara (creme) no meio da página dark. */
 export function TheNight() {
   return (
     <section className="bg-cream text-ink-warm">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
+      <Reveal className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
         <p className="font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">A noite</p>
         <h2 className="mt-3 max-w-3xl font-condensed text-[clamp(34px,7.5vw,76px)] font-extrabold uppercase leading-[0.88] text-ink-warm">
           Não é sobre sorte. É sobre quem fica até o fim.
@@ -23,7 +25,7 @@ export function TheNight() {
             </div>
           ))}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

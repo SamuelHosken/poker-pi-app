@@ -1,4 +1,7 @@
 import { PokerPiLogo } from "@/components/ui/poker-pi-logo";
+import { Grain } from "./grain";
+import { BlurWord } from "./blur-word";
+import { Reveal } from "./reveal";
 
 /**
  * Herói da LP: estética dos vídeos (creme + vermelho-tomate + Big Shoulders).
@@ -26,8 +29,9 @@ export function Hero({
 }) {
   return (
     <section className="relative mx-auto grid w-full max-w-6xl items-center gap-8 px-5 pb-14 pt-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:pb-20 lg:pt-12">
+      <Grain opacity={0.07} />
       {/* Coluna texto */}
-      <div className="flex flex-col">
+      <Reveal className="relative z-[2] flex flex-col">
         <div className="inline-flex items-center gap-2 font-condensed text-base font-bold uppercase tracking-[0.14em] text-red-brand">
           <span className="h-2.5 w-2.5 rounded-full bg-red-brand" />
           2ª Edição · Torneio de Poker
@@ -36,7 +40,7 @@ export function Hero({
         <h1 className="mt-4 font-condensed text-[clamp(56px,13vw,128px)] font-extrabold uppercase leading-[0.82] tracking-[-0.01em] text-red-brand">
           Isso não é
           <br />
-          uma festa.
+          uma <BlurWord>festa.</BlurWord>
         </h1>
 
         <p className="mt-6 max-w-md text-lg leading-relaxed text-cream sm:text-xl">
@@ -72,10 +76,10 @@ export function Hero({
             </span>
           )}
         </div>
-      </div>
+      </Reveal>
 
       {/* Coluna vídeo emoldurado */}
-      <div className="relative">
+      <div className="relative z-[2]">
         <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-[0_30px_60px_-24px_rgba(0,0,0,0.7)]">
           <video
             className="aspect-[4/5] w-full object-cover sm:aspect-[3/4] lg:aspect-[4/5]"
