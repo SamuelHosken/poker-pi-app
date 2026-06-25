@@ -97,10 +97,10 @@ export default async function PokerPiPage() {
             </p>
           </div>
 
-          <div className="mt-12 grid items-start gap-12 lg:grid-cols-[0.8fr_1.2fr]">
-            <div className="order-1 mx-auto max-w-[230px] lg:order-none lg:sticky lg:top-24 lg:max-w-[340px]">
+          <div className="mt-12 grid items-start gap-10 lg:grid-cols-[1fr_1fr] lg:gap-14">
+            <div className="order-1 mx-auto w-full max-w-[340px] lg:order-none lg:sticky lg:top-20 lg:max-w-[520px]">
               <GoldTicketArt />
-              <p className="mt-5 text-center font-condensed text-base font-bold uppercase tracking-[0.16em] text-cream-soft">
+              <p className="mt-6 text-center font-condensed text-lg font-bold uppercase tracking-[0.16em] text-cream-soft">
                 Seu lugar na mesa
               </p>
             </div>

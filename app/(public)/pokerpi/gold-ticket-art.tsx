@@ -1,26 +1,25 @@
 import Image from "next/image";
 
 /**
- * Arte decorativa da placa de ouro (o "ingresso" como objeto de desejo).
+ * Arte decorativa da placa de ouro (PNG sem fundo) flutuando no dark.
  * Apenas visual. O ingresso funcional com QR é a página/e-mail.
  */
 export function GoldTicketArt() {
   return (
-    <div className="relative mx-auto w-full max-w-[300px]">
+    <div className="relative w-full">
       {/* brilho dourado atrás */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 blur-2xl"
-        style={{ background: "radial-gradient(ellipse 70% 60% at 50% 45%, rgba(217,184,118,0.35), rgba(10,10,12,0) 70%)" }}
+        className="pointer-events-none absolute inset-0 -z-10 scale-125 blur-3xl"
+        style={{ background: "radial-gradient(ellipse 60% 55% at 50% 45%, rgba(216,176,108,0.4), rgba(23,18,15,0) 70%)" }}
       />
       <Image
-        src="/event/ticket-gold-2.png"
+        src="/event/ticket-gold-cut.png"
         alt="Ingresso Poker Pi em placa de ouro"
-        width={620}
-        height={930}
-        sizes="(max-width: 640px) 80vw, 300px"
-        className="w-full drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
-        priority={false}
+        width={1024}
+        height={1536}
+        sizes="(max-width: 1024px) 80vw, 460px"
+        className="w-full drop-shadow-[0_40px_70px_rgba(0,0,0,0.7)]"
       />
     </div>
   );
