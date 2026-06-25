@@ -5,7 +5,7 @@ import { requireAdmin, rawServiceClient } from "@/lib/tournament/auth";
 export async function checkInTicket(
   qrToken: string,
 ): Promise<
-  | { ok: true; buyerName: string; ticketName: string; already: boolean }
+  | { ok: true; buyerName: string; ticketName: string; isOpenBar: boolean; already: boolean; checkedInAt: string | null }
   | { ok: false; error: string }
 > {
   const { userId } = await requireAdmin();
@@ -29,9 +29,17 @@ export async function checkInTicket(
     .eq("id", ticket.ticket_type_id)
     .maybeSingle();
   const ticketName = tt?.name ?? "Ingresso";
+  const isOpenBar = /open\s*bar/i.test(ticketName);
 
   if (ticket.checked_in_at) {
-    return { ok: true, buyerName: ticket.buyer_name, ticketName, already: true };
+    return {
+      ok: true,
+      buyerName: ticket.buyer_name,
+      ticketName,
+      isOpenBar,
+      already: true,
+      checkedInAt: ticket.checked_in_at as string,
+    };
   }
 
   // Cria/liga o player no evento (estado PRESENTE)
@@ -64,5 +72,48 @@ export async function checkInTicket(
     return { ok: false, error: "Falha ao registrar o check-in. Tente de novo." };
   }
 
-  return { ok: true, buyerName: ticket.buyer_name, ticketName, already: false };
+  return {
+    ok: true,
+    buyerName: ticket.buyer_name,
+    ticketName,
+    isOpenBar,
+    already: false,
+    checkedInAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Contagem ao vivo pra portaria: quantos pagaram e quantos já fizeram check-in
+ * no evento ATIVO (sales_open=true, mais próximo). Admin-only.
+ */
+export async function getCheckinCounts(): Promise<{
+  present: number;
+  sold: number;
+  eventName: string | null;
+}> {
+  await requireAdmin();
+  const db = rawServiceClient();
+
+  const { data: rows } = await db
+    .from("events")
+    .select("id,name")
+    .eq("sales_open", true)
+    .order("starts_at", { ascending: true })
+    .limit(1);
+  const active = rows?.[0];
+  if (!active) return { present: 0, sold: 0, eventName: null };
+
+  const { count: sold } = await db
+    .from("tickets")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", active.id)
+    .eq("status", "paid");
+
+  const { count: present } = await db
+    .from("tickets")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", active.id)
+    .not("checked_in_at", "is", null);
+
+  return { present: present ?? 0, sold: sold ?? 0, eventName: active.name };
 }
