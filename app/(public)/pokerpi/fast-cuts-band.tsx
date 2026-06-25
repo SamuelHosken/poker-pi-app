@@ -1,5 +1,5 @@
 /**
- * Faixa imersiva no meio da LP — vídeo de cortes rápidos (energia da noite)
+ * Faixa imersiva no meio da LP: vídeo de cortes rápidos (energia da noite)
  * em loop, com uma linha de copy por cima. Mobile-first.
  *
  * Footage real da 1ª edição (cortes rápidos), comprimido pra web.

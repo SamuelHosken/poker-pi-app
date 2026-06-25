@@ -21,7 +21,7 @@ export default async function PokerPiPage() {
       <main className="flex min-h-dvh flex-col items-center justify-center bg-ink px-5 text-center text-paper">
         <PokerPiLogo className="h-16 w-16 text-gold" />
         <p className="mt-6 text-lg">Nenhum evento com vendas abertas no momento.</p>
-        <p className="mt-2 text-sm text-gray-soft">Fique de olho — em breve.</p>
+        <p className="mt-2 text-sm text-gray-soft">Fique de olho, em breve.</p>
       </main>
     );
   }
@@ -44,7 +44,7 @@ export default async function PokerPiPage() {
     .replace(":00", "h")
     .replace(":", "h");
   const weekdayTimeText = `${weekday} · ${time}`;
-  const locationShort = (event.locationText.split("—").pop() ?? event.locationText).trim();
+  const locationShort = (event.locationText.split(",").pop() ?? event.locationText).trim();
 
   return (
     <main className="bg-ink text-paper">
@@ -69,7 +69,7 @@ export default async function PokerPiPage() {
             Seu ingresso
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-gray-soft">
-            Pagamento via PIX ou cartão. Você recebe o ingresso com QR Code na hora — e por e-mail.
+            Pagamento via PIX ou cartão. Você recebe o ingresso com QR Code na hora, e também por e-mail.
           </p>
         </div>
 
@@ -96,7 +96,7 @@ export default async function PokerPiPage() {
           Poker Pi · {locationShort}
         </p>
         <p className="mx-auto mt-3 max-w-xs text-xs leading-relaxed text-gray-mid">
-          Lotação limitada a {event.capacity ?? "—"} lugares. O ingresso é pessoal e chega por e-mail com QR para check-in.
+          Lotação limitada a {event.capacity ?? ""} lugares. O ingresso é pessoal e chega por e-mail com QR para check-in.
         </p>
       </footer>
     </main>

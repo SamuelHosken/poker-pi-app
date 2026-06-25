@@ -35,7 +35,7 @@ export function buildTicketEmailHtml(p: {
 
         <!-- Saudação -->
         <tr><td style="padding:26px 28px 6px;">
-          <p style="margin:0;font-size:16px;line-height:1.5;color:#f2f3f5;">Olá, <strong>${p.buyerName}</strong> — seu lugar na mesa está garantido. 🎉</p>
+          <p style="margin:0;font-size:16px;line-height:1.5;color:#f2f3f5;">Olá, <strong>${p.buyerName}</strong>, seu lugar na mesa está garantido. 🎉</p>
         </td></tr>
 
         <!-- QR -->
@@ -101,7 +101,7 @@ export async function sendTicketEmail(p: {
     from: FROM,
     replyTo: REPLY_TO,
     to: p.to,
-    subject: "🎟️ Seu ingresso — Poker Pi",
+    subject: "🎟️ Seu ingresso · Poker Pi",
     html: buildTicketEmailHtml(p),
   });
 }

@@ -2,7 +2,7 @@ import Image from "next/image";
 
 /**
  * Arte decorativa da placa de ouro (o "ingresso" como objeto de desejo).
- * Apenas visual — o ingresso funcional com QR é a página/e-mail.
+ * Apenas visual. O ingresso funcional com QR é a página/e-mail.
  */
 export function GoldTicketArt() {
   return (

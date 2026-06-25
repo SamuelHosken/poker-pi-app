@@ -85,15 +85,15 @@ export default async function IngressoPage({
           </div>
 
           <dl className="divide-y divide-line/70">
-            <Row label="Nome" value={ticket.buyer_name ?? "—"} />
-            <Row label="Data" value={dateText || "—"} />
-            <Row label="Horário" value={timeText || "—"} />
-            <Row label="Local" value={ev?.location_text ?? "—"} />
+            <Row label="Nome" value={ticket.buyer_name ?? ""} />
+            <Row label="Data" value={dateText} />
+            <Row label="Horário" value={timeText} />
+            <Row label="Local" value={ev?.location_text ?? ""} />
           </dl>
         </div>
 
         <p className="mt-6 max-w-xs text-center text-xs leading-relaxed text-gray-soft">
-          Apresente este QR Code na entrada. Salve um print por garantia — ele é o seu ingresso.
+          Apresente este QR Code na entrada. Salve um print por garantia. Ele é o seu ingresso.
         </p>
       </div>
     </main>

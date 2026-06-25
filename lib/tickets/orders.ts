@@ -116,7 +116,7 @@ export async function createTicketOrder(input: OrderInput): Promise<OrderResult>
     const payment = await createAsaasPayment({
       customerId: customer.id,
       valueCents: tt.price_cents,
-      description: `Ingresso ${tt.name} — Poker Pi`,
+      description: `Ingresso ${tt.name} · Poker Pi`,
       externalReference: ticket.id,
       dueDate: todayIso(),
     });

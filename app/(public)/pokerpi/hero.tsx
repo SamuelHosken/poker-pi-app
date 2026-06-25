@@ -1,7 +1,7 @@
 import { PokerPiLogo } from "@/components/ui/poker-pi-logo";
 
 /**
- * Herói da LP de ingressos — vídeo de fundo em loop (slow-mo da 1ª edição),
+ * Herói da LP de ingressos: vídeo de fundo em loop (slow-mo da 1ª edição),
  * escurecido, com a marca + data + vagas + CTA por cima. Mobile-first.
  *
  * Footage real da 1ª edição (slow-mo), comprimido pra web.
@@ -80,7 +80,7 @@ export function Hero({
         <p className="mt-4 font-mono text-sm uppercase tracking-[0.22em] text-gold-soft">{weekdayTimeText}</p>
         <p className="mt-3 max-w-md text-base leading-relaxed text-gray-soft">
           Uma noite, trinta lugares, uma mesa até a final. Jantar, bar e um torneio de
-          verdade — entre quem você quer ter por perto.
+          verdade, entre quem você quer ter por perto.
         </p>
 
         {remaining != null && (
