@@ -12,7 +12,7 @@ export function TheNight() {
     <section className="bg-cream text-ink-warm">
       <Reveal className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
         <p className="font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">A noite</p>
-        <h2 className="mt-3 max-w-3xl font-condensed text-[clamp(34px,7.5vw,76px)] font-extrabold uppercase leading-[0.88] text-ink-warm">
+        <h2 className="mt-3 max-w-3xl font-condensed text-[clamp(34px,7.5vw,76px)] font-extrabold uppercase leading-[0.96] text-ink-warm">
           Não é sobre sorte. É sobre quem fica até o fim.
         </h2>
 

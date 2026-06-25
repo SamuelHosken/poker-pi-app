@@ -88,7 +88,7 @@ export default async function PokerPiPage() {
         <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
           <div className="max-w-2xl">
             <p className="font-condensed text-lg font-bold uppercase tracking-[0.18em] text-red-brand">Os ingressos</p>
-            <h2 className="mt-3 font-condensed text-[clamp(40px,9vw,92px)] font-extrabold uppercase leading-[0.85] text-cream">
+            <h2 className="mt-3 font-condensed text-[clamp(40px,9vw,92px)] font-extrabold uppercase leading-[0.93] text-cream">
               Garanta seu lugar
             </h2>
             <p className="mt-4 max-w-md text-lg text-cream-soft">
@@ -121,7 +121,7 @@ export default async function PokerPiPage() {
       {!soldOut && (
         <section className="bg-red-brand">
           <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-5 py-20 text-center sm:px-8">
-            <h2 className="font-condensed text-[clamp(40px,9vw,96px)] font-extrabold uppercase leading-[0.85] text-cream">
+            <h2 className="font-condensed text-[clamp(40px,9vw,96px)] font-extrabold uppercase leading-[0.93] text-cream">
               Te vejo na mesa?
             </h2>
             <a

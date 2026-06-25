@@ -29,7 +29,7 @@ export function Hero({
 }) {
   return (
     <section className="relative mx-auto grid w-full max-w-6xl items-center gap-8 px-5 pb-14 pt-8 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:pb-20 lg:pt-12">
-      <Grain opacity={0.07} />
+      <Grain opacity={0.2} />
       {/* Coluna texto */}
       <Reveal className="relative z-[2] flex flex-col">
         <div className="inline-flex items-center gap-2 font-condensed text-base font-bold uppercase tracking-[0.14em] text-red-brand">
@@ -37,7 +37,7 @@ export function Hero({
           2ª Edição · Torneio de Poker
         </div>
 
-        <h1 className="mt-4 font-condensed text-[clamp(56px,13vw,128px)] font-extrabold uppercase leading-[0.82] tracking-[-0.01em] text-red-brand">
+        <h1 className="mt-4 font-condensed text-[clamp(56px,13vw,128px)] font-extrabold uppercase leading-[0.9] tracking-[-0.01em] text-red-brand">
           Isso não é
           <br />
           uma <BlurWord>festa.</BlurWord>
