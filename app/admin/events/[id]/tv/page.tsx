@@ -31,7 +31,7 @@ const TABLE_STATE_LABEL: Record<string, string> = {
 };
 
 export const metadata = {
-  title: "Configuração da TV · Poker Pi",
+  title: "Configuração da TV",
 };
 
 export default async function TvConfigPage({

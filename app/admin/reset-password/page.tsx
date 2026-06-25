@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ResetForm } from "./reset-form";
 
-export const metadata = { title: "Nova senha · Poker Pi" };
+export const metadata = { title: "Nova senha" };
 
 export default function ResetPasswordPage() {
   return (

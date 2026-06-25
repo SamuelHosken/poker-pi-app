@@ -25,7 +25,7 @@ const PLAYER_STATE_LABEL: Record<string, string> = {
 const FINALIST_STATES = new Set(["CAMPEAO", "VICE", "TERCEIRO", "OUTROS_FINALISTAS"]);
 
 export const metadata = {
-  title: "Resultados · Poker Pi",
+  title: "Resultados",
 };
 
 export default async function ResultsPage({

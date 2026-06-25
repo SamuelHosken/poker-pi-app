@@ -2,7 +2,7 @@ import Link from "next/link";
 import { NewProfileForm } from "./new-profile-form";
 
 export const metadata = {
-  title: "Cadastrar pessoa · Poker Pi",
+  title: "Cadastrar pessoa",
 };
 
 export default function NewProfilePage() {

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { NewEventForm } from "./new-event-form";
 
 export const metadata = {
-  title: "Novo evento · Poker Pi",
+  title: "Novo evento",
 };
 
 export default function NewEventPage() {

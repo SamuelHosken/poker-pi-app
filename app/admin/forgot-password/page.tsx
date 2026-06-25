@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ForgotForm } from "./forgot-form";
 
-export const metadata = { title: "Recuperar senha · Poker Pi" };
+export const metadata = { title: "Recuperar senha" };
 
 export default function ForgotPasswordPage() {
   return (

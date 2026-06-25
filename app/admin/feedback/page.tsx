@@ -6,7 +6,7 @@ import { CopyLinkButton } from "./copy-link-button";
 import { ResetFeedbackButton } from "./reset-feedback-button";
 
 export const metadata = {
-  title: "Avaliações · Poker Pi",
+  title: "Avaliações",
 };
 
 function scoreColor(v: number | null): string {

@@ -9,7 +9,7 @@ import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata = {
-  title: "Perfis · Poker Pi",
+  title: "Perfis",
 };
 
 export default async function ProfilesListPage() {

@@ -6,7 +6,7 @@ import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
 import { Trophy } from "lucide-react";
 
-export const metadata = { title: "Galeria de campeões · Poker Pi" };
+export const metadata = { title: "Galeria de campeões" };
 
 export default async function GaleriaPage() {
   const champions = await listChampions();

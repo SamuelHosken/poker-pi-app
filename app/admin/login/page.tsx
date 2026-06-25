@@ -3,7 +3,7 @@ import { getCurrentUserAndProfile } from "@/lib/tournament/auth";
 import { LoginForm } from "./login-form";
 
 export const metadata = {
-  title: "Entrar · Poker Pi",
+  title: "Entrar",
 };
 
 export default async function LoginPage() {

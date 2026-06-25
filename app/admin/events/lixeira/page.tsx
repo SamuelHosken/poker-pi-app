@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { eventStateLabel } from "@/lib/ui-labels";
 import type { EventState } from "@/lib/types/domain";
 
-export const metadata = { title: "Lixeira · Poker Pi" };
+export const metadata = { title: "Lixeira" };
 
 export default async function LixeiraPage() {
   const events = await listDeletedEvents();

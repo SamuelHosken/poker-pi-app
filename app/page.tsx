@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/home/site-footer";
 import { HOME } from "@/components/home/content";
 
 export const metadata: Metadata = {
-  title: "Poker Pi — Noites de poker entre amigos · Brasília",
+  title: "Poker Pi",
   description: HOME.description,
   openGraph: {
     title: "Poker Pi — O poker é matemática. O resto é narrativa.",

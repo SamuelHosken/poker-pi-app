@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
-  title: "Inscritos · Poker Pi",
+  title: "Inscritos",
 };
 
 export default async function InscritosPage() {

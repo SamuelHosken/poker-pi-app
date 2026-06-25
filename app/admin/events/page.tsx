@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { LiveRefresh } from "@/components/live-refresh";
 
 export const metadata = {
-  title: "Eventos · Poker Pi",
+  title: "Eventos",
 };
 
 const STATE_LABEL: Record<string, string> = {
