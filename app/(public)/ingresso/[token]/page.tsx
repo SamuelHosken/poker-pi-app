@@ -26,11 +26,15 @@ export default async function IngressoPage({
   const isOpenBar = /open\s*bar/i.test(planName);
   const checkedIn = !!ticket.checked_in_at;
   const startsAt = ev?.starts_at ? new Date(ev.starts_at) : null;
-  const dateText = startsAt
-    ? startsAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", weekday: "long", timeZone: "America/Sao_Paulo" })
+  const rawDate = startsAt
+    ? startsAt.toLocaleDateString("pt-BR", { day: "numeric", month: "long", weekday: "long", timeZone: "America/Sao_Paulo" })
     : "";
+  const dateText = rawDate ? rawDate.charAt(0).toUpperCase() + rawDate.slice(1) : "";
   const timeText = startsAt
-    ? startsAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })
+    ? startsAt
+        .toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })
+        .replace(":00", "h")
+        .replace(":", "h")
     : "";
 
   return (
@@ -82,8 +86,8 @@ export default async function IngressoPage({
 
           <dl className="divide-y divide-line/70">
             <Row label="Nome" value={ticket.buyer_name ?? "—"} />
-            <Row label="Data" value={dateText} cap />
-            <Row label="Horário" value={timeText ? `${timeText}` : "—"} />
+            <Row label="Data" value={dateText || "—"} />
+            <Row label="Horário" value={timeText || "—"} />
             <Row label="Local" value={ev?.location_text ?? "—"} />
           </dl>
         </div>
@@ -96,11 +100,11 @@ export default async function IngressoPage({
   );
 }
 
-function Row({ label, value, cap }: { label: string; value: string; cap?: boolean }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5">
       <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">{label}</dt>
-      <dd className={`max-w-[62%] text-right text-sm font-medium text-paper ${cap ? "capitalize" : ""}`}>{value}</dd>
+      <dd className="max-w-[62%] text-right text-sm font-medium text-paper">{value}</dd>
     </div>
   );
 }

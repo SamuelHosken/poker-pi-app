@@ -41,6 +41,7 @@ export default async function PokerPiPage() {
   );
   const time = start
     .toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })
+    .replace(":00", "h")
     .replace(":", "h");
   const weekdayTimeText = `${weekday} · ${time}`;
   const locationShort = (event.locationText.split("—").pop() ?? event.locationText).trim();
