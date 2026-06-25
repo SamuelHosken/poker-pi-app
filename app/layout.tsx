@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/sw-register";
@@ -26,6 +26,14 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://poker-pi-app.vercel.app"),
   title: "Poker Pi — Sistema de gestão de torneio",
   description: "Sistema web para gerenciar torneios presenciais de poker entre amigos.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0c",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  maximumScale: 5,
 };
 
 export default function RootLayout({

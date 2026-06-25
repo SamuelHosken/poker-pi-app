@@ -166,8 +166,8 @@ poker-pi-app/
 
 ## 10. Status atual do projeto
 
-**ITERAÇÃO ATUAL:** V1.2 — Perfis cadastrados + Self-service de mesa (concluída no código; aguardando validação E2E)
-**PRÓXIMA ITERAÇÃO:** V1.3 — Chip display na TV + histórico de tempo em mesa (post-validação)
+**ITERAÇÃO ATUAL:** Venda de ingressos (Tasks 1–9) — check-in na portaria + gestão de vendas admin implementados; aguardando validação E2E sandbox (Step 5 intencional — requer URL pública + Asaas sandbox, coordenação separada)
+**PRÓXIMA ITERAÇÃO:** Validação E2E sandbox + virada para produção (pós-lançamento)
 
 ### Roteiro
 
@@ -181,6 +181,7 @@ poker-pi-app/
 - [~] Etapa 7-A: PWA do jogador + QR codes
 - [x] **Iteração V1.1: Simplificação** → `docs/iteracao-v1-1-simplificacao.md`
 - [x] **Iteração V1.2: Perfis cadastrados + Self-service de mesa** → `docs/iteracao-v1-2-perfis.md`
+- [x] **Iteração venda de ingressos:** migration 0020 (ticket_types + tickets), LP `/evento/[slug]`, checkout Asaas, webhook, e-mail Resend, página do ingresso QR, check-in `/admin/checkin` (QR scanner), gestão de vendas `/admin/events/[id]/ingressos`
 - [ ] Iteração V1.3: Chip display na TV + histórico (futuro)
 
 ### V1.1 — o que mudou (resumo)

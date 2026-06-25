@@ -1,6 +1,8 @@
-import Link from "next/link";
 import { getCurrentUserId } from "@/lib/tournament/auth";
-import { logoutAction } from "./login/actions";
+import { getMyProfile } from "@/lib/tournament/profiles";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminTopBar } from "@/components/admin/admin-top-bar";
+import { AdminBottomNav } from "@/components/admin/admin-bottom-nav";
 
 export default async function AdminLayout({
   children,
@@ -9,55 +11,25 @@ export default async function AdminLayout({
 }) {
   const userId = await getCurrentUserId();
 
+  // Páginas públicas do admin (login/forgot/reset): sem shell.
+  if (!userId) {
+    return (
+      <div className="flex min-h-svh flex-col bg-ink text-paper">{children}</div>
+    );
+  }
+
+  const profile = await getMyProfile();
+  const name = profile?.name ?? "Admin";
+  const avatarUrl = profile?.avatar_url ?? null;
+
   return (
-    <div className="flex min-h-svh flex-col bg-ink text-paper">
-      {userId && (
-        <header className="sticky top-0 z-30 border-b border-line bg-ink/85 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-            <Link
-              href="/admin/events"
-              className="flex items-baseline gap-1.5 font-display text-base font-light tracking-tight no-underline sm:gap-2 sm:text-lg"
-            >
-              Poker <em className="not-italic italic text-gold">Pi</em>
-              <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-gray-soft sm:inline">
-                · admin
-              </span>
-            </Link>
-
-            <nav className="flex items-baseline gap-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft sm:gap-4">
-              <Link href="/admin/events" className="hover:text-paper">
-                Eventos
-              </Link>
-              <Link href="/admin/profiles" className="hover:text-paper">
-                Perfis
-              </Link>
-              <Link href="/admin/galeria" className="hover:text-paper">
-                Galeria
-              </Link>
-              <Link href="/admin/feedback" className="hover:text-paper">
-                Avaliações
-              </Link>
-              <Link href="/admin/inscritos" className="hover:text-paper">
-                Inscritos
-              </Link>
-              <Link href="/me" prefetch className="text-gold hover:text-paper">
-                Jogar
-              </Link>
-            </nav>
-
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft transition-colors hover:text-paper"
-              >
-                Sair
-              </button>
-            </form>
-          </div>
-        </header>
-      )}
-
-      <div className="flex-1">{children}</div>
+    <div className="flex min-h-svh bg-ink text-paper">
+      <AdminSidebar name={name} avatarUrl={avatarUrl} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <AdminTopBar name={name} avatarUrl={avatarUrl} />
+        <main className="flex-1 pb-28 md:pb-0">{children}</main>
+        <AdminBottomNav />
+      </div>
     </div>
   );
 }

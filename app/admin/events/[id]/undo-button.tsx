@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { buttonVariants } from "@/components/ui/button";
 import { undoLastAction } from "@/lib/tournament/matches";
 
 const ACTION_LABEL: Record<string, string> = {
@@ -48,7 +49,7 @@ export function UndoButton({ eventId, enabled }: { eventId: string; enabled: boo
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         disabled={!enabled || pending}
-        className="inline-flex h-9 items-center rounded-md border border-line px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft transition-colors hover:border-gold/50 hover:text-paper disabled:opacity-30 disabled:hover:border-line"
+        className={`${buttonVariants({ variant: "ghost", size: "sm" })} font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground`}
       >
         ↶ Desfazer última ação
       </AlertDialogTrigger>

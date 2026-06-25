@@ -33,9 +33,10 @@ export function AdvanceStateButton({
   return (
     <Button
       type="button"
+      size="lg"
       onClick={handleClick}
       disabled={pending || disabled}
-      className="h-12 bg-gold text-ink hover:bg-gold/90 disabled:opacity-50"
+      className="w-full sm:w-auto"
     >
       {pending ? "Atualizando…" : label}
     </Button>

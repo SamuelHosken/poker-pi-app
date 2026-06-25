@@ -43,3 +43,6 @@ next-env.d.ts
 # supabase (CLI local state — auto-managed, not project source)
 /supabase/.temp/
 /supabase/.branches/
+
+# brainstorm visual companion
+.superpowers/

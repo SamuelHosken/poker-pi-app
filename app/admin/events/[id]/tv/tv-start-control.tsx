@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Hourglass, X } from "lucide-react";
 import { setTvStartsAt } from "@/lib/tournament/events";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 /**
  * V1.3 — Admin define um horário-alvo de início. TV mostra overlay
@@ -84,122 +86,127 @@ export function TvStartControl({
 
   if (isActive && activeDate) {
     return (
-      <div className="flex flex-wrap items-center gap-2 rounded-md border border-gold/40 bg-gold/5 px-3 py-2">
-        <Hourglass className="size-4 shrink-0 text-gold" aria-hidden />
-        <span className="flex-1 truncate font-mono text-[11px] text-gold">
-          Modo início ativo · começa{" "}
-          {activeDate.toLocaleTimeString("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </span>
-        <button
-          type="button"
-          onClick={deactivate}
-          disabled={pending}
-          style={{ touchAction: "manipulation" }}
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-gold px-3 text-xs font-medium text-ink hover:bg-gold/90 disabled:opacity-50"
-        >
-          <X className="size-3.5" aria-hidden />
-          Desligar
-        </button>
-      </div>
+      <Card className="border-gold/40 bg-gold/5">
+        <CardContent className="flex flex-wrap items-center gap-2 py-3">
+          <Hourglass className="size-4 shrink-0 text-gold" aria-hidden />
+          <span className="flex-1 truncate font-mono text-[11px] text-gold">
+            Modo início ativo · começa{" "}
+            {activeDate.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+          <Button
+            variant="default"
+            size="default"
+            onClick={deactivate}
+            disabled={pending}
+            style={{ touchAction: "manipulation" }}
+          >
+            <X className="size-3.5" aria-hidden />
+            Desligar
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="default"
         onClick={() => setOpen(true)}
         disabled={pending}
         style={{ touchAction: "manipulation" }}
-        className="inline-flex h-11 items-center gap-2 rounded-md border border-line bg-ink-2 px-4 text-sm text-gray-soft transition-colors hover:border-gold/40 hover:text-gold disabled:opacity-50"
       >
         <Hourglass className="size-4" aria-hidden />
         Modo &ldquo;Vamos começar jajá&rdquo;
-      </button>
+      </Button>
 
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
-          <div
-            className="w-full max-w-md space-y-4 rounded-2xl border border-gold/30 bg-ink-2 p-5"
+          <Card
+            className="w-full max-w-md border-gold/30"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="space-y-1">
-              <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
-                Vamos começar jajá
-              </span>
-              <p className="font-display text-xl font-light text-paper">
-                Cobre a TV com countdown ao vivo
-              </p>
-              <p className="font-mono text-[11px] text-gray-soft">
-                Mostra o nome do evento + horário-alvo + tempo restante.
-                Esquenta os jogadores antes de começar.
-              </p>
-            </div>
+            <CardContent className="space-y-4 py-5">
+              <div className="space-y-1">
+                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
+                  Vamos começar jajá
+                </span>
+                <p className="font-display text-xl font-light text-paper">
+                  Cobre a TV com countdown ao vivo
+                </p>
+                <p className="font-mono text-[11px] text-muted-foreground">
+                  Mostra o nome do evento + horário-alvo + tempo restante.
+                  Esquenta os jogadores antes de começar.
+                </p>
+              </div>
 
-            <div className="space-y-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-                Atalhos
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { label: "+15 min", value: 15 },
-                  { label: "+30 min", value: 30 },
-                  { label: "+1 hora", value: 60 },
-                ].map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => handlePreset(p.value)}
+              <div className="space-y-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+                  Atalhos
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: "+15 min", value: 15 },
+                    { label: "+30 min", value: 30 },
+                    { label: "+1 hora", value: 60 },
+                  ].map((p) => (
+                    <Button
+                      key={p.value}
+                      variant="outline"
+                      size="default"
+                      onClick={() => handlePreset(p.value)}
+                      disabled={pending}
+                      className="font-mono text-[11px] uppercase tracking-[0.18em]"
+                    >
+                      {p.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+                  Horário específico (hoje)
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    type="time"
+                    value={timeStr}
+                    onChange={(e) => setTimeStr(e.target.value)}
+                    className="h-12 flex-1 rounded-xl border border-hair bg-surface px-3 text-sm text-foreground focus:border-gold focus:outline-none"
+                  />
+                  <Button
+                    variant="default"
+                    size="lg"
+                    onClick={handleManual}
                     disabled={pending}
-                    className="h-11 rounded-md border border-line bg-ink font-mono text-[11px] uppercase tracking-[0.18em] text-paper transition-colors hover:border-gold/40 hover:text-gold disabled:opacity-40"
                   >
-                    {p.label}
-                  </button>
-                ))}
+                    {pending ? "Ativando…" : "Ativar"}
+                  </Button>
+                </div>
+                <p className="font-mono text-[10px] text-muted-foreground">
+                  Se o horário já passou hoje, vai pra amanhã.
+                </p>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-                Horário específico (hoje)
-              </span>
-              <div className="flex gap-2">
-                <input
-                  type="time"
-                  value={timeStr}
-                  onChange={(e) => setTimeStr(e.target.value)}
-                  className="h-12 flex-1 rounded-md border border-line bg-ink px-3 text-sm text-paper focus:border-gold focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleManual}
-                  disabled={pending}
-                  className="inline-flex h-12 items-center rounded-md bg-gold px-5 text-sm font-medium text-ink hover:bg-gold/90 disabled:opacity-50"
+              <div className="flex justify-end pt-1">
+                <Button
+                  variant="ghost"
+                  size="default"
+                  onClick={() => setOpen(false)}
                 >
-                  {pending ? "Ativando…" : "Ativar"}
-                </button>
+                  Cancelar
+                </Button>
               </div>
-              <p className="font-mono text-[10px] text-gray-mid">
-                Se o horário já passou hoje, vai pra amanhã.
-              </p>
-            </div>
-
-            <div className="flex justify-end pt-1">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="inline-flex h-11 items-center rounded-md border border-line px-4 text-sm text-gray-soft hover:text-paper"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </>

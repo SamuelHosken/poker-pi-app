@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Eraser, Eye, Minus } from "lucide-react";
 import { requestChipDisplay } from "@/lib/tournament/player-actions";
 import { CHIP_VERSION } from "@/lib/chip-version";
+import { Button } from "@/components/ui/button";
 
 // V1.3 — Fichas da casa (atualizado). Bump CHIP_VERSION em lib/chip-version.ts
 // SEMPRE que mexer aqui pra forçar reload nos clientes com a página aberta.
@@ -134,7 +135,7 @@ export function ChipCalculator({ tableId }: { tableId: string }) {
         </div>
 
         <div className="text-center">
-          <span className="font-display text-6xl font-light leading-none tracking-tight text-paper sm:text-7xl">
+          <span className="font-display text-6xl font-light leading-none tracking-tight text-gold-soft sm:text-7xl">
             {total.toLocaleString("pt-BR")}
           </span>
         </div>
@@ -159,15 +160,16 @@ export function ChipCalculator({ tableId }: { tableId: string }) {
                   <span className="font-display text-base font-light text-paper">
                     {(c.value * counts[c.value]).toLocaleString("pt-BR")}
                   </span>
-                  <button
-                    type="button"
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => sub(c.value)}
                     aria-label={`Tirar uma ficha ${c.value}`}
                     style={{ touchAction: "manipulation" }}
-                    className="flex size-11 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-red-poker/40 hover:text-red-poker active:scale-95"
+                    className="shrink-0 text-gray-soft hover:border-red-poker/40 hover:text-red-poker"
                   >
                     <Minus className="size-4" aria-hidden />
-                  </button>
+                  </Button>
                 </div>
               </li>
             ))}
@@ -208,24 +210,26 @@ export function ChipCalculator({ tableId }: { tableId: string }) {
 
       {/* Ações: limpar + mostrar */}
       <div className="mt-auto grid w-full grid-cols-[1fr_2fr] gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="lg"
           onClick={clearAll}
           disabled={pending || total === 0}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-line bg-ink-2 text-sm text-gray-soft transition-colors hover:border-red-poker/40 hover:text-red-poker disabled:opacity-40"
+          style={{ touchAction: "manipulation" }}
+          className="text-gray-soft hover:border-red-poker/40 hover:text-red-poker"
         >
           <Eraser className="size-4" aria-hidden />
           Limpar
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          size="lg"
           onClick={show}
           disabled={pending || total <= 0}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-gold text-sm font-medium text-ink transition-colors hover:bg-gold/90 disabled:opacity-40"
+          style={{ touchAction: "manipulation" }}
         >
           <Eye className="size-4" aria-hidden />
           {pending ? "Enviando…" : "Mostrar na TV"}
-        </button>
+        </Button>
       </div>
     </div>
   );

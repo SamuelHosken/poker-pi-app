@@ -6,6 +6,8 @@ import {
 import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
 import { InscritosToolbar } from "./inscritos-toolbar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
   title: "Inscritos · Poker Pi",
@@ -113,7 +115,7 @@ export default async function InscritosPage() {
             {rows.map((r, i) => (
               <li
                 key={r.id}
-                className="rounded-xl border border-line bg-ink-2 p-4"
+                className="rounded-xl border border-hair bg-surface p-4"
               >
                 <div className="mb-2 flex items-center justify-between">
                   <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
@@ -191,7 +193,7 @@ function ConvidadoRow({ c }: { c: ConviteStatus }) {
   const accent =
     c.status === "opened_not_subscribed"
       ? "border-gold/50 bg-gold/5"
-      : "border-line bg-ink-2";
+      : "border-hair bg-surface";
 
   return (
     <li
@@ -216,24 +218,12 @@ function ConvidadoRow({ c }: { c: ConviteStatus }) {
 
 function ConvidadoBadge({ status }: { status: ConviteStatus["status"] }) {
   if (status === "subscribed") {
-    return (
-      <span className="inline-flex items-center rounded-full border border-felt bg-felt/15 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-felt">
-        Inscrito
-      </span>
-    );
+    return <Badge variant="live">Inscrito</Badge>;
   }
   if (status === "opened_not_subscribed") {
-    return (
-      <span className="inline-flex items-center rounded-full border border-gold/50 bg-gold/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-gold">
-        Abriu · não inscr.
-      </span>
-    );
+    return <Badge variant="gold">Abriu · não inscr.</Badge>;
   }
-  return (
-    <span className="inline-flex items-center rounded-full border border-line bg-ink px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-soft">
-      Não abriu
-    </span>
-  );
+  return <Badge variant="neutral">Não abriu</Badge>;
 }
 
 function Stat({
@@ -252,25 +242,23 @@ function Stat({
         ? "text-felt"
         : "text-paper";
   return (
-    <div className="rounded-xl border border-line bg-ink-2 p-4 text-center">
-      <span className={`block font-display text-3xl font-light tabular-nums ${color}`}>
-        {value}
-      </span>
-      <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-gray-mid">
-        {label}
-      </span>
-    </div>
+    <Card size="sm">
+      <CardContent className="p-4 text-center">
+        <span className={`block font-display text-3xl font-light tabular-nums ${color}`}>
+          {value}
+        </span>
+        <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          {label}
+        </span>
+      </CardContent>
+    </Card>
   );
 }
 
 function AttendedBadge({ attended }: { attended: boolean }) {
   return attended ? (
-    <span className="inline-flex items-center rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-gold">
-      Veterano
-    </span>
+    <Badge variant="gold">Veterano</Badge>
   ) : (
-    <span className="inline-flex items-center rounded-full border border-line bg-ink px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-gray-soft">
-      Estreante
-    </span>
+    <Badge variant="neutral">Estreante</Badge>
   );
 }

@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { buttonVariants } from "@/components/ui/button";
 import { crownChampion } from "@/lib/tournament/events";
 import type { Tables } from "@/lib/types/database.types";
 
@@ -67,7 +68,7 @@ export function CrownChampionControl({
   return (
     <>
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
-        <DialogTrigger className="inline-flex h-12 items-center gap-2 rounded-md bg-gold px-5 text-sm font-medium text-ink transition-colors hover:bg-gold/90">
+        <DialogTrigger className={`${buttonVariants({ size: "lg" })} gap-2`}>
           <Crown className="size-4" aria-hidden />
           {currentChampionId ? "Trocar campeão" : "Definir campeão"}
         </DialogTrigger>

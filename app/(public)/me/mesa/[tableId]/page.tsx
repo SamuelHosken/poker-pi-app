@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTableForPlayer } from "@/lib/tournament/player-actions";
 import { getMyProfile } from "@/lib/tournament/profiles";
+import { Badge } from "@/components/ui/badge";
+import { tableStateLabel } from "@/lib/ui-labels";
+import type { MatchState } from "@/lib/types/domain";
 import { MesaView } from "./mesa-view";
 
 export const metadata = {
@@ -20,8 +23,12 @@ export default async function MesaPage({
   if (!profile) redirect("/admin/login");
   if (!view) notFound();
 
+  const tableState = view.table.state as MatchState;
+  const isLive = tableState === "JOGANDO";
+
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+    <div className="flex flex-col gap-0">
+      {/* Cabeçalho */}
       <div className="flex items-center justify-between gap-2">
         <Link
           href="/me"
@@ -29,9 +36,10 @@ export default async function MesaPage({
         >
           ← Voltar
         </Link>
-        <span className="inline-flex rounded-full border border-line px-3 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-          {view.table.state}
-        </span>
+        {/* Badge à esquerda do header para não colidir com o Toaster (top-right) */}
+        <Badge variant={isLive ? "live" : "neutral"}>
+          {tableStateLabel(tableState)}
+        </Badge>
       </div>
 
       <header className="mt-4 space-y-1">
@@ -44,6 +52,6 @@ export default async function MesaPage({
       </header>
 
       <MesaView initial={view} />
-    </main>
+    </div>
   );
 }

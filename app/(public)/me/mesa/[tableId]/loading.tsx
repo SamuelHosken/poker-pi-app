@@ -1,6 +1,6 @@
 export default function MesaLoading() {
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col px-4 py-6 sm:px-6 sm:py-10">
+    <div className="flex flex-col">
       <div className="flex items-center justify-between gap-2">
         <span className="h-3 w-16 animate-pulse rounded bg-ink-2" />
         <span className="h-5 w-20 animate-pulse rounded-full bg-ink-2" />
@@ -19,6 +19,6 @@ export default function MesaLoading() {
         <div className="h-12 w-full animate-pulse rounded-md bg-ink-2" />
         <div className="h-32 w-full animate-pulse rounded-md bg-ink-2" />
       </div>
-    </main>
+    </div>
   );
 }

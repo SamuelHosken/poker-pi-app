@@ -27,24 +27,15 @@ import { createPlayer, removePlayerFromEvent, markPlayerPaid } from "@/lib/tourn
 import { adminMovePlayer } from "@/lib/tournament/matches";
 import { broadcastPlayerUpdate } from "@/lib/realtime/avatar-broadcast";
 import type { Tables } from "@/lib/types/database.types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { AvatarImage } from "@/components/ui/avatar-image";
+import { playerStateLabel, tableStateLabel } from "@/lib/ui-labels";
+import type { PlayerState, MatchState } from "@/lib/types/domain";
 
 type Player = Tables<"players">;
 type Profile = Tables<"profiles">;
 type PhysicalTable = Tables<"physical_tables">;
-
-const STATE_LABEL: Record<string, string> = {
-  INSCRITO: "Inscrito",
-  PRESENTE: "Presente",
-  CHAMADO: "Chamado",
-  JOGANDO: "Jogando",
-  ELIMINADO: "Eliminado",
-  CLASSIFICADO: "Classificado",
-  NA_FINAL: "Na final",
-  CAMPEAO: "Campeão",
-  VICE: "Vice",
-  TERCEIRO: "3º",
-  OUTROS_FINALISTAS: "Finalista",
-};
 
 /**
  * V1.2 — Credenciamento usa profiles cadastrados (não input livre de nome).
@@ -113,69 +104,72 @@ export function PlayersSection({
       </div>
 
       {/* Card de ação: adicionar pessoa */}
-      <div className="space-y-4 rounded-xl border border-line bg-ink-2 p-4 sm:p-5">
-        {availableProfiles.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-2 text-center">
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-              Todas as pessoas já estão neste evento
-            </span>
-            <Link
-              href="/admin/profiles/new"
-              className="inline-flex h-11 items-center gap-2 rounded-md border border-gold/40 bg-gold/5 px-4 text-sm text-gold transition-colors hover:bg-gold/10"
-            >
-              <UserPlus className="size-4" aria-hidden />
-              Cadastrar nova pessoa
-            </Link>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                Adicionar pessoa ao evento
+      <Card>
+        <CardContent className="space-y-4 py-5">
+          {availableProfiles.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Todas as pessoas já estão neste evento
               </span>
-
-              <ProfilePicker
-                profiles={availableProfiles}
-                value={selectedProfileId}
-                onChange={setSelectedProfileId}
-                disabled={pending}
-                selectedLabel={
-                  selectedProfile
-                    ? selectedProfile.nickname
-                      ? `${selectedProfile.name} — ${selectedProfile.nickname}`
-                      : selectedProfile.name
-                    : null
-                }
-              />
+              <Link
+                href="/admin/profiles/new"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-hair bg-surface px-4 text-sm text-paper transition-colors hover:bg-surface-2"
+              >
+                <UserPlus className="size-4" aria-hidden />
+                Cadastrar nova pessoa
+              </Link>
             </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  Adicionar pessoa ao evento
+                </span>
 
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={pending || !selectedProfileId}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-gold text-sm font-medium text-ink transition-colors hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {pending ? "Adicionando…" : "+ Adicionar"}
-            </button>
+                <ProfilePicker
+                  profiles={availableProfiles}
+                  value={selectedProfileId}
+                  onChange={setSelectedProfileId}
+                  disabled={pending}
+                  selectedLabel={
+                    selectedProfile
+                      ? selectedProfile.nickname
+                        ? `${selectedProfile.name} — ${selectedProfile.nickname}`
+                        : selectedProfile.name
+                      : null
+                  }
+                />
+              </div>
 
-            <div className="flex items-center gap-3 pt-1">
-              <span className="h-px flex-1 bg-line" aria-hidden />
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-gray-mid">
-                ou
-              </span>
-              <span className="h-px flex-1 bg-line" aria-hidden />
-            </div>
+              <Button
+                type="button"
+                size="lg"
+                onClick={handleAdd}
+                disabled={pending || !selectedProfileId}
+                className="w-full"
+              >
+                {pending ? "Adicionando…" : "+ Adicionar"}
+              </Button>
 
-            <Link
-              href="/admin/profiles/new"
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-line text-sm text-gray-soft transition-colors hover:border-gold/40 hover:text-gold"
-            >
-              <UserPlus className="size-4" aria-hidden />
-              Cadastrar nova pessoa
-            </Link>
-          </>
-        )}
-      </div>
+              <div className="flex items-center gap-3 pt-1">
+                <span className="h-px flex-1 bg-hair" aria-hidden />
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  ou
+                </span>
+                <span className="h-px flex-1 bg-hair" aria-hidden />
+              </div>
+
+              <Link
+                href="/admin/profiles/new"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-hair bg-surface text-sm text-paper transition-colors hover:bg-surface-2"
+              >
+                <UserPlus className="size-4" aria-hidden />
+                Cadastrar nova pessoa
+              </Link>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Lista de pessoas no evento */}
       {players.length > 0 && (
@@ -187,11 +181,9 @@ export function PlayersSection({
             {players.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center gap-3 rounded-md border border-line bg-ink-2 p-3 sm:p-3.5"
+                className="flex items-center gap-3 rounded-2xl border border-hair bg-surface p-3 sm:p-3.5"
               >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink font-display text-base font-light text-gold">
-                  {p.name.charAt(0).toUpperCase()}
-                </div>
+                <AvatarImage name={p.name} size="sm" variant="inline" />
 
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-paper">{p.name}</div>
@@ -202,15 +194,15 @@ export function PlayersSection({
                       </span>
                     )}
                     {!p.profile_id && (
-                      <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-gray-mid">
+                      <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
                         convidado
                       </span>
                     )}
                   </div>
                 </div>
 
-                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                  {STATE_LABEL[p.state] ?? p.state}
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  {playerStateLabel(p.state as PlayerState)}
                 </span>
 
                 <PaidToggle
@@ -299,9 +291,7 @@ function ProfilePicker({
                       : "text-paper hover:bg-smoke"
                   }`}
                 >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink-2 font-display text-base font-light text-gold">
-                    {p.name.charAt(0).toUpperCase()}
-                  </div>
+                  <AvatarImage name={p.name} size="sm" variant="inline" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm">{p.name}</div>
                     {p.nickname && (
@@ -358,17 +348,15 @@ function PaidToggle({
   const label = isEliminated && !isPaid ? "Rebuy" : isPaid ? "Pago" : "Marcar";
 
   return (
-    <button
+    <Button
       type="button"
+      variant={isPaid ? "secondary" : "destructive"}
+      size="sm"
       onClick={handle}
       disabled={pending}
       aria-label={isPaid ? `Desmarcar pagamento de ${playerName}` : `Marcar ${playerName} como pago`}
       style={{ touchAction: "manipulation" }}
-      className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border px-2.5 font-mono text-[10px] uppercase tracking-[0.18em] transition-colors disabled:opacity-50 ${
-        isPaid
-          ? "border-gold/50 bg-gold/10 text-gold"
-          : "border-red-poker/40 bg-red-poker/5 text-red-poker hover:bg-red-poker/10"
-      }`}
+      className="shrink-0 gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em]"
     >
       {isPaid ? (
         <Wallet className="size-3.5" aria-hidden />
@@ -376,7 +364,7 @@ function PaidToggle({
         <WalletMinimal className="size-3.5" aria-hidden />
       )}
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -411,7 +399,7 @@ function MovePlayerButton({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         aria-label={`Mover ${playerName} de mesa`}
-        className="flex size-9 shrink-0 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-gold/40 hover:text-gold"
+        className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-hair text-muted-foreground transition-colors hover:border-gold/40 hover:text-gold"
       >
         <ArrowRightLeft className="size-4" aria-hidden />
       </DialogTrigger>
@@ -438,7 +426,7 @@ function MovePlayerButton({
                 <div className="min-w-0 flex-1">
                   <div className="text-sm">Mesa {t.table_number}</div>
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                    {t.state}
+                    {tableStateLabel(t.state as MatchState)}
                   </div>
                 </div>
               </button>
@@ -476,7 +464,7 @@ function RemovePlayerButton({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         aria-label={`Remover ${playerName}`}
-        className="flex size-9 shrink-0 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-red-poker/40 hover:text-red-poker"
+        className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-hair text-muted-foreground transition-colors hover:border-red-poker/40 hover:text-red-poker"
       >
         <Trash2 className="size-4" aria-hidden />
       </AlertDialogTrigger>

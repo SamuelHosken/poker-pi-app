@@ -76,15 +76,6 @@ export default async function EventsListPage() {
           ))}
         </ul>
       )}
-
-      <div className="pt-4 text-center">
-        <Link
-          href="/admin/events/lixeira"
-          className="inline-flex h-10 items-center gap-2 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"
-        >
-          Lixeira →
-        </Link>
-      </div>
     </main>
   );
 }

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { listProfiles } from "@/lib/tournament/profiles";
 import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { AvatarImage } from "@/components/ui/avatar-image";
 import { ProfileRowActions } from "./profile-row-actions";
 import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -26,69 +29,74 @@ export default async function ProfilesListPage() {
         </div>
         <Link
           href="/admin/profiles/new"
-          className={buttonVariants({
-            className: "h-12 w-full bg-gold text-ink hover:bg-gold/90 sm:w-auto",
-          })}
+          className={buttonVariants({ size: "lg", className: "w-full sm:w-auto" })}
         >
           + Cadastrar pessoa
         </Link>
       </header>
 
       {profiles.length === 0 ? (
-        <div className="rounded-lg border border-line bg-ink-2 px-6 py-12 text-center">
-          <p className="font-display text-lg italic text-gray-soft">
-            Nenhum perfil cadastrado ainda.
-          </p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="font-display text-lg italic text-muted-foreground">
+              Nenhum perfil cadastrado ainda.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <ul className="space-y-3">
           {profiles.map((p) => (
-            <li
-              key={p.id}
-              className="space-y-3 rounded-lg border border-line bg-ink-2 p-4 sm:p-5"
-            >
-              {/* Linha 1: nome + badge admin/jogador */}
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="font-display text-xl font-light text-paper sm:text-2xl break-words">
-                    {p.name}
-                  </div>
-                  {p.nickname && (
-                    <div className="font-display text-base italic text-gold break-words">
-                      {p.nickname}
+            <li key={p.id}>
+              <Card>
+                <CardContent className="space-y-3">
+                  {/* Linha 1: avatar + nome + badge admin/jogador */}
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <AvatarImage
+                        name={p.name}
+                        url={p.avatar_url}
+                        size="sm"
+                        variant="inline"
+                      />
+                      <div className="min-w-0">
+                        <div className="font-display text-xl font-light text-paper sm:text-2xl break-words">
+                          {p.name}
+                        </div>
+                        {p.nickname && (
+                          <div className="font-display text-base italic text-gold break-words">
+                            {p.nickname}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-                {p.is_admin ? (
-                  <span className="shrink-0 rounded-full border border-gold/50 px-3 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-                    Admin
-                  </span>
-                ) : (
-                  <span className="shrink-0 rounded-full border border-line px-3 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                    Jogador
-                  </span>
-                )}
-              </div>
+                    {p.is_admin ? (
+                      <Badge variant="gold">Admin</Badge>
+                    ) : (
+                      <Badge variant="neutral">Jogador</Badge>
+                    )}
+                  </div>
 
-              {/* Linha 2: data de cadastro */}
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-                Cadastrado em {formatDateBR(p.created_at, "dd/MM/yyyy")}
-              </div>
+                  {/* Linha 2: data de cadastro */}
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    Cadastrado em {formatDateBR(p.created_at, "dd/MM/yyyy")}
+                  </div>
 
-              {/* Linha 3: ações */}
-              <div className="border-t border-line pt-3">
-                <ProfileRowActions
-                  profileId={p.id}
-                  name={p.name}
-                  isAdmin={p.is_admin}
-                />
-              </div>
+                  {/* Linha 3: ações */}
+                  <div className="border-t border-hair pt-3">
+                    <ProfileRowActions
+                      profileId={p.id}
+                      name={p.name}
+                      isAdmin={p.is_admin}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </li>
           ))}
         </ul>
       )}
 
-      <p className="rounded-md border border-line bg-ink-2 p-3 font-mono text-[10px] leading-relaxed uppercase tracking-[0.18em] text-gray-mid">
+      <p className="rounded-md border border-hair bg-surface p-3 font-mono text-[10px] leading-relaxed uppercase tracking-[0.18em] text-muted-foreground">
         Dica: o e-mail e senha cadastrados aqui servem para a pessoa entrar em
         /admin/login. Admins acessam /admin; outros vão pra /me (página do jogador).
       </p>

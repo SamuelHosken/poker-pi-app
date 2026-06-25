@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { listChampions } from "@/lib/tournament/galeria";
 import { AvatarImage } from "@/components/ui/avatar-image";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
+import { Trophy } from "lucide-react";
 
 export const metadata = { title: "Galeria de campeões · Poker Pi" };
 
@@ -66,33 +68,36 @@ export default async function GaleriaPage() {
           </span>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {ranking.map((r, i) => (
-              <li
-                key={r.name}
-                className={`flex flex-col items-center gap-2 rounded-lg border p-4 ${
-                  i === 0 ? "border-gold/60 bg-gold/5" : "border-line bg-ink-2"
-                }`}
-              >
-                <AvatarImage
-                  name={r.name}
-                  url={r.avatarUrl}
-                  size="md"
-                  variant={i === 0 ? "gold" : "outline"}
-                />
-                <div className="text-center">
-                  <div className="font-display text-sm text-paper">
-                    {r.name.split(" ")[0]}
-                  </div>
-                  <div
-                    className={`font-display text-2xl font-light leading-none ${
-                      i === 0 ? "text-gold" : "text-paper/80"
-                    }`}
-                  >
-                    {r.wins}
-                  </div>
-                  <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-gray-soft">
-                    título{r.wins === 1 ? "" : "s"}
-                  </div>
-                </div>
+              <li key={r.name}>
+                <Card
+                  className={`flex flex-col items-center gap-2 py-4 ${
+                    i === 0 ? "border-gold/60 bg-gold/5" : ""
+                  }`}
+                >
+                  <CardContent className="flex flex-col items-center gap-2 px-4 py-0">
+                    <AvatarImage
+                      name={r.name}
+                      url={r.avatarUrl}
+                      size="md"
+                      variant={i === 0 ? "gold" : "outline"}
+                    />
+                    <div className="text-center">
+                      <div className="font-display text-sm text-paper">
+                        {r.name.split(" ")[0]}
+                      </div>
+                      <div
+                        className={`font-display text-2xl font-light leading-none ${
+                          i === 0 ? "text-gold" : "text-paper/80"
+                        }`}
+                      >
+                        {r.wins}
+                      </div>
+                      <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                        título{r.wins === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>
@@ -111,30 +116,29 @@ export default async function GaleriaPage() {
         ) : (
           <ul className="space-y-2">
             {champions.map((c) => (
-              <li
-                key={`${c.eventId}-${c.playerId}`}
-                className="flex items-center gap-4 rounded-lg border border-gold/30 bg-gradient-to-r from-gold/5 to-transparent p-4"
-              >
-                <AvatarImage name={c.playerName} url={c.avatarUrl} size="lg" variant="gold" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-display text-xl font-light text-paper sm:text-2xl">
-                    {c.playerName}
-                  </div>
-                  {c.nickname && (
-                    <div className="font-display text-sm italic text-gold">
-                      {c.nickname}
+              <li key={`${c.eventId}-${c.playerId}`}>
+                <Card className="border-gold/30 bg-gradient-to-r from-gold/5 to-transparent">
+                  <CardContent className="flex items-center gap-4 py-0">
+                    <AvatarImage name={c.playerName} url={c.avatarUrl} size="lg" variant="gold" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-display text-xl font-light text-paper sm:text-2xl">
+                        {c.playerName}
+                      </div>
+                      {c.nickname && (
+                        <div className="font-display text-sm italic text-gold">
+                          {c.nickname}
+                        </div>
+                      )}
+                      <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        {c.eventName} · {formatDateBR(c.eventDate)}
+                        {c.rebuysUsed > 0 && (
+                          <> · {c.rebuysUsed} rebuy{c.rebuysUsed === 1 ? "" : "s"}</>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-                    {c.eventName} · {formatDateBR(c.eventDate)}
-                    {c.rebuysUsed > 0 && (
-                      <> · {c.rebuysUsed} rebuy{c.rebuysUsed === 1 ? "" : "s"}</>
-                    )}
-                  </div>
-                </div>
-                <div className="hidden font-display text-4xl font-light text-gold/40 sm:block">
-                  🏆
-                </div>
+                    <Trophy className="hidden size-6 shrink-0 text-gold sm:block" />
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getEvent } from "@/lib/tournament/events";
 import { getMatchesForEvent } from "@/lib/tournament/matches";
 import { formatBRL, formatDateBR } from "@/lib/format";
+import { Card, CardContent } from "@/components/ui/card";
 import { TvActions } from "./tv-actions";
 import { MesaLiveControl } from "./mesa-live-control";
 import { BlindsEditor } from "./blinds-editor";
@@ -77,45 +78,49 @@ export default async function TvConfigPage({
         </span>
       </div>
 
-      <header className="space-y-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
-          Configuração da TV
-        </span>
-        <h1 className="font-display text-3xl font-light leading-tight tracking-tight text-paper sm:text-4xl break-words">
-          {event.name}
-        </h1>
-        <p className="font-mono text-xs text-gray-soft">
-          {formatDateBR(event.event_date)} · Buy-in {formatBRL(event.buy_in_cents)}
-        </p>
-      </header>
+      <Card>
+        <CardContent className="space-y-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
+            Configuração da TV
+          </span>
+          <h1 className="font-display text-3xl font-light leading-tight tracking-tight text-paper sm:text-4xl break-words">
+            {event.name}
+          </h1>
+          <p className="font-mono text-xs text-muted-foreground">
+            {formatDateBR(event.event_date)} · Buy-in {formatBRL(event.buy_in_cents)}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Telão público */}
-      <section className="space-y-4 rounded-xl border border-line bg-ink-2 p-4 sm:p-5">
-        <div className="space-y-1">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-            Telão público
-          </span>
-          <p className="font-display text-lg font-light text-paper sm:text-xl">
-            Abra esse link em qualquer tela — TV, monitor, segunda tela.
-          </p>
-        </div>
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+              Telão público
+            </span>
+            <p className="font-display text-lg font-light text-paper sm:text-xl">
+              Abra esse link em qualquer tela — TV, monitor, segunda tela.
+            </p>
+          </div>
 
-        <code className="block break-all rounded-md border border-line bg-ink px-3 py-2 font-mono text-xs text-gray-soft">
-          {tvUrl}
-        </code>
+          <code className="block break-all rounded-md border border-hair bg-surface px-3 py-2 font-mono text-xs text-muted-foreground">
+            {tvUrl}
+          </code>
 
-        <TvActions tvUrl={tvUrl} />
+          <TvActions tvUrl={tvUrl} />
 
-        <TvStartControl
-          eventId={event.id}
-          currentStartsAt={event.tv_starts_at ?? null}
-        />
+          <TvStartControl
+            eventId={event.id}
+            currentStartsAt={event.tv_starts_at ?? null}
+          />
 
-        <TvPauseControl
-          eventId={event.id}
-          currentMessage={event.tv_paused_message ?? null}
-        />
-      </section>
+          <TvPauseControl
+            eventId={event.id}
+            currentMessage={event.tv_paused_message ?? null}
+          />
+        </CardContent>
+      </Card>
 
       {/* Mesas — cronômetro vivo + estrutura por mesa */}
       <section className="space-y-3">
@@ -190,19 +195,6 @@ export default async function TvConfigPage({
         </ul>
       </section>
 
-      {/* Em breve */}
-      <section className="space-y-3 rounded-xl border border-dashed border-line bg-ink-2/40 p-4 sm:p-5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-gray-soft">
-          Em breve (V2.2)
-        </span>
-        <ul className="space-y-1.5 font-mono text-xs text-gray-mid">
-          <li>· Overlays e efeitos na TV (chamada, fanfarra, aviso)</li>
-          <li>· Fila &ldquo;Mostrar fichas&rdquo; controlada do admin</li>
-          <li>· Layout de mesas (1 destaque, 2 lado a lado, grid)</li>
-          <li>· Personalização visual (logo, cores, densidade, volume)</li>
-          <li>· Diagnóstico Realtime (latência, conexão, histórico)</li>
-        </ul>
-      </section>
     </main>
   );
 }

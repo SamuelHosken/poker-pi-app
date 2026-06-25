@@ -26,6 +26,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { tableStateLabel } from "@/lib/ui-labels";
+import type { MatchState } from "@/lib/types/domain";
 import type { Tables } from "@/lib/types/database.types";
 
 type PhysicalTable = Tables<"physical_tables">;
@@ -134,11 +138,13 @@ export function MesaLiveControl({
   // Estado LIVRE — nenhum match ainda
   if (!match || !currentLevel) {
     return (
-      <div className="rounded-md border border-dashed border-line bg-ink p-4 text-center">
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
-          Mesa aberta · aguardando alguém entrar pelo /me
-        </span>
-      </div>
+      <Card>
+        <CardContent className="py-4 text-center">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Mesa aberta · aguardando alguém entrar pelo /me
+          </span>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -223,71 +229,73 @@ export function MesaLiveControl({
   return (
     <div className="space-y-3">
       {/* Cronômetro grande */}
-      <div className="rounded-lg border border-line bg-ink p-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-              Nível {currentLevel.level_number}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+                Nível {currentLevel.level_number}
+              </div>
+              <div className="font-mono text-xs text-muted-foreground">
+                SB {currentLevel.small_blind.toLocaleString("pt-BR")} · BB{" "}
+                {currentLevel.big_blind.toLocaleString("pt-BR")}
+                {currentLevel.ante > 0 && (
+                  <> · Ante {currentLevel.ante.toLocaleString("pt-BR")}</>
+                )}
+              </div>
             </div>
-            <div className="font-mono text-xs text-gray-soft">
-              SB {currentLevel.small_blind.toLocaleString("pt-BR")} · BB{" "}
-              {currentLevel.big_blind.toLocaleString("pt-BR")}
-              {currentLevel.ante > 0 && (
-                <> · Ante {currentLevel.ante.toLocaleString("pt-BR")}</>
-              )}
-            </div>
+            {isPaused && (
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-destructive">
+                {neverStarted
+                  ? "Aguardando início"
+                  : tableStateLabel(match.state as MatchState)}
+              </span>
+            )}
           </div>
-          {isPaused && (
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker">
-              {neverStarted ? "Aguardando início" : "Pausada"}
-            </span>
+
+          <div
+            className={`mt-2 font-mono text-5xl leading-none tabular-nums sm:text-6xl ${
+              isPaused || isExpired ? "text-destructive" : "text-foreground"
+            }`}
+          >
+            {formatTime(remainingMs)}
+          </div>
+
+          {isExpired && !isPaused && (
+            <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-destructive">
+              {autoAdvance
+                ? "Acabou o tempo — avançando automaticamente…"
+                : "Acabou o tempo — aperte \"Próximo nível\""}
+            </div>
           )}
-        </div>
-
-        <div
-          className={`mt-2 font-mono text-5xl leading-none tabular-nums sm:text-6xl ${
-            isPaused || isExpired ? "text-red-poker" : "text-paper"
-          }`}
-        >
-          {formatTime(remainingMs)}
-        </div>
-
-        {isExpired && !isPaused && (
-          <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-red-poker">
-            {autoAdvance
-              ? "Acabou o tempo — avançando automaticamente…"
-              : "Acabou o tempo — aperte “Próximo nível”"}
-          </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Ajuste fino do cronômetro */}
       <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => handleAdjust(-60)}
           disabled={pendingAdjust}
-          className="inline-flex h-11 items-center justify-center gap-1 rounded-md border border-line bg-ink-2 text-sm text-paper transition-colors hover:border-gold/40 hover:text-gold disabled:opacity-40"
         >
-          <Minus className="size-4" aria-hidden />
+          <Minus aria-hidden />
           1 min
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="secondary"
           onClick={() => handleAdjust(60)}
           disabled={pendingAdjust}
-          className="inline-flex h-11 items-center justify-center gap-1 rounded-md border border-line bg-ink-2 text-sm text-paper transition-colors hover:border-gold/40 hover:text-gold disabled:opacity-40"
         >
-          <Plus className="size-4" aria-hidden />
+          <Plus aria-hidden />
           1 min
-        </button>
+        </Button>
       </div>
 
       {/* Reiniciar cronômetro do nível atual (com confirmação) */}
       <AlertDialog>
         <AlertDialogTrigger
           disabled={pendingReset}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-line bg-ink-2 text-sm text-paper transition-colors hover:border-gold/40 hover:text-gold disabled:opacity-40"
+          className={`${buttonVariants({ variant: "outline" })} w-full`}
         >
           <RotateCcw className="size-4" aria-hidden />
           {pendingReset ? "Reiniciando…" : "Reiniciar cronômetro"}
@@ -312,15 +320,14 @@ export function MesaLiveControl({
 
       {/* Pause/resume + advance */}
       <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={handlePauseResume}
           disabled={pendingPauseResume}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-line bg-ink-2 text-sm text-paper transition-colors hover:border-gold/40 hover:text-gold disabled:opacity-40"
         >
           {isPaused ? (
             <>
-              <Play className="size-4" aria-hidden />
+              <Play aria-hidden />
               {pendingPauseResume
                 ? neverStarted
                   ? "Iniciando…"
@@ -331,27 +338,25 @@ export function MesaLiveControl({
             </>
           ) : (
             <>
-              <Pause className="size-4" aria-hidden />
+              <Pause aria-hidden />
               {pendingPauseResume ? "Pausando…" : "Pausar"}
             </>
           )}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
           onClick={handleAdvance}
           disabled={pendingAdvance}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-gold text-sm font-medium text-ink transition-colors hover:bg-gold/90 disabled:opacity-40"
         >
-          <FastForward className="size-4" aria-hidden />
+          <FastForward aria-hidden />
           {pendingAdvance ? "Avançando…" : "Próximo nível"}
-        </button>
+        </Button>
       </div>
 
       {/* Zona destrutiva — reinicia a mesa do zero */}
       <AlertDialog>
         <AlertDialogTrigger
           disabled={pendingResetTable}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-red-poker/40 bg-red-poker/5 text-sm text-red-poker transition-colors hover:bg-red-poker/10 disabled:opacity-40"
+          className={`${buttonVariants({ variant: "destructive" })} w-full`}
         >
           <Trash2 className="size-4" aria-hidden />
           {pendingResetTable ? "Reiniciando…" : "Reiniciar mesa"}
@@ -371,7 +376,7 @@ export function MesaLiveControl({
             <AlertDialogAction
               onClick={handleResetTable}
               disabled={pendingResetTable}
-              className="bg-red-poker text-white hover:bg-red-poker/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               {pendingResetTable ? "Reiniciando…" : "Reiniciar mesa"}
             </AlertDialogAction>

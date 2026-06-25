@@ -24,6 +24,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   createBlindLevel,
   updateBlindLevel,
@@ -46,43 +50,54 @@ export function BlindsEditor({
   currentLevelId: string | null;
 }) {
   return (
-    <div className="space-y-2">
-      <ul className="space-y-1.5">
-        {levels.map((lvl) => {
-          const isCurrent = lvl.id === currentLevelId;
-          return (
-            <li
-              key={lvl.id}
-              className={`grid grid-cols-[2.5rem_1fr_auto] items-center gap-2 rounded-md px-2.5 py-2 font-mono text-xs ${
-                isCurrent
-                  ? "border border-gold/40 bg-gold/5 text-paper"
-                  : "border border-line text-gray-soft"
-              }`}
-            >
-              <span className={`text-center ${isCurrent ? "text-gold" : ""}`}>
-                N{lvl.level_number}
-              </span>
-              <span className="truncate">
-                SB {lvl.small_blind.toLocaleString("pt-BR")} · BB{" "}
-                {lvl.big_blind.toLocaleString("pt-BR")}
-                {lvl.ante > 0 && (
-                  <> · Ante {lvl.ante.toLocaleString("pt-BR")}</>
-                )}
-                <span className="ml-1 text-gray-mid">· {lvl.duration_minutes}min</span>
-              </span>
-              <div className="flex items-center gap-1">
-                {matchId && !isCurrent && (
-                  <JumpToLevelButton matchId={matchId} level={lvl} />
-                )}
-                <EditBlindButton level={lvl} />
-                <DeleteBlindButton level={lvl} isCurrent={isCurrent} />
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+    <div className="space-y-3">
+      <Card size="sm">
+        <CardContent className="px-3 py-2">
+          <ul className="divide-y divide-hair">
+            {levels.map((lvl) => {
+              const isCurrent = lvl.id === currentLevelId;
+              return (
+                <li
+                  key={lvl.id}
+                  className={`grid grid-cols-[2.5rem_1fr_auto] items-center gap-2 py-2 font-mono text-xs ${
+                    isCurrent ? "text-gold" : "text-muted-foreground"
+                  }`}
+                >
+                  <span
+                    className={`text-center font-semibold ${isCurrent ? "text-gold" : "text-muted-foreground"}`}
+                  >
+                    N{lvl.level_number}
+                  </span>
+                  <span className="truncate">
+                    <span className={isCurrent ? "text-gold-soft" : ""}>
+                      SB {lvl.small_blind.toLocaleString("pt-BR")} · BB{" "}
+                      {lvl.big_blind.toLocaleString("pt-BR")}
+                      {lvl.ante > 0 && (
+                        <> · Ante {lvl.ante.toLocaleString("pt-BR")}</>
+                      )}
+                    </span>
+                    <span className="ml-1 text-muted-foreground">
+                      · {lvl.duration_minutes}min
+                    </span>
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {matchId && !isCurrent && (
+                      <JumpToLevelButton matchId={matchId} level={lvl} />
+                    )}
+                    <EditBlindButton level={lvl} />
+                    <DeleteBlindButton level={lvl} isCurrent={isCurrent} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
 
-      <AddBlindButton physicalTableId={physicalTableId} lastLevel={levels[levels.length - 1]} />
+      <AddBlindButton
+        physicalTableId={physicalTableId}
+        lastLevel={levels[levels.length - 1]}
+      />
     </div>
   );
 }
@@ -115,18 +130,20 @@ function JumpToLevelButton({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         aria-label={`Pular pro nível ${level.level_number}`}
-        className="flex size-8 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-gold/40 hover:text-gold"
+        className={buttonVariants({ variant: "ghost", size: "icon" })}
       >
-        <FastForward className="size-3.5" aria-hidden />
+        <FastForward className="size-4" aria-hidden />
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Pular pro nível {level.level_number}?</AlertDialogTitle>
+          <AlertDialogTitle>
+            Pular pro nível {level.level_number}?
+          </AlertDialogTitle>
           <AlertDialogDescription>
             SB {level.small_blind.toLocaleString("pt-BR")} / BB{" "}
             {level.big_blind.toLocaleString("pt-BR")} · {level.duration_minutes}
-            min. Cronômetro vai recomeçar do zero ({level.duration_minutes}min cheios).
-            A mesa volta pra JOGANDO se tava pausada. Sem undo.
+            min. Cronômetro vai recomeçar do zero ({level.duration_minutes}min
+            cheios). A mesa volta pra JOGANDO se tava pausada. Sem undo.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -187,7 +204,12 @@ function AddBlindButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-dashed border-line bg-ink text-xs text-gray-soft transition-colors hover:border-gold/40 hover:text-gold">
+      <DialogTrigger
+        className={buttonVariants({
+          variant: "outline",
+          className: "w-full border-dashed border-hair text-muted-foreground hover:text-gold hover:border-gold/40",
+        })}
+      >
         <Plus className="size-4" aria-hidden />
         Adicionar nível
       </DialogTrigger>
@@ -198,7 +220,7 @@ function AddBlindButton({
             Adicionado ao fim da estrutura desta mesa.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <BlindFields
             smallBlind={smallBlind}
             bigBlind={bigBlind}
@@ -207,13 +229,9 @@ function AddBlindButton({
             onChange={{ setSmallBlind, setBigBlind, setAnte, setDuration }}
           />
           <DialogFooter>
-            <button
-              type="submit"
-              disabled={pending}
-              className="h-11 rounded-md bg-gold px-5 text-sm font-medium text-ink hover:bg-gold/90 disabled:opacity-50"
-            >
+            <Button type="submit" disabled={pending}>
               {pending ? "Adicionando…" : "Adicionar"}
-            </button>
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -225,10 +243,14 @@ function EditBlindButton({ level }: { level: BlindLevel }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [smallBlind, setSmallBlind] = useState<string>(String(level.small_blind));
+  const [smallBlind, setSmallBlind] = useState<string>(
+    String(level.small_blind),
+  );
   const [bigBlind, setBigBlind] = useState<string>(String(level.big_blind));
   const [ante, setAnte] = useState<string>(String(level.ante));
-  const [duration, setDuration] = useState<string>(String(level.duration_minutes));
+  const [duration, setDuration] = useState<string>(
+    String(level.duration_minutes),
+  );
 
   function handleOpen(next: boolean) {
     if (next) {
@@ -264,19 +286,19 @@ function EditBlindButton({ level }: { level: BlindLevel }) {
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger
         aria-label={`Editar nível ${level.level_number}`}
-        className="flex size-8 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-gold/40 hover:text-gold"
+        className={buttonVariants({ variant: "ghost", size: "icon" })}
       >
-        <Pencil className="size-3.5" aria-hidden />
+        <Pencil className="size-4" aria-hidden />
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Editar nível {level.level_number}</DialogTitle>
           <DialogDescription>
-            Alterações valem imediatamente. Se este for o nível atual, o cronômetro
-            ainda usa a duração nova.
+            Alterações valem imediatamente. Se este for o nível atual, o
+            cronômetro ainda usa a duração nova.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <BlindFields
             smallBlind={smallBlind}
             bigBlind={bigBlind}
@@ -285,13 +307,9 @@ function EditBlindButton({ level }: { level: BlindLevel }) {
             onChange={{ setSmallBlind, setBigBlind, setAnte, setDuration }}
           />
           <DialogFooter>
-            <button
-              type="submit"
-              disabled={pending}
-              className="h-11 rounded-md bg-gold px-5 text-sm font-medium text-ink hover:bg-gold/90 disabled:opacity-50"
-            >
+            <Button type="submit" disabled={pending}>
               {pending ? "Salvando…" : "Salvar"}
-            </button>
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -328,16 +346,19 @@ function DeleteBlindButton({
       <AlertDialogTrigger
         disabled={isCurrent}
         aria-label={`Remover nível ${level.level_number}`}
-        className="flex size-8 items-center justify-center rounded-md border border-line text-gray-soft transition-colors hover:border-red-poker/40 hover:text-red-poker disabled:cursor-not-allowed disabled:opacity-30"
+        className={buttonVariants({ variant: "destructive", size: "icon" })}
       >
-        <Trash2 className="size-3.5" aria-hidden />
+        <Trash2 className="size-4" aria-hidden />
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Remover nível {level.level_number}?</AlertDialogTitle>
+          <AlertDialogTitle>
+            Remover nível {level.level_number}?
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            SB {level.small_blind} / BB {level.big_blind} · {level.duration_minutes}min.
-            Os outros níveis mantêm a numeração atual (pode ficar com gap).
+            SB {level.small_blind} / BB {level.big_blind} ·{" "}
+            {level.duration_minutes}min. Os outros níveis mantêm a numeração
+            atual (pode ficar com gap).
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -393,18 +414,18 @@ function Field({
   onChange: (v: string) => void;
 }) {
   return (
-    <label className="block space-y-1">
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+    <div className="space-y-1.5">
+      <Label className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         {label}
-      </span>
-      <input
+      </Label>
+      <Input
         type="number"
         inputMode="numeric"
         min={0}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full rounded-md border border-line bg-ink px-3 text-sm text-paper focus:border-gold focus:outline-none"
+        className="h-11"
       />
-    </label>
+    </div>
   );
 }

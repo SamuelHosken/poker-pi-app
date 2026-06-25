@@ -4,6 +4,9 @@ import { getEvent } from "@/lib/tournament/events";
 import { listPlayersForEvent } from "@/lib/tournament/players";
 import { formatBRL, formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
+import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 const PLAYER_STATE_LABEL: Record<string, string> = {
   INSCRITO: "Inscrito",
@@ -57,7 +60,7 @@ export default async function ResultsPage({
       <LiveRefresh intervalMs={10000} />
       <Link
         href={`/admin/events/${id}`}
-        className="inline-block font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:text-paper"
+        className="inline-block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-paper"
       >
         ← Evento
       </Link>
@@ -69,132 +72,82 @@ export default async function ResultsPage({
         <h1 className="font-display text-3xl font-light leading-tight tracking-tight text-paper sm:text-4xl break-words">
           {event.name}
         </h1>
-        <p className="font-mono text-xs text-gray-soft">
+        <p className="font-mono text-xs text-muted-foreground">
           {formatDateBR(event.event_date)} · Buy-in {formatBRL(event.buy_in_cents)}
         </p>
       </header>
 
-      {/* Mobile: cards verticais */}
-      <ul className="space-y-2 sm:hidden">
-        {sorted.map((p) => {
-          const positionLabel =
-            p.state === "CAMPEAO"
-              ? "1º"
-              : p.state === "VICE"
-                ? "2º"
-                : p.state === "TERCEIRO"
-                  ? "3º"
-                  : p.final_position != null
-                    ? `${p.final_position}º`
-                    : "—";
-          const isPodium =
-            p.state === "CAMPEAO" || p.state === "VICE" || p.state === "TERCEIRO";
-          const isChamp = p.state === "CAMPEAO";
+      <Card size="sm" className="py-0">
+        <CardContent className="px-0 divide-y divide-hair">
+          {sorted.map((p) => {
+            const positionLabel =
+              p.state === "CAMPEAO"
+                ? "1º"
+                : p.state === "VICE"
+                  ? "2º"
+                  : p.state === "TERCEIRO"
+                    ? "3º"
+                    : p.final_position != null
+                      ? `${p.final_position}º`
+                      : "—";
+            const isPodium =
+              p.state === "CAMPEAO" || p.state === "VICE" || p.state === "TERCEIRO";
+            const isChamp = p.state === "CAMPEAO";
 
-          return (
-            <li
-              key={p.id}
-              className={`flex items-center gap-3 rounded-md border p-3 ${
-                isChamp
-                  ? "border-gold/60 bg-gold/5"
-                  : isPodium
-                    ? "border-line bg-ink-2"
-                    : "border-line bg-ink-2"
-              }`}
-            >
+            return (
               <div
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md font-mono text-lg font-medium ${
-                  isChamp
-                    ? "bg-gold text-ink"
-                    : isPodium
-                      ? "border border-gold/40 text-gold"
-                      : "border border-line text-gray-soft"
+                key={p.id}
+                className={`flex items-center gap-3 px-4 py-3 ${
+                  isChamp ? "bg-gold/5" : ""
                 }`}
               >
-                {positionLabel}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-paper">{p.name}</div>
-                {p.nickname && (
-                  <div className="truncate font-display text-xs italic text-gold">
-                    {p.nickname}
-                  </div>
-                )}
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-mid">
-                  {PLAYER_STATE_LABEL[p.state] ?? p.state}
-                  {p.rebuys_used > 0 && ` · ${p.rebuys_used} rebuy${p.rebuys_used === 1 ? "" : "s"}`}
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      {/* Desktop: tabela */}
-      <div className="hidden overflow-hidden rounded-lg border border-line sm:block">
-        <table className="w-full text-sm">
-          <thead className="bg-ink-2 text-gray-soft">
-            <tr>
-              <th className="px-4 py-2 text-left font-mono text-[10px] uppercase tracking-[0.18em]">
-                Posição
-              </th>
-              <th className="px-4 py-2 text-left font-mono text-[10px] uppercase tracking-[0.18em]">
-                Jogador
-              </th>
-              <th className="px-4 py-2 text-right font-mono text-[10px] uppercase tracking-[0.18em]">
-                Estado
-              </th>
-              <th className="px-4 py-2 text-right font-mono text-[10px] uppercase tracking-[0.18em]">
-                Rebuys
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((p) => {
-              const positionLabel =
-                p.state === "CAMPEAO"
-                  ? "1º"
-                  : p.state === "VICE"
-                    ? "2º"
-                    : p.state === "TERCEIRO"
-                      ? "3º"
-                      : p.final_position != null
-                        ? `${p.final_position}º`
-                        : "—";
-              const isPodium =
-                p.state === "CAMPEAO" || p.state === "VICE" || p.state === "TERCEIRO";
-              return (
-                <tr
-                  key={p.id}
-                  className={`border-t border-line ${isPodium ? "bg-ink-2" : ""}`}
+                {/* Position badge */}
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono text-sm font-medium ${
+                    isChamp
+                      ? "bg-gold text-ink"
+                      : isPodium
+                        ? "border border-gold/40 text-gold"
+                        : "border border-hair text-muted-foreground"
+                  }`}
                 >
-                  <td
-                    className={`px-4 py-2 font-mono ${
-                      p.state === "CAMPEAO" ? "text-gold" : "text-paper"
-                    }`}
-                  >
-                    {positionLabel}
-                  </td>
-                  <td className="px-4 py-2 text-paper">
+                  {positionLabel}
+                </div>
+
+                {/* Avatar */}
+                <AvatarImage
+                  name={p.name}
+                  size="sm"
+                  variant={isChamp ? "gold" : "inline"}
+                />
+
+                {/* Name + status */}
+                <div className="min-w-0 flex-1">
+                  <div className={`truncate text-sm font-medium ${isChamp ? "text-gold" : "text-paper"}`}>
                     {p.name}
                     {p.nickname && (
                       <span className="ml-2 font-display text-xs italic text-gold">
                         {p.nickname}
                       </span>
                     )}
-                  </td>
-                  <td className="px-4 py-2 text-right font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft">
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     {PLAYER_STATE_LABEL[p.state] ?? p.state}
-                  </td>
-                  <td className="px-4 py-2 text-right font-mono text-gray-soft">
-                    {p.rebuys_used}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    {p.rebuys_used > 0 && ` · ${p.rebuys_used} rebuy${p.rebuys_used === 1 ? "" : "s"}`}
+                  </div>
+                </div>
+
+                {/* Rebuys (desktop only) */}
+                {p.rebuys_used > 0 && (
+                  <span className="hidden font-mono text-xs text-muted-foreground sm:block">
+                    {p.rebuys_used}×
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
 
       <ExportJsonLink eventId={id} sorted={sorted} eventName={event.name} />
     </main>
@@ -243,7 +196,7 @@ function ExportJsonLink({
     <a
       href={dataUri}
       download={`poker-pi-resultados-${eventId}.json`}
-      className="inline-flex h-11 w-full items-center justify-center rounded-md border border-line px-4 font-mono text-[10px] uppercase tracking-[0.18em] text-gray-soft hover:border-gold/50 hover:text-gold sm:w-auto"
+      className={buttonVariants({ variant: "secondary" })}
     >
       Exportar JSON
     </a>

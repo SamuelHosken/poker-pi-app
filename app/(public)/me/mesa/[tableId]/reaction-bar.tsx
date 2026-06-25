@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { Button } from "@/components/ui/button";
 
 const REACTIONS = [
   { emoji: "😭", label: "Perdi" },
@@ -31,9 +32,10 @@ export function ReactionBar({
   return (
     <div className="grid w-full grid-cols-4 gap-2">
       {REACTIONS.map((r) => (
-        <button
+        <Button
           key={r.emoji}
-          type="button"
+          variant="ghost"
+          size="icon-lg"
           onClick={() => handle(r.emoji)}
           disabled={disabled}
           aria-label={r.label}
@@ -41,10 +43,10 @@ export function ReactionBar({
             touchAction: "manipulation",
             WebkitTapHighlightColor: "rgba(212,175,55,0.3)",
           }}
-          className="flex h-14 items-center justify-center rounded-2xl border border-line bg-ink-2 text-3xl transition-all active:scale-90 disabled:opacity-40 [&_*]:pointer-events-none"
+          className="h-14 w-full rounded-2xl border border-line bg-ink-2 text-3xl transition-all active:scale-90 [&_*]:pointer-events-none"
         >
           {r.emoji}
-        </button>
+        </Button>
       ))}
     </div>
   );

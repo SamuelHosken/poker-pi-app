@@ -1,6 +1,7 @@
 import { getAllFeedback } from "@/lib/tournament/feedback";
 import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
+import { Card, CardContent } from "@/components/ui/card";
 import { CopyLinkButton } from "./copy-link-button";
 import { ResetFeedbackButton } from "./reset-feedback-button";
 
@@ -76,51 +77,53 @@ export default async function FeedbackPage() {
       ) : (
         <>
           {/* Nota geral + médias por categoria */}
-          <section className="rounded-2xl border border-line bg-ink-2 p-5 sm:p-6">
-            <div className="flex items-center gap-5 border-b border-line pb-5">
-              <div
-                className={`flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border border-line bg-ink ${scoreColor(
-                  summary.averages.geral,
-                )}`}
-              >
-                <span className="font-display text-3xl font-light tabular-nums">
-                  {summary.averages.geral ?? "—"}
-                </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-gray-mid">
-                  geral
-                </span>
+          <Card>
+            <CardContent className="pt-5 sm:pt-6">
+              <div className="flex items-center gap-5 border-b border-hair pb-5">
+                <div
+                  className={`flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border border-hair bg-surface-2 ${scoreColor(
+                    summary.averages.geral,
+                  )}`}
+                >
+                  <span className="font-display text-3xl font-light tabular-nums">
+                    {summary.averages.geral ?? "—"}
+                  </span>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                    geral
+                  </span>
+                </div>
+                <div>
+                  <p className="font-display text-lg text-foreground">Nota média geral</p>
+                  <p className="text-xs text-muted-foreground">
+                    Média de todas as notas, de 0 a 10.
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="font-display text-lg text-paper">Nota média geral</p>
-                <p className="text-xs text-gray-soft">
-                  Média de todas as notas, de 0 a 10.
-                </p>
-              </div>
-            </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
-              {CATEGORIES.map((c) => {
-                const v = summary.averages[c.key];
-                return (
-                  <div
-                    key={c.key}
-                    className="rounded-xl border border-line bg-ink p-3 text-center"
-                  >
-                    <span
-                      className={`block font-display text-2xl font-light tabular-nums ${scoreColor(
-                        v,
-                      )}`}
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                {CATEGORIES.map((c) => {
+                  const v = summary.averages[c.key];
+                  return (
+                    <div
+                      key={c.key}
+                      className="rounded-xl border border-hair bg-surface-2 p-3 text-center"
                     >
-                      {v ?? "—"}
-                    </span>
-                    <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-gray-mid">
-                      {c.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+                      <span
+                        className={`block font-display text-2xl font-light tabular-nums ${scoreColor(
+                          v,
+                        )}`}
+                      >
+                        {v ?? "—"}
+                      </span>
+                      <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {c.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Respostas individuais — cada avaliação, por pessoa */}
           <section className="space-y-3">
