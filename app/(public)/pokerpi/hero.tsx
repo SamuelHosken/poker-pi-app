@@ -4,11 +4,10 @@ import { PokerPiLogo } from "@/components/ui/poker-pi-logo";
  * Herói da LP de ingressos — vídeo de fundo em loop (slow-mo da 1ª edição),
  * escurecido, com a marca + data + vagas + CTA por cima. Mobile-first.
  *
- * PLACEHOLDER de vídeo: usa a moeda (/coin/coin-spin.mp4) que já existe.
- * Trocar HERO_VIDEO/HERO_POSTER por /event/slowmo.mp4 quando o footage chegar.
+ * Footage real da 1ª edição (slow-mo), comprimido pra web.
  */
-const HERO_VIDEO = "/coin/coin-spin.mp4";
-const HERO_POSTER = "/coin/coin-poster.jpg";
+const HERO_VIDEO = "/event/slowmo.mp4";
+const HERO_POSTER = "/event/slowmo-poster.jpg";
 
 export function Hero({
   dateText,

@@ -14,7 +14,7 @@ export function buildTicketEmailHtml(p: {
   const origin = p.ticketUrl.split("/ingresso/")[0] || "";
   // QR servido por rota própria (Gmail bloqueia data: URI em <img>).
   const qrImageUrl = p.ticketUrl.replace("/ingresso/", "/api/qr/");
-  const logoUrl = `${origin}/icon-192.png`;
+  const logoUrl = `${origin}/event/email-logo.png`;
   const isOpenBar = /open\s*bar/i.test(p.ticketName);
   const planLabel = isOpenBar ? "🥃 Open Bar" : p.ticketName;
 

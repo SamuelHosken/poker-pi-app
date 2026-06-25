@@ -2,10 +2,10 @@
  * Faixa imersiva no meio da LP — vídeo de cortes rápidos (energia da noite)
  * em loop, com uma linha de copy por cima. Mobile-first.
  *
- * PLACEHOLDER: usa /login-bg.mp4 (existe). Trocar BAND_VIDEO por
- * /event/fastcuts.mp4 quando o footage de cortes rápidos chegar.
+ * Footage real da 1ª edição (cortes rápidos), comprimido pra web.
  */
-const BAND_VIDEO = "/login-bg.mp4";
+const BAND_VIDEO = "/event/fastcuts.mp4";
+const BAND_POSTER = "/event/fastcuts-poster.jpg";
 
 export function FastCutsBand() {
   return (
@@ -14,6 +14,7 @@ export function FastCutsBand() {
       <video
         className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-70 motion-reduce:hidden"
         src={BAND_VIDEO}
+        poster={BAND_POSTER}
         autoPlay
         loop
         muted
