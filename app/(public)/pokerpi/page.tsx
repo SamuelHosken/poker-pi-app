@@ -1,14 +1,22 @@
-import { notFound } from "next/navigation";
-import { getEventBySlugPublic } from "@/lib/tickets/orders";
+import { getActiveEventPublic } from "@/lib/tickets/orders";
 import { hasCapacity } from "@/lib/tickets/capacity";
 import { CheckoutForm } from "./checkout-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function EventoPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const data = await getEventBySlugPublic(slug);
-  if (!data) notFound();
+export default async function PokerPiPage() {
+  const data = await getActiveEventPublic();
+
+  if (!data) {
+    return (
+      <main className="min-h-dvh bg-ink text-paper flex flex-col items-center justify-center text-center px-5">
+        <div className="text-gold text-6xl font-bold drop-shadow-[0_0_30px_rgba(217,184,118,0.35)]">π</div>
+        <p className="mt-6 text-lg text-paper">Nenhum evento com vendas abertas no momento.</p>
+        <p className="mt-2 text-sm text-gray-soft">Fique de olho — em breve.</p>
+      </main>
+    );
+  }
+
   const { event, ticketTypes, soldCount } = data;
   const soldOut = !event.salesOpen || !hasCapacity(soldCount, event.capacity);
   const remaining = event.capacity != null ? Math.max(0, event.capacity - soldCount) : null;
@@ -29,7 +37,9 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
             {remaining > 0 ? `${remaining} de ${event.capacity} vagas restantes` : "Esgotado"}
           </p>
         )}
-        <a href="#ingressos" className="mt-6 rounded-full bg-gold px-7 py-3 font-bold text-ink">Garantir meu ingresso</a>
+        {!soldOut && (
+          <a href="#ingressos" className="mt-6 rounded-full bg-gold px-7 py-3 font-bold text-ink">Garantir meu ingresso</a>
+        )}
       </section>
 
       {/* INGRESSOS / CHECKOUT */}

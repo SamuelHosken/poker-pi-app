@@ -12,17 +12,19 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export async function getEventBySlugPublic(slug: string): Promise<{
+export async function getActiveEventPublic(): Promise<{
   event: { id: string; name: string; slug: string; startsAt: string; locationText: string; capacity: number | null; salesOpen: boolean };
   ticketTypes: TicketType[];
   soldCount: number;
 } | null> {
   const db = rawServiceClient();
-  const { data: ev } = await db
+  const { data } = await db
     .from("events")
     .select("id,name,slug,starts_at,location_text,capacity,sales_open")
-    .eq("slug", slug)
-    .maybeSingle();
+    .eq("sales_open", true)
+    .order("starts_at", { ascending: true })
+    .limit(1);
+  const ev = data?.[0];
   if (!ev) return null;
 
   const { data: types } = await db
