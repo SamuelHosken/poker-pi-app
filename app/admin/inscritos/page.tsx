@@ -1,11 +1,8 @@
 import { getAllSubscriptions } from "@/lib/tournament/subscriptions";
-import {
-  getConviteStatuses,
-  type ConviteStatus,
-} from "@/lib/tournament/convite-stats";
 import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
 import { InscritosToolbar } from "./inscritos-toolbar";
+import { CountToggle } from "./count-toggle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -14,9 +11,16 @@ export const metadata = {
 };
 
 export default async function InscritosPage() {
-  const { count, attendedCount, firstTimerCount, rows } =
+  const { count, attendedCount, firstTimerCount, excludedCount, rows } =
     await getAllSubscriptions();
-  const convites = await getConviteStatuses();
+
+  // Numera só os contabilizados (desc); os não contabilizados ficam sem número.
+  let running = count;
+  const items = rows.map((r) => {
+    const isCounted = r.counted !== false;
+    const num = isCounted ? running-- : null;
+    return { r, isCounted, num };
+  });
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-10">
@@ -30,24 +34,23 @@ export default async function InscritosPage() {
           Inscritos
         </h1>
         <p className="font-mono text-xs text-gray-soft">
-          {count === 0
+          {rows.length === 0
             ? "nenhuma inscrição ainda"
-            : `${count} inscrito${count === 1 ? "" : "s"}`}
+            : `${count} contabilizado${count === 1 ? "" : "s"}` +
+              (excludedCount > 0 ? ` · ${excludedCount} fora da conta` : "")}
         </p>
       </header>
 
-      {/* Métricas */}
+      {/* Métricas (só contabilizados) */}
       <section className="grid grid-cols-3 gap-3">
         <Stat label="Total" value={count} tone="paper" />
         <Stat label="Foram à 1ª" value={attendedCount} tone="gold" />
         <Stat label="Primeira vez" value={firstTimerCount} tone="felt" />
       </section>
 
-      <ConvidadosPanel convites={convites} />
-
       <InscritosToolbar rows={rows} />
 
-      {count === 0 ? (
+      {rows.length === 0 ? (
         <div className="rounded-2xl border border-line bg-ink-2 px-6 py-12 text-center">
           <p className="text-sm text-gray-soft">
             Ainda não chegou nenhuma inscrição. Compartilhe o link acima.
@@ -66,19 +69,24 @@ export default async function InscritosPage() {
                   <th className="px-4 py-3 font-medium">Telefone</th>
                   <th className="px-4 py-3 font-medium">1ª edição?</th>
                   <th className="px-4 py-3 font-medium">Data</th>
+                  <th className="px-4 py-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
+                {items.map(({ r, isCounted, num }) => (
                   <tr
                     key={r.id}
-                    className="border-b border-line/60 last:border-0 hover:bg-ink-2/50"
+                    className={`border-b border-line/60 last:border-0 hover:bg-ink-2/50 ${
+                      isCounted ? "" : "opacity-45"
+                    }`}
                   >
                     <td className="px-4 py-3 font-mono text-xs text-gray-mid tabular-nums">
-                      {count - i}
+                      {num ?? "—"}
                     </td>
                     <td className="px-4 py-3 font-medium text-paper">
-                      {r.full_name}
+                      <span className={isCounted ? "" : "line-through"}>
+                        {r.full_name}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <a
@@ -104,6 +112,9 @@ export default async function InscritosPage() {
                     <td className="px-4 py-3 font-mono text-[11px] text-gray-mid">
                       {formatDateBR(r.created_at, "dd/MM 'às' HH:mm")}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <CountToggle id={r.id} counted={isCounted} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -112,18 +123,24 @@ export default async function InscritosPage() {
 
           {/* Celular: cards */}
           <ul className="space-y-2 sm:hidden">
-            {rows.map((r, i) => (
+            {items.map(({ r, isCounted, num }) => (
               <li
                 key={r.id}
-                className="rounded-xl border border-hair bg-surface p-4"
+                className={`rounded-xl border border-hair bg-surface p-4 ${
+                  isCounted ? "" : "opacity-60"
+                }`}
               >
                 <div className="mb-2 flex items-center justify-between">
                   <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
-                    #{count - i}
+                    {isCounted ? `#${num}` : "Fora da conta"}
                   </span>
                   <AttendedBadge attended={r.attended_first_edition} />
                 </div>
-                <p className="font-medium text-paper">{r.full_name}</p>
+                <p className="font-medium text-paper">
+                  <span className={isCounted ? "" : "line-through"}>
+                    {r.full_name}
+                  </span>
+                </p>
                 <a
                   href={`mailto:${r.email}`}
                   className="mt-0.5 block truncate text-sm text-gray-soft hover:text-gold"
@@ -143,6 +160,9 @@ export default async function InscritosPage() {
                     {formatDateBR(r.created_at, "dd/MM 'às' HH:mm")}
                   </span>
                 </div>
+                <div className="mt-3 flex justify-end">
+                  <CountToggle id={r.id} counted={isCounted} />
+                </div>
               </li>
             ))}
           </ul>
@@ -150,80 +170,6 @@ export default async function InscritosPage() {
       )}
     </main>
   );
-}
-
-function ConvidadosPanel({
-  convites,
-}: {
-  convites: Awaited<ReturnType<typeof getConviteStatuses>>;
-}) {
-  const { rows, total, subscribedCount, openedNotSubscribedCount, notOpenedCount } =
-    convites;
-
-  return (
-    <section className="space-y-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-display text-xl font-light tracking-tight text-paper">
-          Convidados{" "}
-          <span className="font-mono text-xs text-gray-mid">({total} links)</span>
-        </h2>
-        {openedNotSubscribedCount > 0 && (
-          <span className="font-mono text-[11px] text-gold">
-            {openedNotSubscribedCount} abriu{openedNotSubscribedCount === 1 ? "" : "ram"} e não se inscreveu
-          </span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <Stat label="Inscritos" value={subscribedCount} tone="felt" />
-        <Stat label="Abriu, não inscr." value={openedNotSubscribedCount} tone="gold" />
-        <Stat label="Não abriu" value={notOpenedCount} tone="paper" />
-      </div>
-
-      <ul className="space-y-2">
-        {rows.map((c) => (
-          <ConvidadoRow key={c.slug} c={c} />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function ConvidadoRow({ c }: { c: ConviteStatus }) {
-  const accent =
-    c.status === "opened_not_subscribed"
-      ? "border-gold/50 bg-gold/5"
-      : "border-hair bg-surface";
-
-  return (
-    <li
-      className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${accent}`}
-    >
-      <div className="min-w-0">
-        <p className="font-medium text-paper">{c.name}</p>
-        <p className="font-mono text-[11px] text-gray-mid">/convite/{c.slug}</p>
-      </div>
-
-      <div className="flex shrink-0 flex-col items-end gap-1 text-right">
-        <ConvidadoBadge status={c.status} />
-        {c.opened && (
-          <span className="font-mono text-[10px] text-gray-mid">
-            {c.openCount}× · {formatDateBR(c.lastOpenedAt!, "dd/MM HH:mm")}
-          </span>
-        )}
-      </div>
-    </li>
-  );
-}
-
-function ConvidadoBadge({ status }: { status: ConviteStatus["status"] }) {
-  if (status === "subscribed") {
-    return <Badge variant="live">Inscrito</Badge>;
-  }
-  if (status === "opened_not_subscribed") {
-    return <Badge variant="gold">Abriu · não inscr.</Badge>;
-  }
-  return <Badge variant="neutral">Não abriu</Badge>;
 }
 
 function Stat({

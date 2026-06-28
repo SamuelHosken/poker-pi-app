@@ -15,7 +15,10 @@ function toCsv(rows: Subscription[]): string {
     "Data",
   ];
   const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
-  const lines = rows.map((r) =>
+  // Só os contabilizados entram na planilha.
+  const lines = rows
+    .filter((r) => r.counted !== false)
+    .map((r) =>
     [
       r.full_name,
       r.email,
