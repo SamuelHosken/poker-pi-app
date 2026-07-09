@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono, Big_Shoulders } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import "./globals.css";
@@ -57,6 +58,7 @@ export default function RootLayout({
         {children}
         <Toaster richColors theme="dark" position="top-right" />
         <ServiceWorkerRegister />
+        <Analytics />
       </body>
     </html>
   );

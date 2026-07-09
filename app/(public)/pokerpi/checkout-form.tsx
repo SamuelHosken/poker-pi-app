@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { createTicketOrder } from "@/lib/tickets/orders";
 import type { TicketType, OrderInput } from "@/lib/tickets/types";
 import { isValidCpf } from "@/lib/tickets/cpf";
+import { getAttribution, getSessionId, trackOnce } from "@/lib/analytics/client";
 import { PhoneInputCream } from "./phone-input-cream";
 import { TicketCards } from "./ticket-cards";
 
@@ -16,8 +17,19 @@ function formatCpf(raw: string): string {
 
 const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
-export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut: boolean }) {
+export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[]; soldOut: boolean; eventId: string }) {
   const [selectedId, setSelectedId] = useState<string | null>(types[0]?.id ?? null);
+
+  function handleSelect(id: string) {
+    setSelectedId(id);
+    const plan = types.find((t) => t.id === id)?.name;
+    trackOnce(`plan:${eventId}:${id}`, "plan_select", { plan: plan ?? undefined, eventId });
+  }
+
+  function markStart() {
+    trackOnce(`checkout:${eventId}`, "checkout_start", { eventId });
+  }
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState({ e164: "", valid: false });
@@ -43,13 +55,17 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
     setLoading(true);
     setServerError(null);
     setErrorField(null);
-    const res = await createTicketOrder({
-      ticketTypeId: selectedId,
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.e164,
-      cpf,
-    });
+    const attr = getAttribution();
+    const res = await createTicketOrder(
+      {
+        ticketTypeId: selectedId,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.e164,
+        cpf,
+      },
+      { sessionId: getSessionId(), source: attr.ref ?? attr.utmSource ?? null },
+    );
     if (res.ok) {
       window.location.href = res.invoiceUrl;
     } else {
@@ -69,7 +85,7 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
 
   return (
     <form onSubmit={submit} className="space-y-5" noValidate>
-      <TicketCards types={types} selectedId={selectedId} onSelect={setSelectedId} />
+      <TicketCards types={types} selectedId={selectedId} onSelect={handleSelect} />
 
       <div className="grid gap-4 rounded-3xl border border-cream-3 bg-cream p-6 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.6)]">
         <Field label="Nome completo" hint={name && !valid.name ? "Digite seu nome completo." : undefined}>
@@ -77,7 +93,7 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
             type="text"
             autoComplete="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { markStart(); setName(e.target.value); }}
             placeholder="Como está no seu documento"
             className={inputCls(errorField === "name" || (!!name && !valid.name))}
           />
@@ -89,14 +105,14 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
             inputMode="email"
             autoComplete="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { markStart(); setEmail(e.target.value); }}
             placeholder="voce@email.com"
             className={inputCls(errorField === "email" || (!!email && !valid.email))}
           />
         </Field>
 
         <Field label="Telefone / WhatsApp">
-          <PhoneInputCream invalid={errorField === "phone"} onChange={(v) => setPhone({ e164: v.e164, valid: v.valid })} />
+          <PhoneInputCream invalid={errorField === "phone"} onChange={(v) => { markStart(); setPhone({ e164: v.e164, valid: v.valid }); }} />
         </Field>
 
         <Field label="CPF" hint={cpf && !valid.cpf ? "CPF inválido." : undefined}>
@@ -105,7 +121,7 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
             inputMode="numeric"
             autoComplete="off"
             value={cpf}
-            onChange={(e) => setCpf(formatCpf(e.target.value))}
+            onChange={(e) => { markStart(); setCpf(formatCpf(e.target.value)); }}
             placeholder="000.000.000-00"
             maxLength={14}
             className={inputCls(errorField === "cpf" || (!!cpf && !valid.cpf))}
@@ -122,7 +138,7 @@ export function CheckoutForm({ types, soldOut }: { types: TicketType[]; soldOut:
           {loading ? "Gerando pagamento…" : "Garantir meu ingresso"}
         </button>
         <p className="text-center text-xs text-ink-warm-soft">
-          Pagamento via PIX ou cartão. Você recebe o ingresso com QR Code na hora, e também por e-mail.
+          Pagamento 100% seguro via PIX ou cartão. Você recebe o ingresso com QR Code na hora, e também por e-mail.
         </p>
       </div>
     </form>

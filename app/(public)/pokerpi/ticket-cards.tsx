@@ -8,9 +8,9 @@ function price(cents: number): string {
 
 function features(name: string): string[] {
   if (/open\s*bar/i.test(name)) {
-    return ["Entrada no torneio", "Jantar completo", "Open Bar a noite toda", "1 rebuy incluso"];
+    return ["Jantar completo", "Open Bar a noite toda"];
   }
-  return ["Entrada no torneio", "Jantar completo", "Bebidas não alcoólicas", "1 rebuy incluso"];
+  return ["Jantar completo", "Bebidas não alcoólicas"];
 }
 
 export function TicketCards({
@@ -66,7 +66,7 @@ function LightCard({ t, active, onSelect }: { t: TicketType; active: boolean; on
       className={[
         "relative flex flex-col rounded-3xl border-2 p-6 text-left transition-all",
         active
-          ? "border-red-brand bg-cream shadow-[0_18px_44px_-18px_rgba(240,48,14,0.7)]"
+          ? "border-red-brand bg-cream shadow-[0_18px_44px_-18px_rgba(205,0,0,0.7)]"
           : "border-cream-3 bg-cream-2 hover:border-red-brand/60",
       ].join(" ")}
     >
@@ -96,7 +96,7 @@ function OpenBarCard({ t, active, onSelect }: { t: TicketType; active: boolean; 
       aria-pressed={active}
       className={[
         "relative isolate flex flex-col overflow-hidden rounded-3xl border-2 p-6 text-left transition-all",
-        active ? "border-red-brand shadow-[0_22px_50px_-16px_rgba(240,48,14,0.85)]" : "border-red-brand/45",
+        active ? "border-red-brand shadow-[0_22px_50px_-16px_rgba(205,0,0,0.85)]" : "border-red-brand/45",
       ].join(" ")}
       style={{ backgroundColor: "#150b06" }}
     >
@@ -106,7 +106,7 @@ function OpenBarCard({ t, active, onSelect }: { t: TicketType; active: boolean; 
         className="absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(125% 95% at 50% 128%, #ff5a1e 0%, #f0300e 22%, #8c1d07 46%, #18110b 76%)",
+            "radial-gradient(125% 95% at 50% 128%, #ff4a1e 0%, #cd0000 22%, #6e0000 46%, #18110b 76%)",
         }}
       />
       {/* glow animado subindo de baixo */}
@@ -115,7 +115,7 @@ function OpenBarCard({ t, active, onSelect }: { t: TicketType; active: boolean; 
         className="ob-glow absolute inset-x-0 bottom-[-25%] -z-10 h-3/4 blur-md"
         style={{
           background:
-            "radial-gradient(60% 100% at 50% 100%, rgba(255,140,60,0.85) 0%, rgba(240,48,14,0.28) 45%, transparent 72%)",
+            "radial-gradient(60% 100% at 50% 100%, rgba(255,110,50,0.85) 0%, rgba(205,0,0,0.32) 45%, transparent 72%)",
         }}
       />
 

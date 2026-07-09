@@ -55,6 +55,7 @@ export async function createAsaasPayment(
     description: string;
     externalReference: string;
     dueDate: string;
+    maxInstallments?: number;
   },
   fetchImpl: Fetch = fetch,
 ): Promise<{ id: string; invoiceUrl: string }> {
@@ -67,6 +68,9 @@ export async function createAsaasPayment(
       dueDate: input.dueDate,
       description: input.description,
       externalReference: input.externalReference,
+      ...(input.maxInstallments && input.maxInstallments > 1
+        ? { maxInstallmentCount: input.maxInstallments }
+        : {}),
     },
     fetchImpl,
   );

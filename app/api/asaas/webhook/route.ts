@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { rawServiceClient } from "@/lib/tournament/auth";
 import { processWebhookEvent } from "@/lib/tickets/webhook";
 import { sendTicketEmail } from "@/lib/email/ticket-email";
+import { trackEvent } from "@/lib/analytics/track";
 
 export async function POST(req: Request) {
   // Auth: o Asaas envia o token configurado no painel no header asaas-access-token.
@@ -41,6 +42,28 @@ export async function POST(req: Request) {
           status: "paid", paid_at: new Date().toISOString(), payment_method: method, qr_token: qrToken,
         }).eq("id", ticketId);
         if (error) throw new Error(`DB update failed: ${error.message}`);
+
+        // Fecha o funil: registra o "paid" ligado à sessão/origem da compra.
+        try {
+          const { data: t } = await db
+            .from("tickets")
+            .select("analytics_session_id,source,amount_cents,event_id,ticket_type_id")
+            .eq("id", ticketId)
+            .maybeSingle();
+          if (t) {
+            const { data: tt } = await db.from("ticket_types").select("name").eq("id", t.ticket_type_id).maybeSingle();
+            await trackEvent({
+              name: "paid",
+              sessionId: t.analytics_session_id,
+              ref: t.source,
+              plan: tt?.name ?? null,
+              eventId: t.event_id,
+              meta: { amountCents: t.amount_cents, method, ticketId },
+            });
+          }
+        } catch {
+          // rastreio é opcional
+        }
         return qrToken;
       },
       sendEmail: async (args) => {

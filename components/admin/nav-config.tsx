@@ -6,12 +6,14 @@ import {
   Star,
   Trash2,
   ScanLine,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 
 export type NavItem = { href: string; label: string; Icon: LucideIcon };
 
 export const PRIMARY_NAV: NavItem[] = [
+  { href: "/admin/dashboard", label: "Painel", Icon: BarChart3 },
   { href: "/admin/events", label: "Eventos", Icon: CalendarDays },
   { href: "/admin/profiles", label: "Perfis", Icon: Users },
   { href: "/admin/inscritos", label: "Inscritos", Icon: UserPlus },

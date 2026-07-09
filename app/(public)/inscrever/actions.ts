@@ -69,7 +69,7 @@ export async function verifyEmail(raw: string): Promise<EmailCheck> {
   if (DISPOSABLE_EMAIL_DOMAINS.has(domain)) {
     return {
       ok: false,
-      reason: "Use um e-mail pessoal — descartáveis não são aceitos.",
+      reason: "Use um e-mail pessoal: descartáveis não são aceitos.",
     };
   }
 

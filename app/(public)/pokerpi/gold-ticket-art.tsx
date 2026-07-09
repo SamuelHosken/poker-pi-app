@@ -14,7 +14,7 @@ export function GoldTicketArt() {
         style={{ background: "radial-gradient(ellipse 60% 55% at 50% 45%, rgba(216,176,108,0.4), rgba(23,18,15,0) 70%)" }}
       />
       <Image
-        src="/event/ticket-gold-cut.png"
+        src="/event/ticket-gold-cut.webp"
         alt="Ingresso Poker Pi em placa de ouro"
         width={1024}
         height={1536}

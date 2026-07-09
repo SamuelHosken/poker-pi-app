@@ -7,6 +7,9 @@ import { onlyDigits } from "./cpf";
 import { hasCapacity } from "./capacity";
 import { mapTicketTypeRow, type TicketType, OrderSchema, type OrderInput, type OrderResult } from "./types";
 import { createAsaasCustomer, createAsaasPayment } from "@/lib/payments/asaas";
+import { trackEvent } from "@/lib/analytics/track";
+
+export type OrderMeta = { sessionId?: string | null; source?: string | null };
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -50,7 +53,7 @@ export async function getActiveEventPublic(): Promise<{
   };
 }
 
-export async function createTicketOrder(input: OrderInput): Promise<OrderResult> {
+export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Promise<OrderResult> {
   const parsed = OrderSchema.safeParse(input);
   if (!parsed.success) {
     const first = parsed.error.issues[0];
@@ -108,6 +111,19 @@ export async function createTicketOrder(input: OrderInput): Promise<OrderResult>
     .single();
   if (insErr || !ticket) return { ok: false, error: "Não foi possível iniciar a compra." };
 
+  // Atribuição (sessão/origem) é best-effort e fica FORA do insert de propósito:
+  // se a migration de analytics ainda não rodou, a compra não pode quebrar.
+  if (meta?.sessionId || meta?.source) {
+    try {
+      await db
+        .from("tickets")
+        .update({ analytics_session_id: meta?.sessionId ?? null, source: meta?.source ?? null })
+        .eq("id", ticket.id);
+    } catch {
+      // colunas ainda não existem — ignora
+    }
+  }
+
   // 2) cria customer + cobrança no Asaas
   try {
     const customer = await createAsaasCustomer({
@@ -119,6 +135,7 @@ export async function createTicketOrder(input: OrderInput): Promise<OrderResult>
       description: `Ingresso ${tt.name} · Poker Pi`,
       externalReference: ticket.id,
       dueDate: todayIso(),
+      maxInstallments: 12,
     });
     await db.from("tickets").update({
       asaas_customer_id: customer.id,
@@ -126,9 +143,26 @@ export async function createTicketOrder(input: OrderInput): Promise<OrderResult>
       asaas_invoice_url: payment.invoiceUrl,
     }).eq("id", ticket.id);
 
+    await trackEvent({
+      name: "order_created",
+      sessionId: meta?.sessionId,
+      ref: meta?.source,
+      plan: tt.name,
+      eventId: tt.event_id,
+      meta: { amountCents: tt.price_cents, ticketId: ticket.id },
+    });
+
     return { ok: true, invoiceUrl: payment.invoiceUrl };
   } catch (err) {
     await db.from("tickets").update({ status: "canceled" }).eq("id", ticket.id);
+    await trackEvent({
+      name: "order_failed",
+      sessionId: meta?.sessionId,
+      ref: meta?.source,
+      plan: tt.name,
+      eventId: tt.event_id,
+      meta: { error: err instanceof Error ? err.message : "unknown" },
+    });
     return { ok: false, error: err instanceof Error ? err.message : "Falha no pagamento." };
   }
 }

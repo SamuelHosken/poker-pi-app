@@ -25,8 +25,11 @@
   --color-ink-warm: #17120f;
   --color-ink-warm-2: #221b16;
   --color-ink-warm-soft: #6a6058;
-  --color-red-brand: #f0300e;
-  --color-red-deep: #cf2608;
+  --color-red-brand: #cd0000;
+  --color-red-deep: #a80000;
+  /* Vermelho um tom mais vivo, usado SÓ nas seções escuras da LP /pokerpi.
+     As seções claras (creme), os cards claros, o e-mail e o OG seguem red-brand. */
+  --color-red-bright: #d40505;
 
   /* Tokens novos do design system */
   --color-gold-soft: #f0dcae;
@@ -242,3 +245,53 @@
 }
 .grain-text { animation: grainTextFlicker 0.8s steps(1) infinite; }
 @media (prefers-reduced-motion: reduce) { .grain-text { animation: none !important; } }
+
+/* Texto que "acende": pisca branco e assenta na cor real (FlickerText) */
+/* opacity:1 por padrão = se o JS não rodar, o texto continua visível (sem o
+   flicker, mas legível). O flicker é só enriquecimento via .flicker-in. */
+.flicker-pre { display: inline-block; opacity: 1; }
+@keyframes flickerIn {
+  0%   { opacity: 0;    color: #fff; text-shadow: 0 0 14px rgba(255,255,255,0.7); }
+  6%   { opacity: 1;    color: #fff; }
+  10%  { opacity: 0.12; color: #fff; }
+  16%  { opacity: 1;    color: #fff; }
+  22%  { opacity: 0.28; color: #fff; }
+  30%  { opacity: 1;    color: #fff; }
+  37%  { opacity: 0.5;  color: #fff; }
+  45%  { opacity: 1;    color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+  100% { opacity: 1;    color: inherit; text-shadow: none; }
+}
+.flicker-in {
+  display: inline-block;
+  animation: flickerIn 1.15s ease-out both;
+  will-change: opacity, color;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flicker-pre, .flicker-in { opacity: 1 !important; animation: none !important; }
+}
+
+/* Reveal de entrada ao rolar (fade + sobe), à prova de falha.
+   - Por PADRÃO o conteúdo é visível (sem regra de opacity aqui). Se o JS não
+     rodar, tudo aparece normal — nunca mais página em branco.
+   - O JS adiciona .js-reveal no <html> ANTES da pintura: aí sim o conteúdo
+     começa escondido e revela ao entrar na tela (.is-visible via IntersectionObserver).
+   - Failsafe: se o bundle não inicializar, um setTimeout remove .js-reveal e
+     tudo volta a aparecer. */
+.js-reveal .pp-reveal {
+  opacity: 0;
+  transform: translateY(26px);
+}
+.js-reveal .pp-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal .pp-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

@@ -16,65 +16,93 @@ export function buildTicketEmailHtml(p: {
   const qrImageUrl = p.ticketUrl.replace("/ingresso/", "/api/qr/");
   const logoUrl = `${origin}/event/email-logo.png`;
   const isOpenBar = /open\s*bar/i.test(p.ticketName);
-  const planLabel = isOpenBar ? "🥃 Open Bar" : p.ticketName;
+  const planLabel = (isOpenBar ? "Open Bar" : p.ticketName).toUpperCase();
+
+  // Paleta da LP: creme + vermelho-tomate + dark quente, fonte condensada.
+  const CREAM = "#f4ede1";
+  const RED = "#cd0000";
+  const INK = "#17120f";
+  const INK_2 = "#1f1813";
+  const BORDER = "#322820";
+  const MUTED = "#b6a392";
+  const DISPLAY = "'Big Shoulders Display','Arial Narrow',Arial,sans-serif";
+  const BODY = "Arial,Helvetica,sans-serif";
+
+  // Ícone de espada (glifo de texto, monocromático, à prova de qualquer cliente).
+  const spade = `<span style="color:${CREAM};">&#9824;</span>`;
+  // Open Bar ganha pílula com degradê (luz vermelha), padrão é vermelho liso.
+  const planPill = isOpenBar
+    ? `<span style="display:inline-block;background:${RED};background:linear-gradient(90deg,#ff4a1e 0%,${RED} 45%,#6e0000 100%);color:${CREAM};font-family:${DISPLAY};font-size:17px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;padding:11px 26px;border-radius:999px;">${spade}&nbsp; ${planLabel}</span>`
+    : `<span style="display:inline-block;background:${RED};color:${CREAM};font-family:${DISPLAY};font-size:17px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;padding:11px 26px;border-radius:999px;">${spade}&nbsp; ${planLabel}</span>`;
 
   return `<!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"></head>
-<body style="margin:0;padding:0;background:#0a0a0c;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0c;">
-    <tr><td align="center" style="padding:28px 16px 40px;">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#0d0e11;border:1px solid #26272c;border-radius:20px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="x-apple-disable-message-reformatting">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:${INK};">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Seu lugar na mesa está garantido. Apresente o QR Code na entrada.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${INK};">
+    <tr><td align="center" style="padding:24px 14px 44px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:${INK};border:1px solid ${BORDER};border-radius:24px;overflow:hidden;font-family:${BODY};">
 
-        <!-- Cabeçalho -->
-        <tr><td style="background:linear-gradient(180deg,#15110a 0%,#0d0e11 100%);padding:32px 28px 24px;text-align:center;border-bottom:1px solid #26272c;">
-          <img src="${logoUrl}" width="52" height="52" alt="Poker Pi" style="display:inline-block;border-radius:50%;">
-          <div style="margin-top:12px;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:#d9b876;font-weight:bold;">Poker&nbsp;Pi</div>
-          <div style="margin-top:14px;font-size:22px;color:#f2f3f5;font-weight:bold;">Ingresso confirmado ✦</div>
+        <!-- Faixa vermelha + marca -->
+        <tr><td style="background:${RED};padding:26px 28px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" align="center"><tr>
+            <td style="background:${INK};border-radius:50%;width:48px;height:48px;text-align:center;vertical-align:middle;">
+              <img src="${logoUrl}" width="32" height="32" alt="Poker Pi" style="display:inline-block;vertical-align:middle;border-radius:50%;">
+            </td>
+            <td style="padding-left:12px;font-family:${DISPLAY};font-size:26px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${CREAM};">Poker&nbsp;Pi</td>
+          </tr></table>
         </td></tr>
 
-        <!-- Saudação -->
-        <tr><td style="padding:26px 28px 6px;">
-          <p style="margin:0;font-size:16px;line-height:1.5;color:#f2f3f5;">Olá, <strong>${p.buyerName}</strong>, seu lugar na mesa está garantido. 🎉</p>
+        <!-- Título -->
+        <tr><td style="padding:34px 30px 6px;">
+          <div style="font-family:${DISPLAY};font-size:14px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:${RED};">Ingresso confirmado</div>
+          <div style="margin-top:8px;font-family:${DISPLAY};font-size:46px;line-height:0.95;font-weight:800;text-transform:uppercase;color:${CREAM};">Seu lugar<br>está garantido</div>
+          <p style="margin:18px 0 0;font-size:16px;line-height:1.5;color:${CREAM};">Olá, <strong style="color:${CREAM};">${p.buyerName}</strong>. Te esperamos na mesa. Guarde este e-mail: o QR abaixo é a sua entrada.</p>
         </td></tr>
 
-        <!-- QR -->
-        <tr><td align="center" style="padding:18px 28px 6px;">
-          <table role="presentation" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:18px;">
-            <tr><td style="padding:16px;">
-              <img src="${qrImageUrl}" width="220" height="220" alt="QR Code do ingresso" style="display:block;width:220px;height:220px;">
+        <!-- QR em cartão branco -->
+        <tr><td align="center" style="padding:26px 30px 8px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" style="background:${CREAM};border-radius:22px;">
+            <tr><td style="padding:20px;">
+              <img src="${qrImageUrl}" width="230" height="230" alt="QR Code do ingresso" style="display:block;width:230px;height:230px;">
             </td></tr>
           </table>
-          <p style="margin:12px 0 0;font-size:12px;color:#9aa0aa;">Apresente este QR Code na entrada</p>
+          <p style="margin:14px 0 0;font-family:${DISPLAY};font-size:14px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:${MUTED};">Apresente na entrada</p>
         </td></tr>
 
         <!-- Plano -->
-        <tr><td align="center" style="padding:14px 28px 4px;">
-          <span style="display:inline-block;background:#d9b876;color:#0a0a0c;font-size:14px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;padding:8px 20px;border-radius:999px;">${planLabel}</span>
-        </td></tr>
+        <tr><td align="center" style="padding:18px 30px 6px;">${planPill}</td></tr>
 
         <!-- Detalhes -->
-        <tr><td style="padding:18px 28px 6px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#131418;border:1px solid #26272c;border-radius:14px;">
-            <tr><td style="padding:14px 16px;border-bottom:1px solid #1f2024;">
-              <span style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#6c707a;">Quando</span><br>
-              <span style="font-size:15px;color:#f2f3f5;">${p.whenText}</span>
+        <tr><td style="padding:18px 30px 8px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${INK_2};border:1px solid ${BORDER};border-radius:16px;">
+            <tr><td style="padding:16px 18px;border-bottom:1px solid ${BORDER};">
+              <div style="font-family:${DISPLAY};font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;color:${RED};">Quando</div>
+              <div style="margin-top:3px;font-size:16px;color:${CREAM};">${p.whenText}</div>
             </td></tr>
-            <tr><td style="padding:14px 16px;">
-              <span style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#6c707a;">Onde</span><br>
-              <span style="font-size:15px;color:#f2f3f5;">${p.locationText}</span>
+            <tr><td style="padding:16px 18px;">
+              <div style="font-family:${DISPLAY};font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;color:${RED};">Onde</div>
+              <div style="margin-top:3px;font-size:16px;color:${CREAM};">${p.locationText}</div>
             </td></tr>
           </table>
         </td></tr>
 
         <!-- Botão -->
-        <tr><td align="center" style="padding:22px 28px 8px;">
-          <a href="${p.ticketUrl}" style="display:inline-block;background:#d9b876;color:#0a0a0c;text-decoration:none;font-weight:bold;font-size:15px;padding:15px 34px;border-radius:999px;">Abrir meu ingresso</a>
+        <tr><td align="center" style="padding:24px 30px 10px;">
+          <a href="${p.ticketUrl}" style="display:inline-block;background:${RED};color:${CREAM};text-decoration:none;font-family:${DISPLAY};font-weight:bold;font-size:18px;text-transform:uppercase;letter-spacing:1px;padding:16px 40px;border-radius:999px;">Abrir meu ingresso</a>
         </td></tr>
 
         <!-- Rodapé -->
-        <tr><td style="padding:20px 28px 28px;text-align:center;border-top:1px solid #26272c;margin-top:10px;">
-          <p style="margin:0;font-size:12px;line-height:1.6;color:#6c707a;">Guarde este e-mail. Em caso de dúvida, é só responder.<br>Poker Pi · ${p.locationText}</p>
+        <tr><td style="padding:22px 30px 30px;text-align:center;border-top:1px solid ${BORDER};">
+          <div style="font-family:${DISPLAY};font-size:15px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:${CREAM};">Poker Pi</div>
+          <p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:${MUTED};">Ingresso pessoal. Em caso de dúvida, é só responder este e-mail.<br>${p.locationText}</p>
         </td></tr>
 
       </table>
@@ -101,7 +129,7 @@ export async function sendTicketEmail(p: {
     from: FROM,
     replyTo: REPLY_TO,
     to: p.to,
-    subject: "🎟️ Seu ingresso · Poker Pi",
+    subject: "Seu ingresso · Poker Pi",
     html: buildTicketEmailHtml(p),
   });
 }
