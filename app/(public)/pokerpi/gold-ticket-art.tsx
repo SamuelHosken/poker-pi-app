@@ -16,8 +16,8 @@ export function GoldTicketArt() {
       <Image
         src="/event/ticket-gold-cut.webp"
         alt="Ingresso Poker Pi em placa de ouro"
-        width={1024}
-        height={1536}
+        width={1200}
+        height={1789}
         sizes="(max-width: 1024px) 80vw, 460px"
         className="w-full drop-shadow-[0_40px_70px_rgba(0,0,0,0.7)]"
       />
