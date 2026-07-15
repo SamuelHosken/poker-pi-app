@@ -19,8 +19,7 @@ const input = {
   ticketId: "tk_1",
   valueCents: 18500,
   itemName: "Ingresso Open Bar · Poker Pi",
-  customer: { name: "Ana", email: "ana@x.com", phone: "5561999990000", cpf: "12345678900" },
-  successUrl: "https://www.mesapigroup.com/ingresso/obrigado",
+  successUrl: "https://www.mesapigroup.com",
   maxInstallments: 12,
 };
 
@@ -31,21 +30,25 @@ describe("buildCheckoutBody", () => {
     expect(body.chargeTypes).toEqual(["DETACHED", "INSTALLMENT"]);
     expect(body.installment).toEqual({ maxInstallmentCount: 12 });
     expect(body.externalReference).toBe("tk_1");
-    expect(body.callback.successUrl).toBe(input.successUrl);
+  });
+
+  it("manda os três URLs do callback (validado no sandbox)", () => {
+    const body = buildCheckoutBody(input);
+    expect(body.callback).toEqual({
+      successUrl: input.successUrl,
+      cancelUrl: input.successUrl,
+      expiredUrl: input.successUrl,
+    });
+  });
+
+  it("NÃO manda customerData (senão o Asaas exige endereço completo)", () => {
+    const body = buildCheckoutBody(input) as Record<string, unknown>;
+    expect(body.customerData).toBeUndefined();
   });
 
   it("põe o valor em reais no item (centavos / 100)", () => {
     const body = buildCheckoutBody(input);
     expect(body.items).toEqual([{ name: input.itemName, quantity: 1, value: 185 }]);
-  });
-
-  it("passa os dados do cliente com cpfCnpj", () => {
-    const body = buildCheckoutBody(input);
-    expect(body.customerData).toMatchObject({
-      name: "Ana",
-      cpfCnpj: "12345678900",
-      email: "ana@x.com",
-    });
   });
 });
 

@@ -57,7 +57,6 @@ export type CheckoutInput = {
   ticketId: string; // vira externalReference (liga o pagamento ao pedido)
   valueCents: number;
   itemName: string;
-  customer: { name: string; email: string; phone: string; cpf: string };
   successUrl: string;
   maxInstallments: number;
 };
@@ -66,6 +65,11 @@ export type CheckoutInput = {
  * Corpo do POST /checkouts. Pura e testavel. billingTypes CREDIT_CARD + PIX e
  * chargeTypes DETACHED + INSTALLMENT => o comprador escolhe PIX/a vista OU
  * cartao parcelado ate maxInstallments.
+ *
+ * customerData e OMITIDO de proposito: se enviado, o Asaas exige endereco
+ * completo (CEP/rua/numero/bairro), que a LP nao coleta. Sem ele, o comprador
+ * preenche os dados na propria pagina segura do Asaas. callback exige os tres
+ * URLs (validado no sandbox).
  */
 export function buildCheckoutBody(input: CheckoutInput) {
   const value = input.valueCents / 100;
@@ -74,14 +78,12 @@ export function buildCheckoutBody(input: CheckoutInput) {
     chargeTypes: ["DETACHED", "INSTALLMENT"],
     minutesToExpire: 60,
     externalReference: input.ticketId,
-    callback: { successUrl: input.successUrl },
-    items: [{ name: input.itemName, quantity: 1, value }],
-    customerData: {
-      name: input.customer.name,
-      cpfCnpj: input.customer.cpf,
-      email: input.customer.email,
-      phone: input.customer.phone,
+    callback: {
+      successUrl: input.successUrl,
+      cancelUrl: input.successUrl,
+      expiredUrl: input.successUrl,
     },
+    items: [{ name: input.itemName, quantity: 1, value }],
     installment: { maxInstallmentCount: input.maxInstallments },
   };
 }
@@ -96,7 +98,7 @@ export async function createAsaasCheckout(
     buildCheckoutBody(input),
     fetchImpl,
   );
-  const url = data.link ?? `https://asaas.com/checkoutSession/show?id=${data.id}`;
+  const url = data.link ?? `https://www.asaas.com/checkoutSession/show/${data.id}`;
   return { id: data.id, url };
 }
 

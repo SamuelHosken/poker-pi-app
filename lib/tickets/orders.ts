@@ -127,7 +127,6 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
       ticketId: ticket.id,
       valueCents: tt.price_cents,
       itemName: `Ingresso ${tt.name} · Poker Pi`,
-      customer: { name: data.name, email: data.email, phone: data.phone, cpf: onlyDigits(data.cpf) },
       successUrl: siteUrl,
       maxInstallments: 12,
     });
