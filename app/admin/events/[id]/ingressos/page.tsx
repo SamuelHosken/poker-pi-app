@@ -1,4 +1,5 @@
 import { requireAdmin, rawServiceClient } from "@/lib/tournament/auth";
+import { ReconcileButton } from "./reconcile-button";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function IngressosAdminPage({
       <p className="mt-1 text-sm text-gray-soft">
         {paid.length} pagos · {tickets.filter((t) => t.checked_in_at).length} presentes
       </p>
+      <ReconcileButton />
       <div className="mt-5 overflow-hidden rounded-2xl border border-line">
         <table className="w-full text-sm">
           <thead className="bg-ink-2 text-gray-soft">

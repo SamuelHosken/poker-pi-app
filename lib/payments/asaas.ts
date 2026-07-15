@@ -31,6 +31,28 @@ async function asaasPost<T>(path: string, body: unknown, fetchImpl: Fetch): Prom
   return (await res.json()) as T;
 }
 
+async function asaasGet<T>(path: string, fetchImpl: Fetch): Promise<T> {
+  const { baseUrl, apiKey } = config();
+  const res = await fetchImpl(`${baseUrl}${path}`, { headers: { access_token: apiKey } });
+  if (!res.ok) {
+    const raw = await res.text();
+    throw new Error(`Asaas ${path} falhou (${res.status}): ${raw}`);
+  }
+  return (await res.json()) as T;
+}
+
+/** Status + valor atual de uma cobranca (pra reconciliar cobrancas pendentes). */
+export async function getAsaasPaymentStatus(
+  paymentId: string,
+  fetchImpl: Fetch = fetch,
+): Promise<{ status: string; value: number; billingType?: string }> {
+  const d = await asaasGet<{ status: string; value: number; billingType?: string }>(
+    `/payments/${paymentId}`,
+    fetchImpl,
+  );
+  return { status: d.status, value: d.value, billingType: d.billingType };
+}
+
 export async function createAsaasCustomer(
   input: { name: string; email: string; phone: string; cpf: string },
   fetchImpl: Fetch = fetch,
