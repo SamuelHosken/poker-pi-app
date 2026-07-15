@@ -53,6 +53,53 @@ export async function getAsaasPaymentStatus(
   return { status: d.status, value: d.value, billingType: d.billingType };
 }
 
+export type CheckoutInput = {
+  ticketId: string; // vira externalReference (liga o pagamento ao pedido)
+  valueCents: number;
+  itemName: string;
+  customer: { name: string; email: string; phone: string; cpf: string };
+  successUrl: string;
+  maxInstallments: number;
+};
+
+/**
+ * Corpo do POST /checkouts. Pura e testavel. billingTypes CREDIT_CARD + PIX e
+ * chargeTypes DETACHED + INSTALLMENT => o comprador escolhe PIX/a vista OU
+ * cartao parcelado ate maxInstallments.
+ */
+export function buildCheckoutBody(input: CheckoutInput) {
+  const value = input.valueCents / 100;
+  return {
+    billingTypes: ["CREDIT_CARD", "PIX"],
+    chargeTypes: ["DETACHED", "INSTALLMENT"],
+    minutesToExpire: 60,
+    externalReference: input.ticketId,
+    callback: { successUrl: input.successUrl },
+    items: [{ name: input.itemName, quantity: 1, value }],
+    customerData: {
+      name: input.customer.name,
+      cpfCnpj: input.customer.cpf,
+      email: input.customer.email,
+      phone: input.customer.phone,
+    },
+    installment: { maxInstallmentCount: input.maxInstallments },
+  };
+}
+
+/** Cria um Checkout no Asaas e devolve o id + a URL pra redirecionar o comprador. */
+export async function createAsaasCheckout(
+  input: CheckoutInput,
+  fetchImpl: Fetch = fetch,
+): Promise<{ id: string; url: string }> {
+  const data = await asaasPost<{ id: string; link?: string }>(
+    "/checkouts",
+    buildCheckoutBody(input),
+    fetchImpl,
+  );
+  const url = data.link ?? `https://asaas.com/checkoutSession/show?id=${data.id}`;
+  return { id: data.id, url };
+}
+
 export async function createAsaasCustomer(
   input: { name: string; email: string; phone: string; cpf: string },
   fetchImpl: Fetch = fetch,

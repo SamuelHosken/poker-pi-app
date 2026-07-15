@@ -6,14 +6,10 @@ import { checkRateLimit } from "@/lib/rate-limit/in-memory";
 import { onlyDigits } from "./cpf";
 import { hasCapacity } from "./capacity";
 import { mapTicketTypeRow, type TicketType, OrderSchema, type OrderInput, type OrderResult } from "./types";
-import { createAsaasCustomer, createAsaasPayment } from "@/lib/payments/asaas";
+import { createAsaasCheckout } from "@/lib/payments/asaas";
 import { trackEvent } from "@/lib/analytics/track";
 
 export type OrderMeta = { sessionId?: string | null; source?: string | null };
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export async function getActiveEventPublic(): Promise<{
   event: { id: string; name: string; slug: string; startsAt: string; locationText: string; capacity: number | null; salesOpen: boolean };
@@ -124,23 +120,20 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
     }
   }
 
-  // 2) cria customer + cobrança no Asaas
+  // 2) cria o Checkout do Asaas (comprador escolhe PIX/à vista OU cartão até 12x)
   try {
-    const customer = await createAsaasCustomer({
-      name: data.name, email: data.email, phone: data.phone, cpf: onlyDigits(data.cpf),
-    });
-    const payment = await createAsaasPayment({
-      customerId: customer.id,
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.mesapigroup.com";
+    const checkout = await createAsaasCheckout({
+      ticketId: ticket.id,
       valueCents: tt.price_cents,
-      description: `Ingresso ${tt.name} · Poker Pi`,
-      externalReference: ticket.id,
-      dueDate: todayIso(),
+      itemName: `Ingresso ${tt.name} · Poker Pi`,
+      customer: { name: data.name, email: data.email, phone: data.phone, cpf: onlyDigits(data.cpf) },
+      successUrl: siteUrl,
       maxInstallments: 12,
     });
     await db.from("tickets").update({
-      asaas_customer_id: customer.id,
-      asaas_payment_id: payment.id,
-      asaas_invoice_url: payment.invoiceUrl,
+      asaas_checkout_id: checkout.id,
+      asaas_invoice_url: checkout.url,
     }).eq("id", ticket.id);
 
     await trackEvent({
@@ -152,7 +145,7 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
       meta: { amountCents: tt.price_cents, ticketId: ticket.id },
     });
 
-    return { ok: true, invoiceUrl: payment.invoiceUrl };
+    return { ok: true, invoiceUrl: checkout.url };
   } catch (err) {
     await db.from("tickets").update({ status: "canceled" }).eq("id", ticket.id);
     await trackEvent({

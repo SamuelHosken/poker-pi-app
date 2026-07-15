@@ -12,23 +12,32 @@ type ServiceClient = ReturnType<typeof rawServiceClient>;
  * de pendentes, pra que os dois confirmem o ingresso do MESMO jeito.
  */
 export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDeps {
+  // Hidrata a linha do ticket com nome do plano + data/local do evento.
+  type TicketRow = {
+    id: string; status: string; buyer_email: string; buyer_name: string | null;
+    ticket_type_id: string; event_id: string;
+  };
+  async function hydrate(data: TicketRow) {
+    const { data: tt } = await db.from("ticket_types").select("name").eq("id", data.ticket_type_id).maybeSingle();
+    const { data: ev } = await db.from("events").select("starts_at,location_text").eq("id", data.event_id).maybeSingle();
+    const whenText = ev?.starts_at
+      ? new Date(ev.starts_at).toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short", timeZone: "America/Sao_Paulo" })
+      : "";
+    return {
+      id: data.id, status: data.status, buyer_email: data.buyer_email, buyer_name: data.buyer_name ?? undefined,
+      ticket_name: tt?.name, when_text: whenText, location_text: ev?.location_text,
+    };
+  }
+  const TICKET_COLS = "id,status,buyer_email,buyer_name,ticket_type_id,event_id";
+
   return {
     async findTicketByPaymentId(paymentId) {
-      const { data } = await db
-        .from("tickets")
-        .select("id,status,buyer_email,buyer_name,ticket_type_id,event_id")
-        .eq("asaas_payment_id", paymentId)
-        .maybeSingle();
-      if (!data) return null;
-      const { data: tt } = await db.from("ticket_types").select("name").eq("id", data.ticket_type_id).maybeSingle();
-      const { data: ev } = await db.from("events").select("starts_at,location_text").eq("id", data.event_id).maybeSingle();
-      const whenText = ev?.starts_at
-        ? new Date(ev.starts_at).toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short", timeZone: "America/Sao_Paulo" })
-        : "";
-      return {
-        id: data.id, status: data.status, buyer_email: data.buyer_email, buyer_name: data.buyer_name ?? undefined,
-        ticket_name: tt?.name, when_text: whenText, location_text: ev?.location_text,
-      };
+      const { data } = await db.from("tickets").select(TICKET_COLS).eq("asaas_payment_id", paymentId).maybeSingle();
+      return data ? hydrate(data as TicketRow) : null;
+    },
+    async findTicketByCheckoutId(checkoutId) {
+      const { data } = await db.from("tickets").select(TICKET_COLS).eq("asaas_checkout_id", checkoutId).maybeSingle();
+      return data ? hydrate(data as TicketRow) : null;
     },
     async markPaid(ticketId, method) {
       const qrToken = nanoid(24);
