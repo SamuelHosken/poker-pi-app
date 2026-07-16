@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isValidCpf } from "./cpf";
+import { MAX_INSTALLMENTS } from "./pricing";
 
 export const OrderSchema = z.object({
   ticketTypeId: z.string().uuid(),
@@ -7,6 +8,10 @@ export const OrderSchema = z.object({
   email: z.string().trim().toLowerCase().email("E-mail inválido.").max(254),
   phone: z.string().trim().regex(/^\+[1-9]\d{6,17}$/, "Telefone inválido."),
   cpf: z.string().trim().refine(isValidCpf, "CPF inválido."),
+  // Forma de pagamento escolhida na LP. PIX = valor cheio; cartão = com juros.
+  method: z.enum(["PIX", "CREDIT_CARD"]),
+  // Parcelas (só relevante no cartão). PIX ignora e usa 1.
+  installments: z.number().int().min(1).max(MAX_INSTALLMENTS).default(1),
 });
 
 export type OrderInput = z.input<typeof OrderSchema>;
@@ -35,7 +40,9 @@ export type Ticket = {
   buyerEmail: string;
   buyerPhone: string;
   buyerCpf: string;
-  amountCents: number;
+  amountCents: number; // preço base do ingresso (o que você recebe líquido)
+  chargedAmountCents: number | null; // o que o comprador paga (com juros no cartão)
+  installments: number | null; // parcelas escolhidas (1 = à vista)
   status: TicketStatus;
   asaasCustomerId: string | null;
   asaasPaymentId: string | null;
@@ -59,6 +66,8 @@ export function mapTicketRow(r: Record<string, unknown>): Ticket {
     buyerPhone: r.buyer_phone as string,
     buyerCpf: r.buyer_cpf as string,
     amountCents: r.amount_cents as number,
+    chargedAmountCents: (r.charged_amount_cents as number) ?? null,
+    installments: (r.installments as number) ?? null,
     status: r.status as TicketStatus,
     asaasCustomerId: (r.asaas_customer_id as string) ?? null,
     asaasPaymentId: (r.asaas_payment_id as string) ?? null,

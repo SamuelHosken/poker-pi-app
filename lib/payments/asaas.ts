@@ -119,30 +119,40 @@ export async function createAsaasCustomer(
   return { id: data.id };
 }
 
+export type PaymentInput = {
+  customerId: string;
+  valueCents: number; // valor TOTAL a cobrar (já com gross-up, no caso do cartão)
+  description: string;
+  externalReference: string;
+  dueDate: string;
+  billingType: "PIX" | "CREDIT_CARD" | "UNDEFINED";
+  installments?: number; // > 1 => cobrança parcelada (installmentCount + totalValue)
+};
+
+/** Corpo do POST /payments. Puro e testável. */
+export function buildPaymentBody(input: PaymentInput) {
+  const value = input.valueCents / 100;
+  const base = {
+    customer: input.customerId,
+    billingType: input.billingType,
+    dueDate: input.dueDate,
+    description: input.description,
+    externalReference: input.externalReference,
+  };
+  // Parcelado: installmentCount + totalValue (campos reais do Asaas).
+  // À vista / PIX: só value.
+  return input.installments && input.installments > 1
+    ? { ...base, installmentCount: input.installments, totalValue: value }
+    : { ...base, value };
+}
+
 export async function createAsaasPayment(
-  input: {
-    customerId: string;
-    valueCents: number;
-    description: string;
-    externalReference: string;
-    dueDate: string;
-    maxInstallments?: number;
-  },
+  input: PaymentInput,
   fetchImpl: Fetch = fetch,
 ): Promise<{ id: string; invoiceUrl: string }> {
   const data = await asaasPost<{ id: string; invoiceUrl: string }>(
     "/payments",
-    {
-      customer: input.customerId,
-      billingType: "UNDEFINED",
-      value: input.valueCents / 100,
-      dueDate: input.dueDate,
-      description: input.description,
-      externalReference: input.externalReference,
-      ...(input.maxInstallments && input.maxInstallments > 1
-        ? { maxInstallmentCount: input.maxInstallments }
-        : {}),
-    },
+    buildPaymentBody(input),
     fetchImpl,
   );
   return { id: data.id, invoiceUrl: data.invoiceUrl };

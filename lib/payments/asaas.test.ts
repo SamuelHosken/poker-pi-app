@@ -33,23 +33,36 @@ describe("createAsaasCustomer", () => {
 });
 
 describe("createAsaasPayment", () => {
-  it("POSTa em /payments com value em reais e billingType UNDEFINED", async () => {
+  it("PIX à vista: value em reais, billingType PIX, sem installmentCount", async () => {
     const f = mockJson({ id: "pay_9", invoiceUrl: "https://asaas/i/pay_9" });
     const res = await createAsaasPayment(
-      { customerId: "cus_123", valueCents: 15000, description: "Ingresso", externalReference: "t1", dueDate: "2026-07-11" },
+      { customerId: "cus_123", valueCents: 18500, description: "Ingresso", externalReference: "t1", dueDate: "2026-07-11", billingType: "PIX" },
       f,
     );
     expect(res).toEqual({ id: "pay_9", invoiceUrl: "https://asaas/i/pay_9" });
     const body = JSON.parse(f.mock.calls[0]![1]!.body as string);
-    expect(body.value).toBe(150);          // cents -> reais
-    expect(body.billingType).toBe("UNDEFINED");
-    expect(body.externalReference).toBe("t1");
+    expect(body.value).toBe(185);
+    expect(body.billingType).toBe("PIX");
+    expect(body.installmentCount).toBeUndefined();
+  });
+
+  it("Cartão parcelado: installmentCount + totalValue, sem value", async () => {
+    const f = mockJson({ id: "pay_10", invoiceUrl: "https://asaas/i/pay_10" });
+    await createAsaasPayment(
+      { customerId: "c", valueCents: 19220, description: "Ingresso", externalReference: "t2", dueDate: "2026-07-11", billingType: "CREDIT_CARD", installments: 6 },
+      f,
+    );
+    const body = JSON.parse(f.mock.calls[0]![1]!.body as string);
+    expect(body.installmentCount).toBe(6);
+    expect(body.totalValue).toBe(192.2);
+    expect(body.value).toBeUndefined();
+    expect(body.billingType).toBe("CREDIT_CARD");
   });
 
   it("lança quando o Asaas responde erro", async () => {
     const f = mockJson({ errors: [{ description: "boom" }] }, false);
     await expect(
-      createAsaasPayment({ customerId: "c", valueCents: 100, description: "x", externalReference: "t", dueDate: "2026-07-11" }, f),
+      createAsaasPayment({ customerId: "c", valueCents: 100, description: "x", externalReference: "t", dueDate: "2026-07-11", billingType: "PIX" }, f),
     ).rejects.toThrow(/boom/);
   });
 });
