@@ -11,6 +11,8 @@ function deps(over: Partial<WebhookDeps> = {}): WebhookDeps {
     findTicketByPaymentId: vi.fn().mockResolvedValue({ ...ticketFixture }),
     findTicketByCheckoutId: vi.fn().mockResolvedValue({ ...ticketFixture }),
     markPaid: vi.fn().mockResolvedValue("qr_abc"),
+    markRefunded: vi.fn().mockResolvedValue(undefined),
+    verifyPaymentPaid: vi.fn().mockResolvedValue(true),
     sendEmail: vi.fn().mockResolvedValue(undefined),
     siteUrl: "https://mesapigroup.com",
     ...over,
@@ -61,6 +63,21 @@ describe("processWebhookEvent", () => {
     const d = deps({ findTicketByCheckoutId: vi.fn().mockResolvedValue(null) });
     const r = await processWebhookEvent({ event: "CHECKOUT_PAID", checkout: { id: "x" } }, d);
     expect(r.handled).toBe(false);
+    expect(d.markPaid).not.toHaveBeenCalled();
+  });
+
+  it("anti-forjar: se o Asaas NÃO confirma o pagamento, não marca pago", async () => {
+    const d = deps({ verifyPaymentPaid: vi.fn().mockResolvedValue(false) });
+    const r = await processWebhookEvent({ event: "PAYMENT_RECEIVED", payment: { id: "pay_1" } }, d);
+    expect(r.handled).toBe(false);
+    expect(d.markPaid).not.toHaveBeenCalled();
+  });
+
+  it("estorno: PAYMENT_REFUNDED libera a vaga (markRefunded)", async () => {
+    const d = deps();
+    const r = await processWebhookEvent({ event: "PAYMENT_REFUNDED", payment: { id: "pay_1" } }, d);
+    expect(r.handled).toBe(true);
+    expect(d.markRefunded).toHaveBeenCalledWith("t1");
     expect(d.markPaid).not.toHaveBeenCalled();
   });
 });

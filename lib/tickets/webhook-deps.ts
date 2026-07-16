@@ -2,7 +2,10 @@ import { nanoid } from "nanoid";
 import type { WebhookDeps } from "./webhook";
 import type { rawServiceClient } from "@/lib/tournament/auth";
 import { sendTicketEmail } from "@/lib/email/ticket-email";
+import { getAsaasPaymentStatus } from "@/lib/payments/asaas";
 import { trackEvent } from "@/lib/analytics/track";
+
+const ASAAS_PAID = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
 
 type ServiceClient = ReturnType<typeof rawServiceClient>;
 
@@ -38,6 +41,19 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
     async findTicketByCheckoutId(checkoutId) {
       const { data } = await db.from("tickets").select(TICKET_COLS).eq("asaas_checkout_id", checkoutId).maybeSingle();
       return data ? hydrate(data as TicketRow) : null;
+    },
+    async verifyPaymentPaid(paymentId) {
+      try {
+        const { status } = await getAsaasPaymentStatus(paymentId);
+        return ASAAS_PAID.has(status);
+      } catch {
+        // Se nao deu pra falar com o Asaas, NAO confirma (fail-safe: melhor
+        // segurar do que marcar pago sem certeza; a reconciliacao pega depois).
+        return false;
+      }
+    },
+    async markRefunded(ticketId) {
+      await db.from("tickets").update({ status: "refunded" }).eq("id", ticketId);
     },
     async markPaid(ticketId, method) {
       const qrToken = nanoid(24);

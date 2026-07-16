@@ -12,6 +12,9 @@ export type WebhookDeps = {
   findTicketByPaymentId(paymentId: string): Promise<Ticket | null>;
   findTicketByCheckoutId(checkoutId: string): Promise<Ticket | null>;
   markPaid(ticketId: string, method: string | null): Promise<string>; // retorna qrToken
+  markRefunded(ticketId: string): Promise<void>; // estorno/chargeback: libera a vaga
+  /** Re-verifica no Asaas se o pagamento esta REALMENTE pago (anti-forjar). */
+  verifyPaymentPaid(paymentId: string): Promise<boolean>;
   sendEmail(args: {
     to: string; buyerName: string; ticketName: string;
     whenText: string; locationText: string; ticketUrl: string;
@@ -20,6 +23,8 @@ export type WebhookDeps = {
 };
 
 const PAID_EVENTS = new Set(["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]);
+// Estorno / chargeback / cobranca removida -> libera a vaga.
+const REFUND_EVENTS = new Set(["PAYMENT_REFUNDED", "PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_DELETED"]);
 
 /** Marca o ticket pago e manda o e-mail com o QR. Idempotente (ticket já pago sai cedo). */
 async function confirmTicket(
@@ -64,12 +69,26 @@ export async function processWebhookEvent(
     return confirmTicket(ticket, p.payment?.billingType ?? "CREDIT_CARD", deps);
   }
 
-  // Fluxo antigo (/payments) e reconciliação: casa pelo payment id.
+  // Fluxo /payments (PIX/cartao a vista) e reconciliação: casa pelo payment id.
   if (PAID_EVENTS.has(p.event)) {
     const paymentId = p.payment?.id;
     if (!paymentId) return { handled: false, reason: "sem payment id" };
+    // Anti-forjar: so confirma se o Asaas diz que ESTA pago de verdade. Assim,
+    // mesmo se o token do webhook vazar, ninguem marca pago sem ter pago.
+    const reallyPaid = await deps.verifyPaymentPaid(paymentId);
+    if (!reallyPaid) return { handled: false, reason: "nao confirmado no Asaas" };
     const ticket = await deps.findTicketByPaymentId(paymentId);
     return confirmTicket(ticket, p.payment?.billingType ?? null, deps);
+  }
+
+  // Estorno / chargeback / cobranca removida -> libera a vaga.
+  if (REFUND_EVENTS.has(p.event)) {
+    const paymentId = p.payment?.id;
+    if (!paymentId) return { handled: false, reason: "sem payment id" };
+    const ticket = await deps.findTicketByPaymentId(paymentId);
+    if (!ticket) return { handled: false, reason: "ticket não encontrado" };
+    await deps.markRefunded(ticket.id);
+    return { handled: true, reason: "estornado" };
   }
 
   return { handled: false, reason: "evento ignorado" };

@@ -9,6 +9,7 @@ describe("OrderSchema", () => {
       email: "ana@gmail.com",
       phone: "+5561999998888",
       cpf: "529.982.247-25",
+      method: "PIX",
     });
     expect(r.success).toBe(true);
   });

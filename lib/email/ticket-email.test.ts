@@ -11,7 +11,7 @@ describe("buildTicketEmailHtml", () => {
       ticketUrl: "https://mesapigroup.com/ingresso/abc",
     });
     expect(html).toContain("Ana");
-    expect(html).toContain("Open Bar");
+    expect(html).toContain("OPEN BAR");
     expect(html).toContain("11/07/2026");
     expect(html).toContain("Solar da Serra");
     expect(html).toContain("https://mesapigroup.com/ingresso/abc");
