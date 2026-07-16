@@ -41,6 +41,24 @@ async function asaasGet<T>(path: string, fetchImpl: Fetch): Promise<T> {
   return (await res.json()) as T;
 }
 
+async function asaasDelete<T>(path: string, fetchImpl: Fetch): Promise<T> {
+  const { baseUrl, apiKey } = config();
+  const res = await fetchImpl(`${baseUrl}${path}`, { method: "DELETE", headers: { access_token: apiKey } });
+  if (!res.ok) {
+    const raw = await res.text();
+    throw new Error(`Asaas ${path} falhou (${res.status}): ${raw}`);
+  }
+  return (await res.json()) as T;
+}
+
+/** Cancela (remove) uma cobranca PENDENTE no Asaas. So funciona se ainda nao paga. */
+export async function cancelAsaasPayment(
+  paymentId: string,
+  fetchImpl: Fetch = fetch,
+): Promise<{ deleted: boolean }> {
+  return asaasDelete<{ deleted: boolean }>(`/payments/${paymentId}`, fetchImpl);
+}
+
 /** Status + valor atual de uma cobranca (pra reconciliar cobrancas pendentes). */
 export async function getAsaasPaymentStatus(
   paymentId: string,

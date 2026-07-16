@@ -6,7 +6,12 @@ import { checkRateLimit } from "@/lib/rate-limit/in-memory";
 import { onlyDigits } from "./cpf";
 import { hasCapacity } from "./capacity";
 import { mapTicketTypeRow, type TicketType, OrderSchema, type OrderInput, type OrderResult } from "./types";
-import { createAsaasCustomer, createAsaasPayment } from "@/lib/payments/asaas";
+import {
+  createAsaasCustomer,
+  createAsaasPayment,
+  cancelAsaasPayment,
+  getAsaasPaymentStatus,
+} from "@/lib/payments/asaas";
 import { grossUpCents } from "./pricing";
 import { trackEvent } from "@/lib/analytics/track";
 
@@ -81,6 +86,38 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
     .eq("id", tt.event_id)
     .maybeSingle();
   if (!ev || !ev.sales_open) return { ok: false, error: "As vendas estão fechadas." };
+
+  // Dedup por CPF: no maximo 1 cobranca pendente por CPF. Se ja pagou, bloqueia.
+  // Se tem pendentes antigas (a pessoa clicou "comprar" varias vezes), cancela a
+  // cobranca no Asaas e marca canceled ANTES de criar a nova - assim ela nunca
+  // paga duas cobrancas. Antes de cancelar, re-verifica no Asaas: se a antiga ja
+  // foi paga (webhook nao processou ainda), NAO cancela e bloqueia.
+  const cpf = onlyDigits(data.cpf);
+  const { data: sameCpf } = await db
+    .from("tickets")
+    .select("id, status, asaas_payment_id")
+    .eq("event_id", tt.event_id)
+    .eq("buyer_cpf", cpf)
+    .in("status", ["paid", "pending"]);
+  const cpfRows = (sameCpf ?? []) as { id: string; status: string; asaas_payment_id: string | null }[];
+  if (cpfRows.some((t) => t.status === "paid")) {
+    return { ok: false, error: "Você já tem um ingresso com esse CPF. Confira seu e-mail." };
+  }
+  for (const old of cpfRows.filter((t) => t.status === "pending")) {
+    if (old.asaas_payment_id) {
+      let realStatus: string | null = null;
+      try {
+        realStatus = (await getAsaasPaymentStatus(old.asaas_payment_id)).status;
+      } catch {
+        /* se nao deu pra checar, segue e cancela (era pendente no nosso banco) */
+      }
+      if (realStatus && ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"].includes(realStatus)) {
+        return { ok: false, error: "Você já pagou um ingresso com esse CPF. Confira seu e-mail." };
+      }
+      await cancelAsaasPayment(old.asaas_payment_id).catch(() => undefined);
+    }
+    await db.from("tickets").update({ status: "canceled" }).eq("id", old.id);
+  }
 
   const { count } = await db
     .from("tickets")
