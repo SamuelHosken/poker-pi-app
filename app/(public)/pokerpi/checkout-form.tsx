@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { createTicketOrder } from "@/lib/tickets/orders";
 import type { TicketType, OrderInput } from "@/lib/tickets/types";
 import { isValidCpf } from "@/lib/tickets/cpf";
-import { installmentOptions, type PaymentMethod } from "@/lib/tickets/pricing";
+import { installmentOptions, MAX_INSTALLMENTS, type PaymentMethod } from "@/lib/tickets/pricing";
 import { getAttribution, getSessionId, trackOnce } from "@/lib/analytics/client";
 import { PhoneInputCream } from "./phone-input-cream";
 import { TicketCards } from "./ticket-cards";
@@ -157,7 +157,7 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
               active={method === "CREDIT_CARD"}
               onClick={() => pickMethod("CREDIT_CARD")}
               title="Cartão"
-              sub="em até 6x"
+              sub={`em até ${MAX_INSTALLMENTS}x`}
             />
           </div>
 

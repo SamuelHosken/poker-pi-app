@@ -9,16 +9,29 @@
 
 export type PaymentMethod = "PIX" | "CREDIT_CARD";
 
-export const MAX_INSTALLMENTS = 6;
+export const MAX_INSTALLMENTS = 3;
 
 /** Taxa fixa por transação no cartão (R$ 0,49). */
 const CARD_FEE_FIXED_CENTS = 49;
 
-/** Faixas de taxa percentual por número de parcelas (limite superior inclusivo). */
+/**
+ * Juros de financiamento ao mês, cobrado do comprador por cima da taxa do
+ * Asaas. Cobre o custo da antecipação (~1,7% a.m. nas parceladas) com folga,
+ * pra você antecipar e receber tudo na hora sem tirar do bolso. Cresce com o
+ * número de parcelas. Editável aqui.
+ */
+const FINANCING_MONTHLY = 0.02;
+
+/** Faixas de taxa percentual do Asaas por número de parcelas (limite superior inclusivo). */
 const CARD_FEE_TIERS: { upTo: number; percent: number }[] = [
   { upTo: 1, percent: 0.0299 }, // à vista
   { upTo: 6, percent: 0.0349 }, // 2 a 6 parcelas
 ];
+
+/** Base "financiada": aplica o juro de financiamento que cresce com o prazo. */
+function financedCents(baseCents: number, installments: number): number {
+  return Math.round(baseCents * Math.pow(1 + FINANCING_MONTHLY, installments - 1));
+}
 
 /** Taxa percentual do Asaas para um número de parcelas (1..MAX). */
 export function cardFeePercent(installments: number): number {
@@ -36,7 +49,8 @@ export function cardFeePercent(installments: number): number {
  */
 export function grossUpCents(baseCents: number, installments: number): number {
   const p = cardFeePercent(installments);
-  return Math.ceil((baseCents + CARD_FEE_FIXED_CENTS) / (1 - p));
+  const financed = financedCents(baseCents, installments);
+  return Math.ceil((financed + CARD_FEE_FIXED_CENTS) / (1 - p));
 }
 
 export type InstallmentOption = {
