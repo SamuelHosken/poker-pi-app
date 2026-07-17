@@ -12,7 +12,7 @@ import {
   cancelAsaasPayment,
   getAsaasPaymentStatus,
 } from "@/lib/payments/asaas";
-import { grossUpCents } from "./pricing";
+import { cardTotalCents } from "./pricing";
 import { trackEvent } from "@/lib/analytics/track";
 
 export type OrderMeta = { sessionId?: string | null; source?: string | null };
@@ -128,12 +128,13 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
     return { ok: false, error: "Ingressos esgotados." };
   }
 
-  // Pricing: PIX = valor cheio (você absorve a taxa fixa); cartão = com o juros
-  // do Asaas repassado (gross-up), pra você receber o preço base líquido.
+  // Pricing: PIX = valor cheio (você absorve a taxa fixa); cartão = juros do
+  // Asaas repassado (gross-up) já com a absorção fixa aplicada, via a MESMA
+  // função que a LP usa pra exibir (cardTotalCents) — display e cobrança batem.
   const method = data.method;
   const installments = method === "CREDIT_CARD" ? data.installments : 1;
   const baseCents = tt.price_cents;
-  const chargedCents = method === "CREDIT_CARD" ? grossUpCents(baseCents, installments) : baseCents;
+  const chargedCents = method === "CREDIT_CARD" ? cardTotalCents(baseCents, installments) : baseCents;
 
   // 1) cria o ticket pendente (pra ter id como externalReference)
   const { data: ticket, error: insErr } = await db

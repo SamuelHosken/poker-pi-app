@@ -9,7 +9,14 @@
 
 export type PaymentMethod = "PIX" | "CREDIT_CARD";
 
-export const MAX_INSTALLMENTS = 3;
+export const MAX_INSTALLMENTS = 6;
+
+/**
+ * Você absorve este valor no cartão pra suavizar as parcelas: no cartão você
+ * recebe líquido (preço − isto). O PIX NÃO é afetado (continua no valor cheio).
+ * Editável aqui.
+ */
+export const CARD_ABSORB_CENTS = 500;
 
 /** Taxa fixa por transação no cartão (R$ 0,49). */
 const CARD_FEE_FIXED_CENTS = 49;
@@ -53,6 +60,21 @@ export function grossUpCents(baseCents: number, installments: number): number {
   return Math.ceil((financed + CARD_FEE_FIXED_CENTS) / (1 - p));
 }
 
+/** Base líquida a receber no cartão: preço menos o que você absorve (nunca < 0). */
+export function cardNetCents(priceCents: number): number {
+  return Math.max(0, priceCents - CARD_ABSORB_CENTS);
+}
+
+/**
+ * Total (centavos) que o comprador paga no cartão em `installments` parcelas,
+ * já com a absorção aplicada. Fonte ÚNICA usada tanto no display da LP quanto
+ * na cobrança do Asaas — NUNCA calcular o valor do cartão por outro caminho,
+ * senão o que aparece diverge do que é cobrado.
+ */
+export function cardTotalCents(priceCents: number, installments: number): number {
+  return grossUpCents(cardNetCents(priceCents), installments);
+}
+
 export type InstallmentOption = {
   installments: number;
   totalCents: number; // total que o comprador paga
@@ -60,10 +82,10 @@ export type InstallmentOption = {
 };
 
 /** Opções de parcelamento no cartão (1..MAX) com total e valor por parcela. */
-export function installmentOptions(baseCents: number): InstallmentOption[] {
+export function installmentOptions(priceCents: number): InstallmentOption[] {
   const opts: InstallmentOption[] = [];
   for (let n = 1; n <= MAX_INSTALLMENTS; n++) {
-    const totalCents = grossUpCents(baseCents, n);
+    const totalCents = cardTotalCents(priceCents, n);
     opts.push({
       installments: n,
       totalCents,

@@ -1,9 +1,21 @@
 "use client";
 import { Check } from "lucide-react";
 import type { TicketType } from "@/lib/tickets/types";
+import { installmentOptions, MAX_INSTALLMENTS } from "@/lib/tickets/pricing";
 
 function price(cents: number): string {
   return `${(cents / 100).toFixed(2).replace(".", ",")}`;
+}
+
+/** "ou 6x de R$ 34,41 no cartão" — mostra o menor valor por mês (parcela máxima). */
+function InstallmentLine({ priceCents, tone }: { priceCents: number; tone: "dark" | "light" }) {
+  const max = installmentOptions(priceCents).find((o) => o.installments === MAX_INSTALLMENTS);
+  if (!max) return null;
+  return (
+    <span className={`mt-1.5 text-[13px] font-medium ${tone === "dark" ? "text-cream/75" : "text-ink-warm-soft"}`}>
+      ou {MAX_INSTALLMENTS}x de R$ {price(max.perInstallmentCents)} no cartão
+    </span>
+  );
 }
 
 function features(name: string): string[] {
@@ -75,6 +87,7 @@ function LightCard({ t, active, onSelect }: { t: TicketType; active: boolean; on
         <span className="font-condensed text-2xl font-bold text-ink-warm">R$</span>
         <span className="font-condensed text-6xl font-extrabold leading-none text-ink-warm">{price(t.priceCents)}</span>
       </div>
+      <InstallmentLine priceCents={t.priceCents} tone="light" />
       <FeatureList items={features(t.name)} tone="light" />
       <span
         className={[
@@ -128,6 +141,7 @@ function OpenBarCard({ t, active, onSelect }: { t: TicketType; active: boolean; 
         <span className="font-condensed text-2xl font-bold text-cream">R$</span>
         <span className="font-condensed text-6xl font-extrabold leading-none text-cream">{price(t.priceCents)}</span>
       </div>
+      <InstallmentLine priceCents={t.priceCents} tone="dark" />
       <FeatureList items={features(t.name)} tone="dark" />
       <span
         className={[

@@ -1,13 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { cardFeePercent, grossUpCents, installmentOptions, MAX_INSTALLMENTS } from "./pricing";
+import {
+  cardFeePercent,
+  grossUpCents,
+  installmentOptions,
+  cardNetCents,
+  cardTotalCents,
+  CARD_ABSORB_CENTS,
+  MAX_INSTALLMENTS,
+} from "./pricing";
 
 describe("cardFeePercent", () => {
   it("1x usa a taxa à vista (2,99%)", () => {
     expect(cardFeePercent(1)).toBeCloseTo(0.0299);
   });
-  it("2 e 3x usam a taxa da faixa (3,49%)", () => {
+  it("2 a 6x usam a taxa da faixa (3,49%)", () => {
     expect(cardFeePercent(2)).toBeCloseTo(0.0349);
     expect(cardFeePercent(3)).toBeCloseTo(0.0349);
+    expect(cardFeePercent(6)).toBeCloseTo(0.0349);
   });
   it("rejeita parcela fora de 1..MAX", () => {
     expect(() => cardFeePercent(0)).toThrow();
@@ -46,14 +55,26 @@ describe("grossUpCents", () => {
   });
 });
 
+describe("cardNetCents / cardTotalCents (absorção fixa no cartão)", () => {
+  it("no cartão você recebe líquido = preço − absorção", () => {
+    expect(cardNetCents(18500)).toBe(18500 - CARD_ABSORB_CENTS); // 18000
+    expect(cardNetCents(100)).toBe(0); // nunca negativo
+  });
+  it("cardTotalCents é o gross-up sobre a base líquida (mesma fonte do display)", () => {
+    for (let n = 1; n <= MAX_INSTALLMENTS; n++) {
+      expect(cardTotalCents(18500, n)).toBe(grossUpCents(18000, n));
+    }
+  });
+});
+
 describe("installmentOptions", () => {
-  it("gera 1..MAX (=3) com total e valor por parcela", () => {
+  it("gera 1..MAX (=6) já com a absorção — Open Bar R$185 (líquido R$180 no cartão)", () => {
     const opts = installmentOptions(18500);
     expect(opts).toHaveLength(MAX_INSTALLMENTS);
-    expect(opts[0]).toMatchObject({ installments: 1, totalCents: 19121, perInstallmentCents: 19121 });
-    const two = opts.find((o) => o.installments === 2)!;
-    expect(two).toMatchObject({ totalCents: 19604, perInstallmentCents: 9802 }); // 2x de R$ 98,02
+    expect(opts[0]).toMatchObject({ installments: 1, totalCents: 18606, perInstallmentCents: 18606 });
     const three = opts.find((o) => o.installments === 3)!;
-    expect(three).toMatchObject({ totalCents: 19994, perInstallmentCents: 6665 }); // 3x de R$ 66,65
+    expect(three).toMatchObject({ totalCents: 19455, perInstallmentCents: 6485 }); // 3x de R$ 64,85
+    const six = opts.find((o) => o.installments === 6)!;
+    expect(six).toMatchObject({ totalCents: 20643, perInstallmentCents: 3441 }); // 6x de R$ 34,41
   });
 });
