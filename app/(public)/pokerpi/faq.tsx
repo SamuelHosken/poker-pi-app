@@ -6,8 +6,8 @@ import { TrackedLink } from "./tracked-link";
 const WHATSAPP_GROUP = "https://chat.whatsapp.com/KJmiMjtr2a26tgr8Tz0Zn9?mode=gi_t";
 
 const FAQS = [
-  { q: "Tem rebuy?", a: "Tem sim, quando você quiser. Cada jogador tem direito a até 2 rebuys, e o rebuy custa o dobro do valor de entrada do torneio." },
-  { q: "O que está incluso?", a: "Jantar e bebidas a noite toda. No plano Open Bar, o bar fica liberado do início ao fim." },
+  { q: "Tem rebuy?", a: "Tem. O buy-in de entrada no torneio é R$ 25, e cada jogador pode fazer 1 re-buy de R$ 45, se quiser. O re-buy é opcional." },
+  { q: "O que está incluso no ingresso?", a: "O ingresso cobre o jantar e as bebidas a noite toda (no plano Open Bar o bar fica liberado do início ao fim). A entrada do torneio (buy-in de R$ 25) é paga à parte, no dia." },
   { q: "Como funciona o check-in?", a: "Você recebe o ingresso com QR Code por e-mail na hora do pagamento. É só apresentar na entrada." },
   { q: "Posso transferir meu ingresso?", a: "Pode. Fale com a organização no grupo do Poker Pi que a gente troca o nome do ingresso." },
 ];

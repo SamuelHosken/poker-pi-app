@@ -44,7 +44,7 @@ export function Hero({
 
         <p className="mt-6 max-w-md text-lg leading-relaxed text-cream sm:text-xl">
           É a 2ª edição do <strong className="font-bold text-cream">Poker Pi</strong>. Um torneio de{" "}
-          <BlurWord amount={0.5}>verdade</BlurWord>, com jantar, bar e 30 cadeiras. Entre quem você quer
+          <BlurWord amount={0.5}>verdade</BlurWord>, com jantar, bar e 30 cadeiras. E só quem você quer
           ter por <BlurWord amount={0.5}>perto.</BlurWord>
         </p>
 

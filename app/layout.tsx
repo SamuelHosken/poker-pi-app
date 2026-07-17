@@ -50,8 +50,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // suppressHydrationWarning: o REVEAL_BOOT (script inline em /pokerpi) adiciona
+    // a classe `js-reveal` no <html> ANTES da hidratação, de propósito, pra não dar
+    // flash. Sem isso o React acusa mismatch de className aqui. Só afeta este nó.
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={`dark ${fraunces.variable} ${geistSans.variable} ${geistMono.variable} ${bigShoulders.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">

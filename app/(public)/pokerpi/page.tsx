@@ -6,6 +6,7 @@ import { CheckoutForm } from "./checkout-form";
 import { Hero } from "./hero";
 import { StatBand } from "./stat-band";
 import { TheNight } from "./the-night";
+import { PremiacaoScroll } from "./premiacao-scroll";
 import { GalleryStrip } from "./gallery-strip";
 import { VenueSchedule } from "./venue-schedule";
 import { Countdown } from "./countdown";
@@ -71,18 +72,15 @@ export default async function PokerPiPage() {
   const start = new Date(event.startsAt);
   const dateText = start.toLocaleDateString("pt-BR", { day: "numeric", month: "long", timeZone: "America/Sao_Paulo" });
   const weekday = capitalize(start.toLocaleDateString("pt-BR", { weekday: "long", timeZone: "America/Sao_Paulo" }));
-  const time = start
-    .toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })
-    .replace(":00", "h")
-    .replace(":", "h");
-  const weekdayTimeText = `${weekday} · ${time}`;
+  // Horário de vitrine no hero: 14h (abertura da casa). O torneio começa 16h (ver programação).
+  const weekdayTimeText = `${weekday} · 14h`;
   const locationShort = (event.locationText.split(",").pop() ?? event.locationText).trim();
 
   const stats = [
     { n: "30", l: "Lugares" },
     { n: "3", l: "Mesas" },
     { n: "1", l: "Campeão" },
-    { n: time.toUpperCase(), l: "Abertura" },
+    { n: "14H", l: "Abertura" },
   ];
 
   return (
@@ -122,6 +120,8 @@ export default async function PokerPiPage() {
 
       <TheNight />
 
+      <PremiacaoScroll eventId={event.id} soldOut={soldOut} />
+
       {/* INGRESSOS */}
       <section id="ingressos" className="border-y border-white/10 bg-ink-warm">
         <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
@@ -134,6 +134,10 @@ export default async function PokerPiPage() {
             </h2>
             <p className="mt-4 max-w-md text-lg text-cream-soft">
               Escolha seu plano e finalize em menos de um minuto.
+            </p>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-cream/60">
+              O ingresso cobre o jantar e o bar. A entrada do torneio (buy-in de R$ 25) é paga à
+              parte, no dia.
             </p>
           </Reveal>
 
