@@ -42,7 +42,41 @@ export async function checkInTicket(
     };
   }
 
-  // Cria/liga o player no evento (estado PRESENTE)
+  // Portão atômico: só a leitura de QR que encontrar checked_in_at=null vence a
+  // corrida. Dois scans simultâneos do mesmo ingresso -> um afeta 1 linha, o
+  // outro afeta 0 e cai no ramo "already", evitando player duplicado.
+  const checkedInAt = new Date().toISOString();
+  const { data: claimed, error: claimError } = await db
+    .from("tickets")
+    .update({ checked_in_at: checkedInAt, checked_in_by: userId })
+    .eq("id", ticket.id)
+    .is("checked_in_at", null)
+    .select("id")
+    .maybeSingle();
+
+  if (claimError) {
+    return { ok: false, error: "Falha ao registrar o check-in. Tente de novo." };
+  }
+  if (!claimed) {
+    // Outro scan venceu a corrida entre o SELECT e o UPDATE. Re-lê pra devolver
+    // o horário real de check-in em vez de recriar player.
+    const { data: fresh } = await db
+      .from("tickets")
+      .select("checked_in_at")
+      .eq("id", ticket.id)
+      .maybeSingle();
+    return {
+      ok: true,
+      buyerName: ticket.buyer_name,
+      ticketName,
+      isOpenBar,
+      already: true,
+      checkedInAt: (fresh?.checked_in_at as string | null) ?? checkedInAt,
+    };
+  }
+
+  // Vencemos a corrida: agora sim é seguro criar/ligar o player (só um caminho
+  // chega aqui por ingresso).
   let playerId: string | null = ticket.player_id as string | null;
   if (!playerId) {
     const { data: player } = await db
@@ -57,19 +91,9 @@ export async function checkInTicket(
       .select("id")
       .single();
     playerId = player?.id ?? null;
-  }
-
-  const { error: checkInError } = await db
-    .from("tickets")
-    .update({
-      checked_in_at: new Date().toISOString(),
-      checked_in_by: userId,
-      player_id: playerId,
-    })
-    .eq("id", ticket.id);
-
-  if (checkInError) {
-    return { ok: false, error: "Falha ao registrar o check-in. Tente de novo." };
+    if (playerId) {
+      await db.from("tickets").update({ player_id: playerId }).eq("id", ticket.id);
+    }
   }
 
   return {
@@ -78,7 +102,7 @@ export async function checkInTicket(
     ticketName,
     isOpenBar,
     already: false,
-    checkedInAt: new Date().toISOString(),
+    checkedInAt,
   };
 }
 

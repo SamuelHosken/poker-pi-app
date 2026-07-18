@@ -6,8 +6,11 @@
  *     etc) cada instância tem o seu — limite efetivo = N × limit.
  *   - Re-inicia ao restartar o servidor.
  *
- * Pra V1.3 (single instance no Mac local) é suficiente. Quando for pro
- * Vercel sério, troca pra Upstash Redis com a mesma assinatura.
+ * BEST-EFFORT em serverless (Vercel): cada instância tem o seu store, então o
+ * limite efetivo é N × limit e não protege de verdade num deploy multi-instância.
+ * Serve como amortecedor de rajada, NÃO como proteção forte. A defesa real do
+ * caminho de dinheiro é a idempotência (reuso de cobrança PENDING). Um limiter
+ * durável (Upstash Redis / Vercel KV / contador no Postgres) é follow-up.
  */
 
 type Bucket = {
@@ -17,13 +20,22 @@ type Bucket = {
 
 const store = new Map<string, Bucket>();
 
-// Limpeza periódica de buckets vazios pra não vazar memória
+// TTL de segurança: acima de qualquer janela real usada. Um bucket cujo hit
+// mais novo é mais velho que isto nunca mais será consultado dentro da janela.
+const MAX_BUCKET_TTL_MS = 15 * 60_000;
+
+// Limpeza periódica pra não vazar memória: remove buckets vazios E buckets
+// cujo hit mais recente já saiu de qualquer janela plausível (antes só os
+// vazios eram removidos, então chaves nunca revisitadas vazavam pra sempre).
 let lastSweep = 0;
 function sweep(now: number) {
   if (now - lastSweep < 60_000) return;
   lastSweep = now;
   for (const [key, bucket] of store) {
-    if (bucket.hits.length === 0) store.delete(key);
+    const newest = bucket.hits[bucket.hits.length - 1];
+    if (bucket.hits.length === 0 || newest === undefined || now - newest > MAX_BUCKET_TTL_MS) {
+      store.delete(key);
+    }
   }
 }
 

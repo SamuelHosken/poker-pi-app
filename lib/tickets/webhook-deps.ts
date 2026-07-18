@@ -53,14 +53,21 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
       }
     },
     async markRefunded(ticketId) {
-      await db.from("tickets").update({ status: "refunded" }).eq("id", ticketId);
+      const { error } = await db.from("tickets").update({ status: "refunded" }).eq("id", ticketId);
+      // Nao engolir: se o UPDATE falha (ex.: CHECK constraint), o estorno vira
+      // no-op silencioso e a vaga nunca e liberada. Lanca pra o Asaas re-tentar.
+      if (error) throw new Error(`markRefunded failed: ${error.message}`);
     },
     async markPaid(ticketId, method) {
       const qrToken = nanoid(24);
-      const { error } = await db.from("tickets").update({
+      // UPDATE atomico: so a chamada que achar o ticket ainda 'pending' vence.
+      // Entregas concorrentes do mesmo pagamento (CONFIRMED + RECEIVED, retries)
+      // afetam 0 linhas -> retornam null, sem reenviar e-mail nem sobrescrever o QR.
+      const { data, error } = await db.from("tickets").update({
         status: "paid", paid_at: new Date().toISOString(), payment_method: method, qr_token: qrToken,
-      }).eq("id", ticketId);
+      }).eq("id", ticketId).eq("status", "pending").select("id").maybeSingle();
       if (error) throw new Error(`DB update failed: ${error.message}`);
+      if (!data) return null; // perdeu a corrida ou nao estava mais 'pending'
 
       // Fecha o funil: registra o "paid" ligado a sessao/origem da compra.
       try {

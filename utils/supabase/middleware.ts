@@ -9,9 +9,11 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
  * V1.3 — Middleware otimizada.
  *
  * O QUE FAZ AQUI (fast path, sem network):
- *   - Lê a sessão do cookie via `getSession()` (zero round-trip ao Supabase —
- *     cookie é assinado pelo Supabase no login, conteúdo é confiável).
- *   - Sem sessão + rota protegida → redirect pra /admin/login.
+ *   - Lê a sessão do cookie via `getSession()` só pra um redirect GROSSO de UX
+ *     (sem sessão + rota protegida → /admin/login). ISTO NÃO É GATE DE
+ *     SEGURANÇA: getSession() não valida a assinatura do JWT. A autorização
+ *     real (identidade + is_admin) roda nas páginas/actions via getUser()
+ *     (lib/tournament/auth.ts), que faz o round-trip de validação.
  *   - Mantém os cookies sincronizados na resposta (necessário pro refresh
  *     automático funcionar nas próximas requests).
  *

@@ -1,4 +1,4 @@
-import { rawServiceClient } from "@/lib/tournament/auth";
+import { rawServiceClient, requireAdmin } from "@/lib/tournament/auth";
 
 // Agregações do painel de analytics. Tudo server-side (service role). A escala é
 // pequena (evento entre amigos), então buscar as linhas e agregar em JS é ok.
@@ -45,6 +45,7 @@ type EventRow = {
 
 /** O evento que o painel mostra: o que está com vendas abertas, senão o mais recente. */
 export async function getDashboardEventId(): Promise<string | null> {
+  await requireAdmin();
   const db = rawServiceClient();
   const open = await db
     .from("events")
@@ -78,6 +79,7 @@ function pct(part: number, whole: number): number {
 }
 
 export async function getDashboard(eventId: string): Promise<Dashboard | null> {
+  await requireAdmin();
   const db = rawServiceClient();
 
   const { data: ev } = await db
