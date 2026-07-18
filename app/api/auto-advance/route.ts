@@ -30,7 +30,19 @@ export async function POST() {
   return runTick();
 }
 
+// Throttle in-process (best-effort por instância serverless): a TV pública faz
+// polling ~5s, então o endpoint é legitimamente público. Isto só evita que
+// alguém dispare o full-scan em rajada; ticks legítimos passam de sobra.
+let lastRunAt = 0;
+const MIN_INTERVAL_MS = 1500;
+
 async function runTick() {
+  const nowMs = Date.now();
+  if (nowMs - lastRunAt < MIN_INTERVAL_MS) {
+    return NextResponse.json({ advanced: 0, throttled: true });
+  }
+  lastRunAt = nowMs;
+
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(
       { advanced: 0, error: "service role unavailable" },

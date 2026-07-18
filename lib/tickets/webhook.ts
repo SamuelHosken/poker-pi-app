@@ -11,7 +11,7 @@ type Ticket = {
 export type WebhookDeps = {
   findTicketByPaymentId(paymentId: string): Promise<Ticket | null>;
   findTicketByCheckoutId(checkoutId: string): Promise<Ticket | null>;
-  markPaid(ticketId: string, method: string | null): Promise<string>; // retorna qrToken
+  markPaid(ticketId: string, method: string | null): Promise<string | null>; // qrToken, ou null se perdeu a corrida
   markRefunded(ticketId: string): Promise<void>; // estorno/chargeback: libera a vaga
   /** Re-verifica no Asaas se o pagamento esta REALMENTE pago (anti-forjar). */
   verifyPaymentPaid(paymentId: string): Promise<boolean>;
@@ -36,6 +36,9 @@ async function confirmTicket(
   if (ticket.status === "paid") return { handled: false, reason: "já pago (idempotente)" };
 
   const qrToken = await deps.markPaid(ticket.id, method);
+  // markPaid é o gate atômico: null = outra entrega concorrente já confirmou.
+  // Sai sem reenviar e-mail (idempotência real, não só a checagem de status acima).
+  if (qrToken === null) return { handled: false, reason: "já confirmado (corrida)" };
 
   if (ticket.buyer_email) {
     await deps.sendEmail({
@@ -65,6 +68,14 @@ export async function processWebhookEvent(
   if (p.event === "CHECKOUT_PAID") {
     const checkoutId = p.checkout?.id;
     if (!checkoutId) return { handled: false, reason: "sem checkout id" };
+    // Anti-forjar (mesma garantia do path /payments): se o evento traz o payment
+    // id gerado pelo checkout, re-verifica no Asaas antes de confirmar. Se nao
+    // traz payment id, confia no token do webhook (autenticado na rota).
+    const checkoutPaymentId = p.payment?.id;
+    if (checkoutPaymentId) {
+      const reallyPaid = await deps.verifyPaymentPaid(checkoutPaymentId);
+      if (!reallyPaid) return { handled: false, reason: "checkout nao confirmado no Asaas" };
+    }
     const ticket = await deps.findTicketByCheckoutId(checkoutId);
     return confirmTicket(ticket, p.payment?.billingType ?? "CREDIT_CARD", deps);
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { Tables } from "@/lib/types/database.types";
 import { playSound } from "@/lib/audio/play-sound";
@@ -371,9 +371,12 @@ export function EventTV({
     };
   }, [event.id]);
 
-  function dismissToast(id: string) {
+  // Estável entre renders: senão o effect de auto-dismiss do EliminationToast
+  // (dep em onDismiss) reinicia a cada render do pai e o timer de 4s nunca
+  // dispara sob atividade contínua, deixando os toasts presos na tela.
+  const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
+  }, []);
 
   // Reações em tempo real (broadcast por evento)
   const { reactions } = useReactions(event.id);

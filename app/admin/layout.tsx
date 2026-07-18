@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { getCurrentUserId } from "@/lib/tournament/auth";
+import { redirect } from "next/navigation";
+import { getCurrentUserAndProfile } from "@/lib/tournament/auth";
 import { getMyProfile } from "@/lib/tournament/profiles";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminTopBar } from "@/components/admin/admin-top-bar";
@@ -19,13 +20,19 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const userId = await getCurrentUserId();
+  const { userId, isAdmin } = await getCurrentUserAndProfile();
 
   // Páginas públicas do admin (login/forgot/reset): sem shell.
   if (!userId) {
     return (
       <div className="flex min-h-svh flex-col bg-ink text-paper">{children}</div>
     );
+  }
+
+  // Logado mas sem privilégio: fecha TODAS as subpáginas de /admin de uma vez.
+  // O gate autoritativo é este (identidade validada via getUser em auth.ts).
+  if (!isAdmin) {
+    redirect("/me");
   }
 
   const profile = await getMyProfile();

@@ -5,21 +5,19 @@ import { createClient } from "@/utils/supabase/server";
 import type { Database } from "@/lib/types/database.types";
 
 /**
- * Lê apenas o ID do usuário logado do cookie da sessão — SEM round-trip ao
- * Supabase. `getSession()` valida apenas o cookie assinado localmente; serve
- * pra identidade. Cacheado per-request via React.cache (deduplica chamadas
- * dentro da mesma renderização).
- *
- * Use em vez de `supabase.auth.getUser()` (que faz um GET /auth/v1/user
- * a cada chamada — ~100-200ms de latência por server action).
+ * Retorna o ID do usuário logado, VALIDADO no servidor de Auth via
+ * `getUser()` (verifica a assinatura do JWT). NÃO use `getSession()` aqui:
+ * ele apenas lê o cookie e não valida a assinatura, então um cookie forjado
+ * com o UUID de um admin passaria pelo gate. Cacheado per-request via
+ * React.cache, então o custo é 1 round-trip por render, não por chamada.
  */
 export const getCurrentUserId = cache(async (): Promise<string | null> => {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.user.id ?? null;
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
 });
 
 /**
