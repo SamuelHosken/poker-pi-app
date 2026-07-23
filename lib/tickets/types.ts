@@ -17,7 +17,7 @@ export const OrderSchema = z.object({
 export type OrderInput = z.input<typeof OrderSchema>;
 export type OrderResult =
   | { ok: true; invoiceUrl: string }
-  | { ok: true; pix: true }
+  | { ok: true; pix: true; ticketId: string }
   | { ok: false; error: string; field?: keyof OrderInput };
 
 export type TicketStatus = "pending" | "paid" | "canceled";

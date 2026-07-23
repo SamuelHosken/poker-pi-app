@@ -179,7 +179,7 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
       eventId: tt.event_id,
       meta: { amountCents: baseCents, chargedCents, method, installments, ticketId: ticket.id },
     });
-    return { ok: true, pix: true };
+    return { ok: true, pix: true, ticketId: ticket.id };
   }
 
   // 2) cartao: cria customer + cobranca no Asaas
