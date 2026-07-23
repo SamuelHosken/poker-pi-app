@@ -11,6 +11,7 @@ type Ticket = {
 export type WebhookDeps = {
   findTicketByPaymentId(paymentId: string): Promise<Ticket | null>;
   findTicketByCheckoutId(checkoutId: string): Promise<Ticket | null>;
+  findTicketById(ticketId: string): Promise<Ticket | null>;
   markPaid(ticketId: string, method: string | null): Promise<string | null>; // qrToken, ou null se perdeu a corrida
   markRefunded(ticketId: string): Promise<void>; // estorno/chargeback: libera a vaga
   /** Re-verifica no Asaas se o pagamento esta REALMENTE pago (anti-forjar). */
@@ -27,7 +28,7 @@ const PAID_EVENTS = new Set(["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]);
 const REFUND_EVENTS = new Set(["PAYMENT_REFUNDED", "PAYMENT_CHARGEBACK_REQUESTED", "PAYMENT_DELETED"]);
 
 /** Marca o ticket pago e manda o e-mail com o QR. Idempotente (ticket já pago sai cedo). */
-async function confirmTicket(
+export async function confirmTicket(
   ticket: Ticket | null,
   method: string | null,
   deps: WebhookDeps,
