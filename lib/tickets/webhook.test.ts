@@ -10,6 +10,7 @@ function deps(over: Partial<WebhookDeps> = {}): WebhookDeps {
   return {
     findTicketByPaymentId: vi.fn().mockResolvedValue({ ...ticketFixture }),
     findTicketByCheckoutId: vi.fn().mockResolvedValue({ ...ticketFixture }),
+    findTicketById: vi.fn().mockResolvedValue({ ...ticketFixture }),
     markPaid: vi.fn().mockResolvedValue("qr_abc"),
     markRefunded: vi.fn().mockResolvedValue(undefined),
     verifyPaymentPaid: vi.fn().mockResolvedValue(true),

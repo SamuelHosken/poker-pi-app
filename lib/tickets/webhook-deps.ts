@@ -42,6 +42,10 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
       const { data } = await db.from("tickets").select(TICKET_COLS).eq("asaas_checkout_id", checkoutId).maybeSingle();
       return data ? hydrate(data as TicketRow) : null;
     },
+    async findTicketById(ticketId) {
+      const { data } = await db.from("tickets").select(TICKET_COLS).eq("id", ticketId).maybeSingle();
+      return data ? hydrate(data as TicketRow) : null;
+    },
     async verifyPaymentPaid(paymentId) {
       try {
         const { status } = await getAsaasPaymentStatus(paymentId);
