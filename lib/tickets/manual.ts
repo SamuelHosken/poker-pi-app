@@ -16,6 +16,26 @@ import { buildWebhookDeps } from "./webhook-deps";
 export async function confirmTicketPaid(ticketId: string): Promise<{ handled: boolean; reason?: string }> {
   const db = rawServiceClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
+  // Invariante: no maximo 1 pago por CPF+evento. Bloqueia se JA existe OUTRO
+  // ticket pago com esse CPF (ex.: confirmar um pendente antigo depois de ja ter
+  // adicionado o mesmo CPF na mao) - senao o CPF ficaria com 2 ingressos pagos.
+  const { data: self } = await db
+    .from("tickets")
+    .select("event_id,buyer_cpf,status")
+    .eq("id", ticketId)
+    .maybeSingle();
+  if (self && self.status !== "paid" && self.buyer_cpf) {
+    const { data: dup } = await db
+      .from("tickets")
+      .select("id")
+      .eq("event_id", self.event_id)
+      .eq("buyer_cpf", self.buyer_cpf)
+      .eq("status", "paid")
+      .neq("id", ticketId);
+    if ((dup ?? []).length > 0) return { handled: false, reason: "Ja existe um ingresso pago com esse CPF." };
+  }
+
   const deps = buildWebhookDeps(db, siteUrl);
   const ticket = await deps.findTicketById(ticketId);
   return confirmTicket(ticket, "PIX", deps);
