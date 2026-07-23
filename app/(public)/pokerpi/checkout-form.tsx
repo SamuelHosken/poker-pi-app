@@ -7,6 +7,7 @@ import { installmentOptions, MAX_INSTALLMENTS, type PaymentMethod } from "@/lib/
 import { getAttribution, getSessionId, trackOnce } from "@/lib/analytics/client";
 import { PhoneInputCream } from "./phone-input-cream";
 import { TicketCards } from "./ticket-cards";
+import { PixPanel } from "./pix-panel";
 
 function formatCpf(raw: string): string {
   const d = raw.replace(/\D/g, "").slice(0, 11);
@@ -50,6 +51,7 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
   const [serverError, setServerError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<keyof OrderInput | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pixShown, setPixShown] = useState(false);
 
   const valid = useMemo(
     () => ({
@@ -81,7 +83,10 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
       },
       { sessionId: getSessionId(), source: attr.ref ?? attr.utmSource ?? null },
     );
-    if (res.ok) {
+    if (res.ok && "pix" in res) {
+      setPixShown(true);
+      setLoading(false);
+    } else if (res.ok) {
       window.location.href = res.invoiceUrl;
     } else {
       setServerError(res.error);
@@ -96,6 +101,10 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
         Ingressos esgotados
       </p>
     );
+  }
+
+  if (pixShown) {
+    return <PixPanel amountCents={selectedPlan?.priceCents ?? 0} onBack={() => setPixShown(false)} />;
   }
 
   return (
@@ -198,10 +207,14 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
           disabled={loading || !allValid}
           className="mt-1 inline-flex h-14 w-full items-center justify-center rounded-full bg-red-brand font-condensed text-xl font-bold uppercase tracking-wide text-cream transition-colors hover:bg-red-deep disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {loading ? "Gerando pagamento…" : `Pagar ${brl(totalCents)}`}
+          {loading
+            ? (method === "PIX" ? "Gerando PIX…" : "Gerando pagamento…")
+            : (method === "PIX" ? `Fazer PIX de ${brl(totalCents)}` : `Pagar ${brl(totalCents)}`)}
         </button>
         <p className="text-center text-xs text-ink-warm-soft">
-          Pagamento 100% seguro via Asaas. Você recebe o ingresso com QR Code por e-mail.
+          {method === "PIX"
+            ? "Voce faz o PIX na chave e manda o comprovante no WhatsApp. Confirmamos e o ingresso com QR Code vai pro seu e-mail."
+            : "Pagamento 100% seguro via Asaas. Voce recebe o ingresso com QR Code por e-mail."}
         </p>
       </div>
     </form>
