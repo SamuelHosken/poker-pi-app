@@ -2,16 +2,18 @@
 import { useState } from "react";
 import { Check, Copy, MessageCircle } from "lucide-react";
 import { PIX_KEY, PIX_KEY_TYPE, PIX_RECEIVER, pixWhatsappLink } from "@/lib/tickets/pix";
+import { pingPixCopied } from "@/lib/tickets/notify-copy";
 
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-export function PixPanel({ amountCents, onBack }: { amountCents: number; onBack: () => void }) {
+export function PixPanel({ amountCents, ticketId, onBack }: { amountCents: number; ticketId?: string; onBack: () => void }) {
   const [copied, setCopied] = useState(false);
   async function copyKey() {
     try {
       await navigator.clipboard.writeText(PIX_KEY);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      if (ticketId) void pingPixCopied(ticketId);
     } catch {
       // clipboard bloqueado - a chave fica visivel pra copiar na mao
     }

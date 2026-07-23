@@ -52,6 +52,7 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
   const [errorField, setErrorField] = useState<keyof OrderInput | null>(null);
   const [loading, setLoading] = useState(false);
   const [pixShown, setPixShown] = useState(false);
+  const [pixTicketId, setPixTicketId] = useState<string | null>(null);
 
   const valid = useMemo(
     () => ({
@@ -84,6 +85,7 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
       { sessionId: getSessionId(), source: attr.ref ?? attr.utmSource ?? null },
     );
     if (res.ok && "pix" in res) {
+      setPixTicketId(res.ticketId);
       setPixShown(true);
       setLoading(false);
     } else if (res.ok) {
@@ -104,7 +106,13 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
   }
 
   if (pixShown) {
-    return <PixPanel amountCents={selectedPlan?.priceCents ?? 0} onBack={() => setPixShown(false)} />;
+    return (
+      <PixPanel
+        amountCents={selectedPlan?.priceCents ?? 0}
+        ticketId={pixTicketId ?? undefined}
+        onBack={() => setPixShown(false)}
+      />
+    );
   }
 
   return (
