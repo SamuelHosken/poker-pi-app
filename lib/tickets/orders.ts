@@ -128,15 +128,15 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
     return { ok: false, error: "Ingressos esgotados." };
   }
 
-  // Pricing: PIX = valor cheio (você absorve a taxa fixa); cartão = juros do
-  // Asaas repassado (gross-up) já com a absorção fixa aplicada, via a MESMA
-  // função que a LP usa pra exibir (cardTotalCents) — display e cobrança batem.
+  // Pricing: PIX = valor cheio, cobrado FORA do Asaas (manual, comprovante por
+  // WhatsApp). Cartao = juros do Asaas repassado (gross-up) via a MESMA
+  // funcao que a LP usa pra exibir (cardTotalCents) - display e cobranca batem.
   const method = data.method;
   const installments = method === "CREDIT_CARD" ? data.installments : 1;
   const baseCents = tt.price_cents;
   const chargedCents = method === "CREDIT_CARD" ? cardTotalCents(baseCents, installments) : baseCents;
 
-  // 1) cria o ticket pendente (pra ter id como externalReference)
+  // 1) cria o ticket pendente (pra ter id como externalReference / registro do PIX)
   const { data: ticket, error: insErr } = await db
     .from("tickets")
     .insert({
@@ -156,8 +156,7 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
     .single();
   if (insErr || !ticket) return { ok: false, error: "Não foi possível iniciar a compra." };
 
-  // Atribuição (sessão/origem) é best-effort e fica FORA do insert de propósito:
-  // se a migration de analytics ainda não rodou, a compra não pode quebrar.
+  // Atribuicao (sessao/origem) best-effort, FORA do insert de proposito.
   if (meta?.sessionId || meta?.source) {
     try {
       await db
@@ -165,11 +164,25 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
         .update({ analytics_session_id: meta?.sessionId ?? null, source: meta?.source ?? null })
         .eq("id", ticket.id);
     } catch {
-      // colunas ainda não existem — ignora
+      // colunas ainda não existem - ignora
     }
   }
 
-  // 2) cria customer + cobrança no Asaas (PIX à vista OU cartão parcelado)
+  // PIX manual: NAO cria cobranca no Asaas. O ticket fica pending ate o admin
+  // confirmar o comprovante (marca pago, gera QR, manda e-mail).
+  if (method === "PIX") {
+    await trackEvent({
+      name: "order_created",
+      sessionId: meta?.sessionId,
+      ref: meta?.source,
+      plan: tt.name,
+      eventId: tt.event_id,
+      meta: { amountCents: baseCents, chargedCents, method, installments, ticketId: ticket.id },
+    });
+    return { ok: true, pix: true };
+  }
+
+  // 2) cartao: cria customer + cobranca no Asaas
   try {
     const dueDate = new Date().toISOString().slice(0, 10);
     const customer = await createAsaasCustomer({
@@ -182,7 +195,7 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
       externalReference: ticket.id,
       dueDate,
       billingType: method,
-      installments: method === "CREDIT_CARD" ? installments : undefined,
+      installments,
     });
     await db.from("tickets").update({
       asaas_customer_id: customer.id,
