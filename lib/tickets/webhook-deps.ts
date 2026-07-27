@@ -70,7 +70,14 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
       const { data, error } = await db.from("tickets").update({
         status: "paid", paid_at: new Date().toISOString(), payment_method: method, qr_token: qrToken,
       }).eq("id", ticketId).eq("status", "pending").select("id").maybeSingle();
-      if (error) throw new Error(`DB update failed: ${error.message}`);
+      if (error) {
+        // 23505 = unique_violation: outro ticket do mesmo CPF ja esta pago
+        // (invariante I1, indice uq_tickets_one_paid_per_cpf_event). Nao e erro
+        // de infra: e a constraint funcionando. Devolve null como "perdeu a
+        // corrida", que o confirmTicket ja trata sem reenviar e-mail.
+        if ((error as { code?: string }).code === "23505") return null;
+        throw new Error(`DB update failed: ${error.message}`);
+      }
       if (!data) return null; // perdeu a corrida ou nao estava mais 'pending'
 
       // Fecha o funil: registra o "paid" ligado a sessao/origem da compra.
