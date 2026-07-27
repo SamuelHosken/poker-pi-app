@@ -20,6 +20,13 @@ export type WebhookDeps = {
     to: string; buyerName: string; ticketName: string;
     whenText: string; locationText: string; ticketUrl: string;
   }): Promise<void>;
+  /** Log append-only do payload cru. Best-effort: falhar aqui nao derruba o pagamento. */
+  recordEvent(args: {
+    provider: string;
+    event: string | null;
+    paymentId: string | null;
+    raw: unknown;
+  }): Promise<void>;
   siteUrl: string;
 };
 
@@ -63,6 +70,16 @@ export async function processWebhookEvent(
     payment?: { id?: string; billingType?: string; customer?: string };
     checkout?: { id?: string };
   };
+
+  // Registra tudo que chega, inclusive o que sera ignorado. Best-effort de
+  // proposito: um problema no log nunca pode impedir a confirmacao de um pagamento.
+  await deps.recordEvent({
+    provider: "asaas",
+    event: p?.event ?? null,
+    paymentId: p?.payment?.id ?? null,
+    raw: payload,
+  }).catch(() => undefined);
+
   if (!p?.event) return { handled: false, reason: "evento ignorado" };
 
   // Fluxo novo: Checkout do Asaas (parcelamento). Casa pelo checkout id.

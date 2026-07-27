@@ -15,6 +15,7 @@ function deps(over: Partial<WebhookDeps> = {}): WebhookDeps {
     markRefunded: vi.fn().mockResolvedValue(undefined),
     verifyPaymentPaid: vi.fn().mockResolvedValue(true),
     sendEmail: vi.fn().mockResolvedValue(undefined),
+    recordEvent: vi.fn().mockResolvedValue(undefined),
     siteUrl: "https://mesapigroup.com",
     ...over,
   };
@@ -113,5 +114,28 @@ describe("processWebhookEvent", () => {
     expect(again.handled).toBe(true);
     expect(d.markRefunded).toHaveBeenCalledTimes(2);
     expect(d.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("registra o payload cru ANTES de decidir qualquer coisa", async () => {
+    const d = deps();
+    const payload = { event: "PAYMENT_CONFIRMED", payment: { id: "pay_1", billingType: "PIX" } };
+    await processWebhookEvent(payload, d);
+    expect(d.recordEvent).toHaveBeenCalledWith({
+      provider: "asaas", event: "PAYMENT_CONFIRMED", paymentId: "pay_1", raw: payload,
+    });
+  });
+
+  it("registra ate eventos que serao ignorados (e onde o bug se esconde)", async () => {
+    const d = deps();
+    await processWebhookEvent({ event: "PAYMENT_CREATED", payment: { id: "x" } }, d);
+    expect(d.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "PAYMENT_CREATED", paymentId: "x" }),
+    );
+  });
+
+  it("falha ao registrar NAO derruba o processamento do pagamento", async () => {
+    const d = deps({ recordEvent: vi.fn().mockRejectedValue(new Error("tabela sumiu")) });
+    const r = await processWebhookEvent({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_1" } }, d);
+    expect(r.handled).toBe(true);
   });
 });

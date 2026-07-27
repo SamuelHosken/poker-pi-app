@@ -124,6 +124,14 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
         console.error("[webhook] sendEmail failed (swallowed):", err);
       }
     },
+    async recordEvent({ provider, event, paymentId, raw }) {
+      // `webhook_events` nao esta em database.types.ts (mantido a mao, e nao
+      // inclui as tabelas de ticket), entao esta chamada e untyped, igual as
+      // outras deste arquivo que tocam `tickets`.
+      await db.from("webhook_events").insert({
+        provider, event, payment_id: paymentId, raw,
+      });
+    },
     siteUrl,
   };
 }
