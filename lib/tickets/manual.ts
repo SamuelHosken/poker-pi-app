@@ -7,6 +7,7 @@ import { onlyDigits, isValidCpf } from "./cpf";
 import { hasCapacity } from "./capacity";
 import { confirmTicket } from "./webhook";
 import { buildWebhookDeps } from "./webhook-deps";
+import { blocksNewPaidTicket, type CpfTicketRow } from "./dedup";
 
 /**
  * Marca um ticket pago MANUALMENTE (PIX confirmado via comprovante). Reusa o
@@ -28,12 +29,12 @@ export async function confirmTicketPaid(ticketId: string): Promise<{ handled: bo
   if (self && self.status !== "paid" && self.buyer_cpf) {
     const { data: dup } = await db
       .from("tickets")
-      .select("id")
+      .select("id, status, asaas_payment_id")
       .eq("event_id", self.event_id)
-      .eq("buyer_cpf", self.buyer_cpf)
-      .eq("status", "paid")
-      .neq("id", ticketId);
-    if ((dup ?? []).length > 0) return { handled: false, reason: "Ja existe um ingresso pago com esse CPF." };
+      .eq("buyer_cpf", self.buyer_cpf);
+    if (blocksNewPaidTicket((dup ?? []) as CpfTicketRow[], ticketId)) {
+      return { handled: false, reason: "Ja existe um ingresso pago com esse CPF." };
+    }
   }
 
   const deps = buildWebhookDeps(db, siteUrl);
@@ -71,11 +72,12 @@ export async function addPaidTicket(input: {
   // Dedup: bloqueia se ja existe pago com esse CPF nesse evento.
   const { data: dup } = await db
     .from("tickets")
-    .select("id")
+    .select("id, status, asaas_payment_id")
     .eq("event_id", input.eventId)
-    .eq("buyer_cpf", cpf)
-    .eq("status", "paid");
-  if ((dup ?? []).length > 0) return { ok: false, error: "Ja existe um ingresso pago com esse CPF." };
+    .eq("buyer_cpf", cpf);
+  if (blocksNewPaidTicket((dup ?? []) as CpfTicketRow[])) {
+    return { ok: false, error: "Ja existe um ingresso pago com esse CPF." };
+  }
 
   // Capacidade.
   const { data: ev } = await db.from("events").select("capacity").eq("id", input.eventId).maybeSingle();

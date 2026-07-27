@@ -14,6 +14,7 @@ import {
 } from "@/lib/payments/asaas";
 import { cardTotalCents } from "./pricing";
 import { trackEvent } from "@/lib/analytics/track";
+import { blocksNewPaidTicket, pendingToCancel, type CpfTicketRow } from "./dedup";
 
 export type OrderMeta = { sessionId?: string | null; source?: string | null };
 
@@ -99,11 +100,11 @@ export async function createTicketOrder(input: OrderInput, meta?: OrderMeta): Pr
     .eq("event_id", tt.event_id)
     .eq("buyer_cpf", cpf)
     .in("status", ["paid", "pending"]);
-  const cpfRows = (sameCpf ?? []) as { id: string; status: string; asaas_payment_id: string | null }[];
-  if (cpfRows.some((t) => t.status === "paid")) {
+  const cpfRows = (sameCpf ?? []) as CpfTicketRow[];
+  if (blocksNewPaidTicket(cpfRows)) {
     return { ok: false, error: "Você já tem um ingresso com esse CPF. Confira seu e-mail." };
   }
-  for (const old of cpfRows.filter((t) => t.status === "pending")) {
+  for (const old of pendingToCancel(cpfRows)) {
     if (old.asaas_payment_id) {
       let realStatus: string | null = null;
       try {
