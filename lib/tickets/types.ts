@@ -20,7 +20,10 @@ export type OrderResult =
   | { ok: true; pix: true; ticketId: string }
   | { ok: false; error: string; field?: keyof OrderInput };
 
-export type TicketStatus = "pending" | "paid" | "canceled";
+// 'refunded' entrou no CHECK do banco na migration 0025 (estorno/chargeback
+// libera a vaga). Manter esta uniao em sincronia com o CHECK: sem isso,
+// mapTicketRow faz cast de um valor real pra um tipo que nao o inclui.
+export type TicketStatus = "pending" | "paid" | "canceled" | "refunded";
 
 export type TicketType = {
   id: string;
