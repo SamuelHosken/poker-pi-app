@@ -73,9 +73,23 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
       if (error) {
         // 23505 = unique_violation: outro ticket do mesmo CPF ja esta pago
         // (invariante I1, indice uq_tickets_one_paid_per_cpf_event). Nao e erro
-        // de infra: e a constraint funcionando. Devolve null como "perdeu a
-        // corrida", que o confirmTicket ja trata sem reenviar e-mail.
-        if ((error as { code?: string }).code === "23505") return null;
+        // de infra: e a constraint funcionando.
+        //
+        // ATENCAO: ha dois cenarios que resultam em null aqui:
+        // (a) entrega concorrente do MESMO pagamento (benigno, esperado)
+        // (b) dinheiro ja capturado DESTE ticket, mas UPDATE barrado porque
+        //     OUTRO ticket do mesmo CPF/evento ja esta paid. Nesse caso o ticket
+        //     fica preso em 'pending' sem alerta, e so e cancelado por idade
+        //     2 dias depois. Dinheiro capturado, ingresso nao emitido.
+        //
+        // Cenario (b) so existe por causa desta constraint. O log e a unica
+        // pista que o time vai ter pra detectar. Nao silenciar.
+        if ((error as { code?: string }).code === "23505") {
+          console.error(
+            `[webhook] markPaid: dinheiro capturado mas UPDATE barrado por constraint (23505) - ticket ${ticketId}`
+          );
+          return null;
+        }
         throw new Error(`DB update failed: ${error.message}`);
       }
       if (!data) return null; // perdeu a corrida ou nao estava mais 'pending'
