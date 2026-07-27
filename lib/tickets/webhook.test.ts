@@ -81,4 +81,37 @@ describe("processWebhookEvent", () => {
     expect(d.markRefunded).toHaveBeenCalledWith("t1");
     expect(d.markPaid).not.toHaveBeenCalled();
   });
+
+  it("I3: markPaid devolve null (corrida perdida) e o e-mail NAO e reenviado", async () => {
+    const d = deps({ markPaid: vi.fn().mockResolvedValue(null) });
+    const r = await processWebhookEvent({ event: "PAYMENT_CONFIRMED", payment: { id: "pay_1" } }, d);
+    expect(r.handled).toBe(false);
+    expect(r.reason).toBe("já confirmado (corrida)");
+    expect(d.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("I3: duas entregas do mesmo pagamento produzem UM e-mail", async () => {
+    const markPaid = vi.fn()
+      .mockResolvedValueOnce("qr_abc")
+      .mockResolvedValueOnce(null);
+    const d = deps({ markPaid });
+    const payload = { event: "PAYMENT_CONFIRMED", payment: { id: "pay_1" } };
+
+    const first = await processWebhookEvent(payload, d);
+    const second = await processWebhookEvent({ ...payload, event: "PAYMENT_RECEIVED" }, d);
+
+    expect(first.handled).toBe(true);
+    expect(second.handled).toBe(false);
+    expect(d.sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("I3: estorno seguido de retry do estorno nao quebra", async () => {
+    const d = deps();
+    const payload = { event: "PAYMENT_REFUNDED", payment: { id: "pay_1" } };
+    await processWebhookEvent(payload, d);
+    const again = await processWebhookEvent(payload, d);
+    expect(again.handled).toBe(true);
+    expect(d.markRefunded).toHaveBeenCalledTimes(2);
+    expect(d.sendEmail).not.toHaveBeenCalled();
+  });
 });
