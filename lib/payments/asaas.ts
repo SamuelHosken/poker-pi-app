@@ -1,4 +1,5 @@
 import { resolveAsaasConfig } from "./asaas-config";
+import { fetchWithTimeout } from "./fetch-timeout";
 
 type Fetch = typeof fetch;
 
@@ -12,7 +13,7 @@ function config() {
 
 async function asaasPost<T>(path: string, body: unknown, fetchImpl: Fetch): Promise<T> {
   const { baseUrl, apiKey } = config();
-  const res = await fetchImpl(`${baseUrl}${path}`, {
+  const res = await fetchWithTimeout(fetchImpl, `${baseUrl}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", access_token: apiKey },
     body: JSON.stringify(body),
@@ -33,7 +34,7 @@ async function asaasPost<T>(path: string, body: unknown, fetchImpl: Fetch): Prom
 
 async function asaasGet<T>(path: string, fetchImpl: Fetch): Promise<T> {
   const { baseUrl, apiKey } = config();
-  const res = await fetchImpl(`${baseUrl}${path}`, { headers: { access_token: apiKey } });
+  const res = await fetchWithTimeout(fetchImpl, `${baseUrl}${path}`, { headers: { access_token: apiKey } });
   if (!res.ok) {
     const raw = await res.text();
     throw new Error(`Asaas ${path} falhou (${res.status}): ${raw}`);
@@ -43,7 +44,10 @@ async function asaasGet<T>(path: string, fetchImpl: Fetch): Promise<T> {
 
 async function asaasDelete<T>(path: string, fetchImpl: Fetch): Promise<T> {
   const { baseUrl, apiKey } = config();
-  const res = await fetchImpl(`${baseUrl}${path}`, { method: "DELETE", headers: { access_token: apiKey } });
+  const res = await fetchWithTimeout(fetchImpl, `${baseUrl}${path}`, {
+    method: "DELETE",
+    headers: { access_token: apiKey },
+  });
   if (!res.ok) {
     const raw = await res.text();
     throw new Error(`Asaas ${path} falhou (${res.status}): ${raw}`);
