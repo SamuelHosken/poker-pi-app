@@ -15,9 +15,26 @@ export const OrderSchema = z.object({
 });
 
 export type OrderInput = z.input<typeof OrderSchema>;
+
+/** O QR do Pix pronto para a tela, sem o comprador sair da pagina. */
+export type PixQrCode = {
+  ticketId: string;
+  /** Copia e cola. */
+  brCode: string;
+  /** PNG ja como data URI, pronto para o <img src>. */
+  brCodeBase64: string;
+  /** Quando o QR morre. ISO. */
+  expiresAt: string | null;
+  /** O que vai ser cobrado, em centavos. Para a tela nunca recalcular preco. */
+  amountCents: number;
+};
+
 export type OrderResult =
   | { ok: true; invoiceUrl: string }
+  /** Pix MANUAL: chave estatica, comprovante por WhatsApp, admin confirma. */
   | { ok: true; pix: true; ticketId: string }
+  /** Pix por gateway: QR na propria tela, confirmacao automatica por webhook. */
+  | { ok: true; pixQr: PixQrCode }
   | { ok: false; error: string; field?: keyof OrderInput };
 
 // 'refunded' entrou no CHECK do banco na migration 0025 (estorno/chargeback

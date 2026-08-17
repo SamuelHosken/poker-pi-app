@@ -88,6 +88,21 @@ export function CheckoutForm({ types, soldOut, eventId }: { types: TicketType[];
       setPixTicketId(res.ticketId);
       setPixShown(true);
       setLoading(false);
+    } else if (res.ok && "pixQr" in res) {
+      /*
+        Pix por gateway, com QR na tela. Esta LP nao tem tela para ele: quem
+        recebeu esse desenho foi a /3edicao, no site novo.
+
+        Na pratica isto nao acontece: o provedor so vira `abacate` por variavel
+        de ambiente, e quando isso acontecer esta pagina ja vai estar aposentada.
+        Mas a possibilidade existe no TIPO, e deixar cair no `else` mandaria o
+        comprador para `undefined` como URL, que e tela branca. Entao a saida e
+        dizer a verdade em vez de fingir que deu certo.
+      */
+      setServerError(
+        "Este pagamento mudou de endereço. Finalize em mesapigroup.com/3edicao.",
+      );
+      setLoading(false);
     } else if (res.ok) {
       window.location.href = res.invoiceUrl;
     } else {

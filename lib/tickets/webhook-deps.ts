@@ -2,7 +2,9 @@ import { nanoid } from "nanoid";
 import type { WebhookDeps } from "./webhook";
 import type { rawServiceClient } from "@/lib/tournament/auth";
 import { sendTicketEmail } from "@/lib/email/ticket-email";
+import { pingVendaConfirmada } from "./notify-copy";
 import { getAsaasPaymentStatus } from "@/lib/payments/asaas";
+import { getAbacatePixStatus, isAbacatePaidStatus } from "@/lib/payments/abacate";
 import { trackEvent } from "@/lib/analytics/track";
 
 const ASAAS_PAID = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
@@ -46,6 +48,14 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
       const { data } = await db.from("tickets").select(TICKET_COLS).eq("id", ticketId).maybeSingle();
       return data ? hydrate(data as TicketRow) : null;
     },
+    async findTicketByAbacateChargeId(chargeId) {
+      const { data } = await db
+        .from("tickets")
+        .select(TICKET_COLS)
+        .eq("abacate_charge_id", chargeId)
+        .maybeSingle();
+      return data ? hydrate(data as TicketRow) : null;
+    },
     async verifyPaymentPaid(paymentId) {
       try {
         const { status } = await getAsaasPaymentStatus(paymentId);
@@ -53,6 +63,17 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
       } catch {
         // Se nao deu pra falar com o Asaas, NAO confirma (fail-safe: melhor
         // segurar do que marcar pago sem certeza; a reconciliacao pega depois).
+        return false;
+      }
+    },
+    async verifyAbacatePaid(chargeId) {
+      try {
+        const { status } = await getAbacatePixStatus(chargeId);
+        return isAbacatePaidStatus(status);
+      } catch {
+        // Mesmo fail-safe do Asaas, e aqui ele pesa mais: enquanto a duvida
+        // sobre a chave do HMAC nao for resolvida, esta consulta e a UNICA
+        // prova de que o dinheiro entrou. Na duvida, nao confirma.
         return false;
       }
     },
@@ -125,6 +146,7 @@ export function buildWebhookDeps(db: ServiceClient, siteUrl: string): WebhookDep
       }
       return qrToken;
     },
+    notifyAdmins: (ticketId) => pingVendaConfirmada(ticketId),
     sendEmail: async (args) => {
       try {
         await sendTicketEmail(args);

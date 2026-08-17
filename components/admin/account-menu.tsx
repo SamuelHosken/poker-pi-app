@@ -53,14 +53,15 @@ export function AccountMenu({
             onClick={() => setOpen(false)}
           />
           <div role="menu" className={`glass absolute z-50 w-52 rounded-2xl p-1.5 ${panelPos}`}>
-            <Link
-              href="/me"
-              prefetch
+            {/* "Jogar como jogador" apontava para o /me do torneio v1, que saiu
+                daqui. O jogador vive no app agora. */}
+            <a
+              href="https://app.mesapigroup.com/me"
               role="menuitem"
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm no-underline hover:bg-white/5"
             >
-              <Gamepad2 className="size-4 text-gold" /> Jogar como jogador
-            </Link>
+              <Gamepad2 className="size-4 text-gold" /> Abrir o app
+            </a>
             <form action={logoutAction}>
               <button
                 type="submit"
