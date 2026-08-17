@@ -28,23 +28,15 @@ export default async function EventsListPage() {
             Eventos
           </span>
           <h1 className="mt-1 font-display text-3xl font-light tracking-tight text-paper sm:text-4xl">
-            Seus torneios
+            Eventos e ingressos
           </h1>
         </div>
-        <Link
-          href="/admin/events/new"
-          className={buttonVariants({
-            className: "h-12 w-full bg-gold text-ink hover:bg-gold/90 sm:w-auto",
-          })}
-        >
-          + Criar evento
-        </Link>
       </header>
 
       {events.length === 0 ? (
         <div className="rounded-lg border border-line bg-ink-2 px-6 py-12 text-center">
           <p className="font-display text-lg italic text-gray-soft">
-            Nenhum evento ainda. Crie o primeiro torneio para começar.
+            Nenhum evento ainda.
           </p>
         </div>
       ) : (
@@ -52,7 +44,7 @@ export default async function EventsListPage() {
           {events.map((ev) => (
             <li key={ev.id}>
               <Link
-                href={`/admin/events/${ev.id}`}
+                href={`/admin/events/${ev.id}/ingressos`}
                 className="block rounded-lg border border-line bg-ink-2 p-4 transition-colors hover:border-gold/50 hover:bg-smoke sm:p-5"
               >
                 <div className="flex items-start justify-between gap-3">

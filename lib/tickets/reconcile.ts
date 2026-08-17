@@ -1,5 +1,6 @@
 import { rawServiceClient } from "@/lib/tournament/auth";
 import { getAsaasPaymentStatus, cancelAsaasPayment } from "@/lib/payments/asaas";
+import { getAbacatePixStatus, isAbacatePaidStatus } from "@/lib/payments/abacate";
 import { sendTicketEmail } from "@/lib/email/ticket-email";
 import { processWebhookEvent } from "./webhook";
 import { buildWebhookDeps } from "./webhook-deps";
@@ -32,13 +33,30 @@ export async function reconcilePendingTickets(fetchImpl: Fetch = fetch): Promise
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const deps = buildWebhookDeps(db, siteUrl);
 
+  /*
+    Pendentes com cobranca em ALGUM gateway.
+
+    Era `.not("asaas_payment_id","is",null)`, e com dois provedores esse filtro
+    passou a esconder metade do problema: um ingresso pago na AbacatePay cujo
+    webhook se perdeu ficaria fora da unica rede de seguranca que existe, para
+    sempre, porque nada mais varre pendente.
+
+    Continua de fora, de proposito, o PIX manual (sem cobranca em gateway
+    nenhum): nao ha o que consultar, e quem confirma e o admin na mao.
+  */
   const { data: pending } = await db
     .from("tickets")
-    .select("id,asaas_payment_id,event_id,created_at")
+    .select("id,asaas_payment_id,abacate_charge_id,event_id,created_at")
     .eq("status", "pending")
-    .not("asaas_payment_id", "is", null);
+    .or("asaas_payment_id.not.is.null,abacate_charge_id.not.is.null");
 
-  const rows = (pending ?? []) as { id: string; asaas_payment_id: string | null; event_id: string; created_at: string }[];
+  const rows = (pending ?? []) as {
+    id: string;
+    asaas_payment_id: string | null;
+    abacate_charge_id: string | null;
+    event_id: string;
+    created_at: string;
+  }[];
   const items: ReconcileResult["items"] = [];
   let confirmed = 0;
   let cleaned = 0;
@@ -61,6 +79,40 @@ export async function reconcilePendingTickets(fetchImpl: Fetch = fetch): Promise
   }
 
   for (const t of rows) {
+    /*
+      Ramo da AbacatePay. Fica antes do Asaas porque uma linha so tem um
+      provedor, e o `continue` no fim evita aninhar o resto do laco.
+
+      A limpeza por idade nao se repete aqui: o Pix ja nasce com validade
+      (`expiresIn`) e o proprio gateway expira a cobranca sozinho. Marcar
+      `canceled` no nosso lado quando ele diz EXPIRED e so espelhar o fato.
+    */
+    if (t.abacate_charge_id) {
+      try {
+        const st = await getAbacatePixStatus(t.abacate_charge_id, fetchImpl);
+        if (isAbacatePaidStatus(st.status)) {
+          const r = await processWebhookEvent(
+            {
+              event: "transparent.completed",
+              data: { id: t.abacate_charge_id },
+            },
+            deps,
+          );
+          if (r.handled) confirmed++;
+          items.push({ ticketId: t.id, status: st.status, handled: r.handled });
+        } else if (st.status === "EXPIRED" || (await eventSoldOut(t.event_id))) {
+          await db.from("tickets").update({ status: "canceled" }).eq("id", t.id);
+          cleaned++;
+          items.push({ ticketId: t.id, status: st.status, cleaned: true });
+        } else {
+          items.push({ ticketId: t.id, status: st.status, handled: false });
+        }
+      } catch (err) {
+        items.push({ ticketId: t.id, error: err instanceof Error ? err.message : String(err) });
+      }
+      continue;
+    }
+
     if (!t.asaas_payment_id) continue;
     try {
       const st = await getAsaasPaymentStatus(t.asaas_payment_id, fetchImpl);
