@@ -1,4 +1,5 @@
 import { getAllSubscriptions } from "@/lib/tournament/subscriptions";
+import { getConviteStatuses, type ConviteStatus } from "@/lib/tournament/convite-stats";
 import { formatDateBR } from "@/lib/format";
 import { LiveRefresh } from "@/components/live-refresh";
 import { InscritosToolbar } from "./inscritos-toolbar";
@@ -11,8 +12,21 @@ export const metadata = {
 };
 
 export default async function InscritosPage() {
-  const { count, attendedCount, firstTimerCount, excludedCount, rows } =
-    await getAllSubscriptions();
+  /*
+    Os convites vieram do `/admin/dashboard`, que virou redirecionamento para o
+    app em 14/08/2026.
+
+    Eles NAO foram para o app junto com o resto do painel, e o motivo e o dado:
+    `convite_opens` so e escrito por `/convite/[slug]`, que e pagina deste
+    projeto, e a lista de convidados (`CONVITES`) mora aqui do lado, em
+    `app/(public)/inscrever/convites.ts`. Levar o painel sem levar a pagina
+    deixaria o app lendo uma tabela que so este repositorio alimenta.
+
+    Aqui e o lugar certo enquanto isso for verdade: quem abriu o convite e nao
+    se inscreveu e informacao de inscrito, e esta e a tela dos inscritos.
+  */
+  const [{ count, attendedCount, firstTimerCount, excludedCount, rows }, convites] =
+    await Promise.all([getAllSubscriptions(), getConviteStatuses()]);
 
   // Numera só os contabilizados (desc); os não contabilizados ficam sem número.
   let running = count;
@@ -48,6 +62,38 @@ export default async function InscritosPage() {
         <Stat label="Primeira vez" value={firstTimerCount} tone="felt" />
       </section>
 
+      {/* Convidados: quem abriu o link e nao se inscreveu vem primeiro, porque
+          e a unica linha desta tela que pede uma acao de quem esta lendo. */}
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-display text-xl font-light tracking-tight text-paper">Convidados</h2>
+          <span className="font-mono text-[11px] text-gray-mid">
+            {convites.total} link{convites.total === 1 ? "" : "s"}
+            {convites.openedNotSubscribedCount > 0
+              ? ` · ${convites.openedNotSubscribedCount} abriu e não inscreveu`
+              : ""}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <Stat label="Inscritos" value={convites.subscribedCount} tone="felt" />
+          <Stat label="Abriu, não inscr." value={convites.openedNotSubscribedCount} tone="gold" />
+          <Stat label="Não abriu" value={convites.notOpenedCount} tone="paper" />
+        </div>
+
+        {convites.rows.length === 0 ? (
+          <div className="rounded-2xl border border-line bg-ink-2 px-6 py-8 text-center">
+            <p className="text-sm text-gray-soft">Nenhum convite personalizado cadastrado.</p>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {convites.rows.map((c) => (
+              <ConvidadoRow key={c.slug} c={c} />
+            ))}
+          </ul>
+        )}
+      </section>
+
       <InscritosToolbar rows={rows} />
 
       {rows.length === 0 ? (
@@ -81,7 +127,9 @@ export default async function InscritosPage() {
                     }`}
                   >
                     <td className="px-4 py-3 font-mono text-xs text-gray-mid tabular-nums">
-                      {num ?? "—"}
+                      {/* Ponto médio, nunca travessão: a linha sem número é a
+                          que ficou fora da conta, e ela já vem esmaecida. */}
+                      {num ?? "·"}
                     </td>
                     <td className="px-4 py-3 font-medium text-paper">
                       <span className={isCounted ? "" : "line-through"}>
@@ -198,6 +246,36 @@ function Stat({
         </span>
       </CardContent>
     </Card>
+  );
+}
+
+function ConvidadoRow({ c }: { c: ConviteStatus }) {
+  const accent =
+    c.status === "opened_not_subscribed" ? "border-gold/50 bg-gold/5" : "border-hair bg-surface";
+  const badge =
+    c.status === "subscribed" ? (
+      <Badge variant="live">Inscrito</Badge>
+    ) : c.status === "opened_not_subscribed" ? (
+      <Badge variant="gold">Abriu · não inscr.</Badge>
+    ) : (
+      <Badge variant="neutral">Não abriu</Badge>
+    );
+
+  return (
+    <li className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${accent}`}>
+      <div className="min-w-0">
+        <p className="font-medium text-paper">{c.name}</p>
+        <p className="font-mono text-[11px] text-gray-mid">/convite/{c.slug}</p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+        {badge}
+        {c.opened && c.lastOpenedAt && (
+          <span className="font-mono text-[10px] text-gray-mid">
+            {c.openCount}× · {formatDateBR(c.lastOpenedAt, "dd/MM HH:mm")}
+          </span>
+        )}
+      </div>
+    </li>
   );
 }
 
